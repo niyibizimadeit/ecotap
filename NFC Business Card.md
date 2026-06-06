@@ -4,7 +4,7 @@
 
 ### Abstract
 
-This document presents the system design and product specification for an NFC-enabled digital business card platform. The platform bridges physical NFC cards with cloud-hosted digital employee profiles, enabling instantan contact exchange between employees and visitors without requiring either party to install a dedicated application.
+This document presents the system design and product specification for an NFC-enabled digital business card platform. The platform bridges physical NFC cards with cloud-hosted digital employee profiles, enabling instant contact exchange between employees and visitors without requiring either party to install a dedicated application.
 
 ## 1. Introduction
 
@@ -146,5 +146,5 @@ The Employee dashboard provides profile management and networking history, with 
 - Edit Card — Update all profile fields and biographical content
 - Theme Settings — Adjust card colour and display preferences
 - Contact Exchanges — Review all received visitor contacts with timestamps
-- QR Code — Download and share the employee's generated QR code
+- QR code — Download and share the employee's generated QR code
 
