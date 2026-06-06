@@ -1,0 +1,46 @@
+@import "tailwindcss";
+
+/* ── Font variables ── */
+:root {
+  --font-cormorant: 'Cormorant Garamond', Georgia, serif;
+  --font-dm-sans:   'DM Sans', system-ui, sans-serif;
+  --font-dm-mono:   'DM Mono', monospace;
+}
+
+/* ── Base resets ── */
+*, *::before, *::after { box-sizing: border-box; }
+html { scroll-behavior: smooth; }
+
+/* ── Grain texture overlay ── */
+body::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.04'/%3E%3C/svg%3E");
+  pointer-events: none;
+  z-index: 9999;
+  opacity: 0.5;
+}
+
+/* ── Scrollbar ── */
+::-webkit-scrollbar { width: 6px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: #D1FAE5; border-radius: 3px; }
+::-webkit-scrollbar-thumb:hover { background: #059669; }
+
+/* ── Selection ── */
+::selection { background: #D1FAE5; color: #064E3B; }
+
+/* ── Focus ring ── */
+:focus-visible { outline: 2px solid #059669; outline-offset: 2px; border-radius: 4px; }
+
+/* ── Shimmer skeleton ── */
+.skeleton {
+  background: linear-gradient(90deg, #F5EDD8 25%, #FEF9EF 50%, #F5EDD8 75%);
+  background-size: 200% 100%;
+  animation: shimmer 1.8s ease-in-out infinite;
+}
+@keyframes shimmer {
+  0%   { background-position: -200% 0; }
+  100% { background-position:  200% 0; }
+}
