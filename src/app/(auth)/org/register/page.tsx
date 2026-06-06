@@ -1,0 +1,329 @@
+"use client";
+
+import { useState } from "react";
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import Link from "next/link";
+import { useRouter } from "next/navigation";
+import { ArrowRight, ArrowLeft, Building2, User, CheckCircle } from "lucide-react";
+
+import { AuthLayout } from "@/components/auth/AuthLayout";
+import { Button } from "@/components/ui/Button";
+import { Input } from "@/components/ui/Input";
+import { Select } from "@/components/ui/Input";
+import {
+  orgRegisterStep1Schema,
+  orgRegisterStep2Schema,
+  type OrgRegisterStep1Data,
+  type OrgRegisterStep2Data,
+} from "@/lib/validations/auth";
+import { COMPANY_SIZES, INDUSTRIES } from "@/constants";
+
+const STEPS = [
+  { label: "Company info", icon: Building2 },
+  { label: "Admin account", icon: User },
+  { label: "Review & submit", icon: CheckCircle },
+];
+
+export default function OrgRegisterPage() {
+  const [step, setStep] = useState(1);
+  const [step1Data, setStep1Data] = useState<OrgRegisterStep1Data | null>(null);
+  const [step2Data, setStep2Data] = useState<OrgRegisterStep2Data | null>(null);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const router = useRouter();
+
+  return (
+    <AuthLayout
+      quote="The best business cards don't get lost in a drawer. They live on every phone you tap."
+      quoteAuthor="EcoTap for Teams"
+    >
+      <div className="w-full max-w-md mx-auto">
+        {/* Step indicator */}
+        <div className="flex items-center gap-3 mb-10">
+          {STEPS.map((s, i) => (
+            <div key={s.label} className="flex items-center gap-3 flex-1 last:flex-none">
+              <div className="flex items-center gap-2">
+                <div
+                  className={`w-8 h-8 rounded-lg flex items-center justify-center text-xs font-mono font-medium transition-all duration-200 ${
+                    i + 1 <= step
+                      ? "bg-emerald-deep text-ivory"
+                      : "bg-cream border border-cream-dark text-ink-light"
+                  }`}
+                >
+                  {i + 1 < step ? <CheckCircle className="h-4 w-4" /> : i + 1}
+                </div>
+                <span
+                  className={`text-xs font-medium hidden sm:block ${
+                    i + 1 <= step ? "text-emerald-deep" : "text-ink-light"
+                  }`}
+                >
+                  {s.label}
+                </span>
+              </div>
+              {i < STEPS.length - 1 && (
+                <div
+                  className={`flex-1 h-px ${
+                    i + 1 < step ? "bg-emerald-light" : "bg-cream-dark"
+                  }`}
+                />
+              )}
+            </div>
+          ))}
+        </div>
+
+        {/* Step content */}
+        {step === 1 && (
+          <Step1CompanyInfo
+            defaultValues={step1Data}
+            onNext={(data) => {
+              setStep1Data(data);
+              setStep(2);
+            }}
+          />
+        )}
+        {step === 2 && (
+          <Step2AdminAccount
+            onBack={() => setStep(1)}
+            onNext={(data) => {
+              setStep2Data(data);
+              setStep(3);
+            }}
+          />
+        )}
+        {step === 3 && step1Data && step2Data && (
+          <Step3Review
+            data={{ ...step1Data, ...step2Data }}
+            onBack={() => setStep(2)}
+            isSubmitting={isSubmitting}
+            onSubmit={async () => {
+              setIsSubmitting(true);
+              // TODO Phase 11: Wire to Supabase Auth + onboarding service
+              await new Promise((r) => setTimeout(r, 1200));
+              setIsSubmitting(false);
+              router.push("/pending");
+            }}
+          />
+        )}
+
+        {/* Footer link */}
+        <p className="text-center text-sm text-ink-light mt-8">
+          Already have an account?{" "}
+          <Link
+            href="/org/login"
+            className="text-emerald-bright underline underline-offset-4 hover:text-emerald-mid transition-colors font-medium"
+          >
+            Sign in
+          </Link>
+        </p>
+      </div>
+    </AuthLayout>
+  );
+}
+
+/* ── Step 1: Company info ─────────────────────────────────────────────────────── */
+
+function Step1CompanyInfo({
+  defaultValues,
+  onNext,
+}: {
+  defaultValues: OrgRegisterStep1Data | null;
+  onNext: (data: OrgRegisterStep1Data) => void;
+}) {
+  const {
+    register,
+    handleSubmit,
+    formState: { errors },
+  } = useForm<OrgRegisterStep1Data>({
+    resolver: zodResolver(orgRegisterStep1Schema),
+    defaultValues: defaultValues ?? {},
+  });
+
+  return (
+    <form onSubmit={handleSubmit(onNext)} className="space-y-5">
+      <div>
+        <h1 className="font-serif text-display-sm text-emerald-deep mb-1">Register your organisation</h1>
+        <p className="text-sm text-ink-light">Tell us about your company — we will review and activate your account within 24 hours.</p>
+      </div>
+
+      <Input
+        label="Company name"
+        required
+        placeholder="e.g., AZ Soft Solutions"
+        error={errors.company_name?.message}
+        {...register("company_name")}
+      />
+
+      <Select
+        label="Industry"
+        required
+        placeholder="Select industry"
+        options={INDUSTRIES.map((i) => ({ value: i, label: i }))}
+        error={errors.industry?.message}
+        {...register("industry")}
+      />
+
+      <Select
+        label="Company size"
+        required
+        placeholder="Select size"
+        options={COMPANY_SIZES.map((s) => ({ value: s.value, label: s.label }))}
+        error={errors.size?.message}
+        {...register("size")}
+      />
+
+      <Input
+        label="Website"
+        hint="Optional — your company URL or domain"
+        placeholder="e.g., azsoftsolutions.com"
+        error={errors.website?.message}
+        {...register("website")}
+      />
+
+      <Button type="submit" variant="primary" size="lg" className="w-full" rightIcon={<ArrowRight className="h-4 w-4" />}>
+        Continue to admin account
+      </Button>
+    </form>
+  );
+}
+
+/* ── Step 2: Admin account ────────────────────────────────────────────────────── */
+
+function Step2AdminAccount({
+  onBack,
+  onNext,
+}: {
+  onBack: () => void;
+  onNext: (data: OrgRegisterStep2Data) => void;
+}) {
+  const {
+    register,
+    handleSubmit,
+    formState: { errors },
+  } = useForm<OrgRegisterStep2Data>({
+    resolver: zodResolver(orgRegisterStep2Schema),
+  });
+
+  return (
+    <form onSubmit={handleSubmit(onNext)} className="space-y-5">
+      <div>
+        <h1 className="font-serif text-display-sm text-emerald-deep mb-1">Admin account</h1>
+        <p className="text-sm text-ink-light">This person will manage the company dashboard, employees, and billing.</p>
+      </div>
+
+      <Input
+        label="Full name"
+        required
+        placeholder="e.g., Prince Niyibizi"
+        error={errors.admin_name?.message}
+        {...register("admin_name")}
+      />
+
+      <Input
+        label="Work email"
+        required
+        type="email"
+        placeholder="prince@azsoftsolutions.com"
+        error={errors.email?.message}
+        {...register("email")}
+      />
+
+      <Input
+        label="Password"
+        required
+        type="password"
+        placeholder="At least 8 characters"
+        error={errors.password?.message}
+        {...register("password")}
+      />
+
+      <div className="flex gap-3 pt-2">
+        <Button type="button" variant="secondary" size="lg" onClick={onBack} leftIcon={<ArrowLeft className="h-4 w-4" />}>
+          Back
+        </Button>
+        <Button type="submit" variant="primary" size="lg" className="flex-1" rightIcon={<ArrowRight className="h-4 w-4" />}>
+          Review details
+        </Button>
+      </div>
+    </form>
+  );
+}
+
+/* ── Step 3: Review ───────────────────────────────────────────────────────────── */
+
+function Step3Review({
+  data,
+  onBack,
+  isSubmitting,
+  onSubmit,
+}: {
+  data: OrgRegisterStep1Data & OrgRegisterStep2Data;
+  onBack: () => void;
+  isSubmitting: boolean;
+  onSubmit: () => void;
+}) {
+  return (
+    <div className="space-y-5">
+      <div>
+        <h1 className="font-serif text-display-sm text-emerald-deep mb-1">Review your details</h1>
+        <p className="text-sm text-ink-light">Everything look correct? You can go back to edit any section.</p>
+      </div>
+
+      {/* Company info card */}
+      <div className="bg-cream border border-cream-dark rounded-2xl p-5 space-y-3">
+        <div className="flex items-center gap-2 mb-3">
+          <Building2 className="h-4 w-4 text-emerald-bright" />
+          <span className="text-xs font-mono tracking-widest uppercase text-emerald-bright">Company</span>
+        </div>
+        <ReviewRow label="Name" value={data.company_name} />
+        <ReviewRow label="Industry" value={data.industry} />
+        <ReviewRow label="Size" value={COMPANY_SIZES.find((s) => s.value === data.size)?.label ?? data.size} />
+        <ReviewRow label="Website" value={data.website || "—"} />
+      </div>
+
+      {/* Admin info card */}
+      <div className="bg-cream border border-cream-dark rounded-2xl p-5 space-y-3">
+        <div className="flex items-center gap-2 mb-3">
+          <User className="h-4 w-4 text-emerald-bright" />
+          <span className="text-xs font-mono tracking-widest uppercase text-emerald-bright">Admin</span>
+        </div>
+        <ReviewRow label="Name" value={data.admin_name} />
+        <ReviewRow label="Email" value={data.email} />
+        <ReviewRow label="Password" value={"•".repeat(12)} />
+      </div>
+
+      <div className="bg-gold-pale border border-gold/20 rounded-2xl p-4">
+        <p className="text-xs text-gold leading-relaxed">
+          Your account will be reviewed within 24 hours. Once approved, you can access the company dashboard, add employees, and order cards.
+        </p>
+      </div>
+
+      <div className="flex gap-3 pt-2">
+        <Button type="button" variant="secondary" size="lg" onClick={onBack} leftIcon={<ArrowLeft className="h-4 w-4" />}>
+          Edit
+        </Button>
+        <Button
+          type="button"
+          variant="primary"
+          size="lg"
+          className="flex-1"
+          loading={isSubmitting}
+          onClick={onSubmit}
+          rightIcon={<CheckCircle className="h-4 w-4" />}
+        >
+          Submit registration
+        </Button>
+      </div>
+    </div>
+  );
+}
+
+/* ── Review row ───────────────────────────────────────────────────────────────── */
+
+function ReviewRow({ label, value }: { label: string; value: string }) {
+  return (
+    <div className="flex justify-between items-center py-1">
+      <span className="text-xs text-ink-light">{label}</span>
+      <span className="text-sm font-medium text-ink text-right">{value}</span>
+    </div>
+  );
+}
