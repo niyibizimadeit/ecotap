@@ -1,0 +1,66 @@
+import type { PublicCard } from "@/types";
+
+export const MOCK_INDIVIDUAL_CARD: PublicCard = {
+  id: "card-001",
+  profile_id: "profile-001",
+  slug: "prince-niyibizi",
+  theme: "emerald",
+  accent_color: "#064E3B",
+  bio: "Founder & software engineer building tech for Rwanda. Co-founder of AZ Soft Solutions and creator of GiraXpress, Rwanda's curated e-commerce marketplace.",
+  job_title: "Founder & CEO",
+  phone: "+250 788 123 456",
+  social_links: {
+    linkedin:  "https://linkedin.com/in/prince-niyibizi",
+    twitter:   "https://x.com/princeniyibizi",
+    whatsapp:  "+250788123456",
+    instagram: "https://instagram.com/princeniyibizi",
+    website:   "https://azsoftsolutions.com",
+  },
+  qr_url: null,
+  is_public: true,
+  created_at: "2024-01-01T00:00:00Z",
+  updated_at: "2024-01-01T00:00:00Z",
+  profile: {
+    id: "profile-001",
+    username: "prince-niyibizi",
+    full_name: "Prince Niyibizi",
+    email: "prince@azsoftsolutions.com",
+    role: "individual",
+  },
+  company: null,
+};
+
+export const MOCK_EMPLOYEE_CARD: PublicCard = {
+  id: "card-002",
+  profile_id: "profile-002",
+  slug: "amara-uwimana",
+  theme: "emerald",
+  accent_color: "#064E3B",
+  bio: "Creative director with 6 years of experience in brand identity, digital campaigns, and experiential design. Passionate about telling Rwandan stories through design.",
+  job_title: "Creative Director",
+  phone: "+250 788 654 321",
+  social_links: {
+    linkedin:  "https://linkedin.com/in/amara-uwimana",
+    twitter:   "https://x.com/amarauwimana",
+    whatsapp:  "+250788654321",
+    website:   "https://rdmc.rw",
+  },
+  qr_url: null,
+  is_public: true,
+  created_at: "2024-01-01T00:00:00Z",
+  updated_at: "2024-01-01T00:00:00Z",
+  profile: {
+    id: "profile-002",
+    username: "amara-uwimana",
+    full_name: "Amara Uwimana",
+    email: "amara@rdmc.rw",
+    role: "employee",
+  },
+  company: {
+    id: "company-001",
+    name: "RDMC Ltd",
+    slug: "rdmc",
+    logo_url: null,
+    brand_color: "#064E3B",
+  },
+};
