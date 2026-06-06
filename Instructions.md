@@ -1,4 +1,4 @@
-# EcoTap — Architecture & Coding Conventions
+# EcoTap — Architecture & Coding Conventions(has to be extremely mobile responsive)
 
 This document is the single source of truth for how this codebase is structured and why. Read this before writing any code.
 
