@@ -34,7 +34,7 @@ export function Footer() {
               Smart NFC and QR digital business cards for companies and individuals across Rwanda.
             </p>
             <p className="text-xs text-ivory/40 mt-6 font-mono tracking-wide">
-              Built in Kigali, Rwanda 🇷🇼
+              Built in Kigali, Rwanda
             </p>
           </div>
 

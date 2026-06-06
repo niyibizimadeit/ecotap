@@ -70,7 +70,7 @@ export function AuthLayout({ children, quote, quoteAuthor }: AuthLayoutProps) {
 
         {/* Footer */}
         <p className="relative text-xs font-mono text-ivory/30 tracking-wide">
-          Built in Kigali, Rwanda 🇷🇼
+          Built in Kigali, Rwanda
         </p>
       </div>
 

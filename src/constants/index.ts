@@ -72,7 +72,7 @@ export const DASHBOARD_ROUTE: Record<string, string> = {
 export const MIN_CARD_QUANTITY = 1;
 export const MAX_CARD_QUANTITY = 100;
 
-// ── Brand colors (matches tailwind.config.ts) ─────────────────────────────────
+// ── Brand colors (matches globals.css @theme tokens) ───────────────────────────
 
 export const COLORS = {
   emeraldDeep:   "#064E3B",
