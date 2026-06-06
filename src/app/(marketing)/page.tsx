@@ -44,12 +44,6 @@ function HeroSection() {
 
         {/* Left — copy */}
         <div>
-          <div className="inline-flex items-center gap-2 bg-emerald-pale border border-emerald-light rounded-full px-4 py-1.5 mb-8">
-            <span className="w-1.5 h-1.5 rounded-full bg-emerald-bright animate-pulse" />
-            <span className="text-xs font-mono tracking-widest text-emerald-mid uppercase">
-              Now live in Rwanda
-            </span>
-          </div>
 
           <h1 className="font-serif text-display-xl text-emerald-deep leading-[1.05] tracking-tight mb-6">
             Your business<br />
@@ -115,14 +109,14 @@ function CardMockup() {
 
         {/* Avatar */}
         <div className="w-16 h-16 rounded-2xl bg-ivory/10 border border-ivory/20 flex items-center justify-center mb-6">
-          <span className="font-serif text-2xl font-semibold text-ivory">PN</span>
+          <span className="font-serif text-2xl font-semibold text-ivory">NF</span>
         </div>
 
         {/* Info */}
         <div className="mb-6">
-          <h3 className="font-serif text-2xl font-semibold text-ivory mb-1">Prince Niyibizi</h3>
+          <h3 className="font-serif text-2xl font-semibold text-ivory mb-1">NTWALI Frankie</h3>
           <p className="text-ivory/60 text-sm">Founder & CEO</p>
-          <p className="text-emerald-light/80 text-sm font-mono tracking-wide mt-0.5">AZ Soft Solutions</p>
+          <p className="text-emerald-light/80 text-sm font-mono tracking-wide mt-0.5">ABC Group</p>
         </div>
 
         {/* Social icons */}
@@ -155,7 +149,7 @@ function CardMockup() {
       {/* Floating badge */}
       <div className="absolute -bottom-4 -left-4 bg-cream border border-cream-dark rounded-2xl px-4 py-3 shadow-card-lg">
         <p className="text-xs text-ink-light font-mono">Tap to share</p>
-        <p className="text-sm font-semibold text-emerald-deep">ecotap.rw/prince</p>
+        <p className="text-sm font-semibold text-emerald-deep">ecotap.rw/ntwali</p>
       </div>
     </div>
   );
