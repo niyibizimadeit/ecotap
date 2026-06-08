@@ -5,7 +5,8 @@ import type { PublicCard } from "@/types";
  * Used by the /api/vcf/[slug] route and the "Save contact" button.
  */
 export function generateVcf(card: PublicCard): string {
-  const { profile, company, job_title, phone, social_links, bio } = card;
+  const { profile, primary_company: company, primary_job_title, phone, social_links, bio } = card;
+  const job_title = primary_job_title ?? card.job_title;
 
   const lines: string[] = [
     "BEGIN:VCARD",
