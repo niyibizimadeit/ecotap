@@ -35,6 +35,7 @@ const MOCK_USERS: AdminUser[] = [
 
 const ROLE_LABELS: Record<UserRole, string> = {
   super_admin:   "Super Admin",
+  country_rep:   "Country Rep",
   company_admin: "Company Admin",
   employee:      "Employee",
   individual:    "Individual",

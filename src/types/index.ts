@@ -186,23 +186,26 @@ export interface CardOrder {
  * Captured fire-and-forget via /api/events — never blocks a page render.
  */
 export interface CardEvent {
-  id:            string;
-  card_id:       string;
-  event_type:    EventType;
-  session_id:    string | null;  // Groups events from one visitor session
-  visitor_id:    string | null;  // Anonymous, persisted in cookie for return detection
-  referrer:      string | null;
-  device_type:   DeviceType;
-  os:            string | null;
-  browser:       string | null;
-  country:       string | null;  // From Vercel x-vercel-ip-country header
-  city:          string | null;
-  utm_source:    string | null;
-  utm_medium:    string | null;
-  utm_campaign:  string | null;
-  social_target: string | null;  // For social_click events — which platform
-  duration_ms:   number | null;  // Time on page — populated on session end
-  created_at:    string;
+  id:                string;
+  card_id:           string;
+  event_type:        EventType;
+  session_id:        string | null;  // Groups events from one visitor session
+  visitor_id:        string | null;  // Anonymous, persisted in cookie for return detection
+  is_return_visitor: boolean;        // Computed: true if visitor_id seen before for this card
+  source:            string | null;  // 'nfc' | 'qr' | 'direct' — clean source column for ML
+  referrer:          string | null;
+  device_type:       DeviceType;
+  os:                string | null;
+  browser:           string | null;
+  screen_resolution: string | null;  // e.g. '390x844' — for device profiling
+  country:           string | null;  // From Vercel x-vercel-ip-country header
+  city:              string | null;
+  utm_source:        string | null;
+  utm_medium:        string | null;
+  utm_campaign:      string | null;
+  social_target:     string | null;  // For social_click events — which platform
+  duration_ms:       number | null;  // Time on page — populated on session end
+  created_at:        string;
 }
 
 /**
@@ -236,11 +239,56 @@ export interface ContactExchange {
   visitor_name:  string;
   visitor_email: string | null;
   visitor_phone: string | null;
+  message:       string | null;  // Optional short note from the visitor
   event_id:      string | null;  // Links to the card_events row for this session
   device_type:   DeviceType;
   referrer:      string | null;
   country:       string | null;
   created_at:    string;
+}
+
+/**
+ * User lifecycle events — logins, profile updates, settings changes.
+ * Critical for churn prediction and engagement scoring.
+ */
+export interface ProfileActivity {
+  id:            string;
+  profile_id:    string;
+  activity_type: string;   // 'login' | 'profile_update' | 'settings_change' | 'card_edit' | 'order_placed'
+  description:   string | null;  // Human-readable summary
+  metadata:      Record<string, unknown>;  // Changed fields, previous values, context
+  ip_address:    string | null;
+  user_agent:    string | null;
+  created_at:    string;
+}
+
+/**
+ * Pre-computed ML scores per card. Updated by batch jobs.
+ * Dashboards and recommendation engines read from here.
+ */
+export interface CardScore {
+  id:               string;
+  card_id:          string;
+  engagement_score: number | null;  // 0.00–100.00
+  quality_score:    number | null;  // 0.00–100.00
+  churn_risk_score: number | null;  // 0.00–100.00
+  influence_score:  number | null;  // 0.00–100.00
+  score_version:    string;         // Model version that produced these scores
+  computed_at:      string;
+  created_at:       string;
+}
+
+/** A/B test variant assignment — which variant each visitor saw */
+export interface ABTestAssignment {
+  id:         string;
+  test_id:    string;         // Unique test slug e.g. 'card_design_v2'
+  variant:    string;         // Variant identifier e.g. 'control', 'emerald_bg'
+  visitor_id: string | null;  // Anonymous cookie ID
+  profile_id: string | null;  // Null for anonymous visitors
+  card_id:    string | null;  // The card being tested
+  metadata:   Record<string, unknown>;  // Extra context
+  converted:  boolean | null; // Null = pending, true/false = outcome
+  created_at: string;
 }
 
 // ── Billing & platform ────────────────────────────────────────────────────────
@@ -255,14 +303,15 @@ export interface BillingPlan {
 }
 
 export interface CompanySubscription {
-  id:               string;
-  company_id:       string;
-  plan_id:          string;
-  status:           SubscriptionStatus;
-  employee_count:   number;
-  next_billing_date:string | null;
-  created_at:       string;
-  updated_at:       string;
+  id:                string;
+  company_id:        string;
+  plan_id:           string;
+  status:            SubscriptionStatus;
+  started_at:        string;       // Tenure start — for churn prediction
+  employee_count:    number;
+  next_billing_date: string | null;
+  created_at:        string;
+  updated_at:        string;
 }
 
 /** Notification log — tracks what was sent, to whom, and via which channel */
@@ -294,6 +343,7 @@ export interface EnvironmentalReport {
   company_id:           string;
   report_month:         string;   // YYYY-MM
   active_cards:         number;   // Employee cards active during this month
+  cards_in_circulation: number;   // Total physical cards ever ordered (full lifecycle count)
   paper_cards_avoided:  number;   // Estimated paper cards not printed
   co2_saved_grams:      number;   // Grams of CO₂ avoided
   water_saved_litres:   number;   // Litres of water not consumed
@@ -372,20 +422,23 @@ export interface OrderForm {
 }
 
 export interface RecordEventPayload {
-  card_id:        string;
-  event_type:     EventType;
-  session_id?:    string;
-  visitor_id?:    string;
-  referrer?:      string;
-  device_type?:   DeviceType;
-  os?:            string;
-  browser?:       string;
-  country?:       string;
-  city?:          string;
-  utm_source?:    string;
-  utm_medium?:    string;
-  utm_campaign?:  string;
-  social_target?: string;
+  card_id:           string;
+  event_type:        EventType;
+  session_id?:       string;
+  visitor_id?:       string;
+  is_return_visitor?:boolean;
+  source?:           string;       // 'nfc' | 'qr' | 'direct'
+  referrer?:         string;
+  device_type?:      DeviceType;
+  os?:               string;
+  browser?:          string;
+  screen_resolution?:string;       // e.g. '390x844'
+  country?:          string;
+  city?:             string;
+  utm_source?:       string;
+  utm_medium?:       string;
+  utm_campaign?:     string;
+  social_target?:    string;
 }
 
 // ── Server Action response ────────────────────────────────────────────────────

@@ -12,7 +12,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 
   // Phase 12: replace with real DB fetch
   const card =
-    slug === MOCK_EMPLOYEE_CARD.company?.slug &&
+    slug === MOCK_EMPLOYEE_CARD.primary_company?.slug &&
     employee === MOCK_EMPLOYEE_CARD.profile.username
       ? MOCK_EMPLOYEE_CARD
       : null;
@@ -21,7 +21,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 
   const name     = card.profile.full_name;
   const titleStr = card.job_title
-    ? `${name} — ${card.job_title} at ${card.company?.name}`
+    ? `${name} — ${card.job_title} at ${card.primary_company?.name}`
     : name;
 
   return {
@@ -41,7 +41,7 @@ export default async function EmployeeCardPage({ params }: Props) {
 
   // Phase 12: replace with real DB fetch
   const card =
-    slug === MOCK_EMPLOYEE_CARD.company?.slug &&
+    slug === MOCK_EMPLOYEE_CARD.primary_company?.slug &&
     employee === MOCK_EMPLOYEE_CARD.profile.username
       ? MOCK_EMPLOYEE_CARD
       : null;

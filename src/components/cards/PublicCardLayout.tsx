@@ -10,8 +10,8 @@ interface PublicCardLayoutProps {
 }
 
 export function PublicCardLayout({ card }: PublicCardLayoutProps) {
-  const { profile, company, job_title, phone, bio, social_links, accent_color } = card;
-  const accent   = accent_color  ?? "#064E3B";
+  const { profile, primary_company: company, primary_job_title: job_title, phone, bio, social_links, theme_color } = card;
+  const accent   = theme_color  ?? "#064E3B";
   const initials = getInitials(profile.full_name);
 
   return (

@@ -1,0 +1,134 @@
+"use server";
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Admin server actions — super admin operations.
+// Called from the admin dashboard. All actions check for super_admin role.
+// ─────────────────────────────────────────────────────────────────────────────
+
+import { getSupabase } from "@/lib/supabase/server";
+import * as onboardingService from "@/lib/services/onboarding.service";
+import * as adminService from "@/lib/services/admin.service";
+import type { ActionResult } from "@/types";
+
+// ── Guard ────────────────────────────────────────────────────────────────────
+
+async function requireSuperAdmin(): Promise<boolean> {
+  const supabase = await getSupabase();
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return false;
+
+  const { data: profile } = await supabase
+    .from("profiles")
+    .select("role")
+    .eq("id", user.id)
+    .single();
+
+  return profile?.role === "super_admin";
+}
+
+// ── Approvals ────────────────────────────────────────────────────────────────
+
+export async function approveCompany(companyId: string): Promise<ActionResult> {
+  if (!(await requireSuperAdmin())) {
+    return { success: false, error: "Unauthorized. Super admin only." };
+  }
+  return onboardingService.approveCompany(companyId);
+}
+
+export async function approveIndividual(profileId: string): Promise<ActionResult> {
+  if (!(await requireSuperAdmin())) {
+    return { success: false, error: "Unauthorized. Super admin only." };
+  }
+  return onboardingService.approveIndividual(profileId);
+}
+
+export async function rejectUser(profileId: string): Promise<ActionResult> {
+  if (!(await requireSuperAdmin())) {
+    return { success: false, error: "Unauthorized. Super admin only." };
+  }
+  return onboardingService.rejectUser(profileId);
+}
+
+// ── Card designs ─────────────────────────────────────────────────────────────
+
+export async function createDesign(formData: FormData): Promise<ActionResult> {
+  if (!(await requireSuperAdmin())) {
+    return { success: false, error: "Unauthorized. Super admin only." };
+  }
+
+  return adminService.createDesign({
+    name:         formData.get("name") as string,
+    description:  (formData.get("description") as string) ?? undefined,
+    accent_color: (formData.get("accent_color") as string) ?? undefined,
+    pattern:      (formData.get("pattern") as string) ?? undefined,
+    is_active:    formData.get("is_active") === "on",
+  });
+}
+
+export async function updateDesign(
+  id: string,
+  data: Record<string, unknown>
+): Promise<ActionResult> {
+  if (!(await requireSuperAdmin())) {
+    return { success: false, error: "Unauthorized. Super admin only." };
+  }
+  return adminService.updateDesign(id, data as Parameters<typeof adminService.updateDesign>[1]);
+}
+
+export async function deleteDesign(id: string): Promise<ActionResult> {
+  if (!(await requireSuperAdmin())) {
+    return { success: false, error: "Unauthorized. Super admin only." };
+  }
+  return adminService.deleteDesign(id);
+}
+
+// ── Billing plans ────────────────────────────────────────────────────────────
+
+export async function upsertPlan(formData: FormData): Promise<ActionResult> {
+  if (!(await requireSuperAdmin())) {
+    return { success: false, error: "Unauthorized. Super admin only." };
+  }
+
+  return adminService.upsertPlan({
+    name:               formData.get("name") as string,
+    billing_cycle:      (formData.get("billing_cycle") as "monthly" | "annual"),
+    price_per_employee: parseInt(formData.get("price_per_employee") as string, 10),
+    is_active:          formData.get("is_active") === "on",
+  });
+}
+
+export async function deletePlan(id: string): Promise<ActionResult> {
+  if (!(await requireSuperAdmin())) {
+    return { success: false, error: "Unauthorized. Super admin only." };
+  }
+  return adminService.deletePlan(id);
+}
+
+// ── Order management ─────────────────────────────────────────────────────────
+
+export async function approveOrder(orderId: string): Promise<ActionResult> {
+  if (!(await requireSuperAdmin())) {
+    return { success: false, error: "Unauthorized. Super admin only." };
+  }
+  const { approveOrder } = await import("@/lib/services/orders.service");
+  return approveOrder(orderId);
+}
+
+export async function markOrderShipped(
+  orderId: string,
+  trackingInfo?: string
+): Promise<ActionResult> {
+  if (!(await requireSuperAdmin())) {
+    return { success: false, error: "Unauthorized. Super admin only." };
+  }
+  const { markShipped } = await import("@/lib/services/orders.service");
+  return markShipped(orderId, trackingInfo);
+}
+
+export async function markOrderDelivered(orderId: string): Promise<ActionResult> {
+  if (!(await requireSuperAdmin())) {
+    return { success: false, error: "Unauthorized. Super admin only." };
+  }
+  const { markDelivered } = await import("@/lib/services/orders.service");
+  return markDelivered(orderId);
+}

@@ -14,7 +14,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   // Try individual card first, then company
   const card =
     slug === MOCK_INDIVIDUAL_CARD.profile.username ? MOCK_INDIVIDUAL_CARD :
-    slug === MOCK_EMPLOYEE_CARD.company?.slug       ? null : // company slug → no card at this level
+    slug === MOCK_EMPLOYEE_CARD.primary_company?.slug ? null : // company slug → no card at this level
     null;
 
   if (!card) {
