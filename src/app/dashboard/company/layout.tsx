@@ -3,6 +3,7 @@
 import { useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { BrandLogo } from "@/components/brand/BrandLogo";
 import { cn } from "@/lib/utils";
 import {
   LayoutDashboard, Users, Building2, Settings,
@@ -39,12 +40,7 @@ export default function CompanyDashboardLayout({ children }: { children: React.R
       >
         {/* Logo */}
         <div className="px-6 py-5 border-b" style={{ borderColor: "rgba(6,78,59,0.08)" }}>
-          <Link href="/" className="flex items-center gap-2.5">
-            <div className="w-8 h-8 rounded-lg flex items-center justify-center" style={{ backgroundColor: "#064E3B" }}>
-              <NfcIcon />
-            </div>
-            <span className="font-serif text-lg font-semibold text-emerald-deep">EcoTap</span>
-          </Link>
+          <BrandLogo variant="light" iconSize="md" />
         </div>
 
         {/* Company pill */}
@@ -164,16 +160,5 @@ export default function CompanyDashboardLayout({ children }: { children: React.R
         </main>
       </div>
     </div>
-  );
-}
-
-function NfcIcon() {
-  return (
-    <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
-      <rect x="2" y="2" width="5" height="5" rx="1.5" fill="white" />
-      <rect x="9" y="2" width="5" height="5" rx="1.5" fill="white" opacity=".55" />
-      <rect x="2" y="9" width="5" height="5" rx="1.5" fill="white" opacity=".55" />
-      <rect x="9" y="9" width="5" height="5" rx="1.5" fill="white" opacity=".25" />
-    </svg>
   );
 }

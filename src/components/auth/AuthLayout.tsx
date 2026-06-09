@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { BrandLogo } from "@/components/brand/BrandLogo";
 
 interface AuthLayoutProps {
   children: React.ReactNode;
@@ -28,12 +29,7 @@ export function AuthLayout({ children, quote, quoteAuthor }: AuthLayoutProps) {
         </div>
 
         {/* Logo */}
-        <Link href="/" className="relative flex items-center gap-2.5 group w-fit">
-          <div className="w-9 h-9 bg-ivory/10 border border-ivory/20 rounded-xl flex items-center justify-center">
-            <NfcIcon />
-          </div>
-          <span className="font-serif text-xl font-semibold text-ivory tracking-tight">EcoTap</span>
-        </Link>
+        <BrandLogo variant="dark" iconSize="lg" />
 
         {/* Quote / feature callout */}
         <div className="relative">
@@ -78,12 +74,7 @@ export function AuthLayout({ children, quote, quoteAuthor }: AuthLayoutProps) {
       <div className="flex-1 flex flex-col bg-ivory">
         {/* Mobile logo */}
         <div className="lg:hidden px-6 py-5 border-b border-cream-dark">
-          <Link href="/" className="flex items-center gap-2.5 w-fit">
-            <div className="w-8 h-8 bg-emerald-deep rounded-lg flex items-center justify-center">
-              <NfcIcon />
-            </div>
-            <span className="font-serif text-xl font-semibold text-emerald-deep">EcoTap</span>
-          </Link>
+          <BrandLogo variant="light" iconSize="md" />
         </div>
 
         <div className="flex-1 flex items-center justify-center px-6 py-12">
@@ -91,16 +82,5 @@ export function AuthLayout({ children, quote, quoteAuthor }: AuthLayoutProps) {
         </div>
       </div>
     </div>
-  );
-}
-
-function NfcIcon() {
-  return (
-    <svg width="18" height="18" viewBox="0 0 16 16" fill="none">
-      <rect x="2" y="2" width="5" height="5" rx="1.5" fill="white" opacity=".9"/>
-      <rect x="9" y="2" width="5" height="5" rx="1.5" fill="white" opacity=".5"/>
-      <rect x="2" y="9" width="5" height="5" rx="1.5" fill="white" opacity=".5"/>
-      <rect x="9" y="9" width="5" height="5" rx="1.5" fill="white" opacity=".2"/>
-    </svg>
   );
 }

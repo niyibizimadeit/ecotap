@@ -130,8 +130,8 @@ export function PublicCardLayout({ card }: PublicCardLayoutProps) {
             href="/"
             className="inline-flex items-center gap-1.5 text-xs text-ink-light hover:text-emerald-bright transition-colors"
           >
-            <NfcIcon />
-            <span>Powered by <strong className="font-medium">EcoTap</strong></span>
+            <img src="/logo.svg" alt="" className="w-4 h-4 flex-shrink-0" />
+            <span>Powered by <strong>Eco</strong>Tap</span>
           </Link>
         </div>
       </div>
@@ -145,17 +145,6 @@ function PhoneIcon() {
   return (
     <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
       <path d="M22 16.92v3a2 2 0 01-2.18 2 19.79 19.79 0 01-8.63-3.07A19.5 19.5 0 013.07 8.81 19.79 19.79 0 01.11 2.18 2 2 0 012.11 0h3a2 2 0 012 1.72c.127.96.361 1.903.7 2.81a2 2 0 01-.45 2.11L6.09 7.91a16 16 0 006 6l1.27-1.27a2 2 0 012.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0122 16.92z"/>
-    </svg>
-  );
-}
-
-function NfcIcon() {
-  return (
-    <svg width="14" height="14" viewBox="0 0 16 16" fill="currentColor">
-      <rect x="2" y="2" width="5" height="5" rx="1.5" opacity=".8"/>
-      <rect x="9" y="2" width="5" height="5" rx="1.5" opacity=".45"/>
-      <rect x="2" y="9" width="5" height="5" rx="1.5" opacity=".45"/>
-      <rect x="9" y="9" width="5" height="5" rx="1.5" opacity=".2"/>
     </svg>
   );
 }

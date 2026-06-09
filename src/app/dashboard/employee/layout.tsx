@@ -3,6 +3,7 @@
 import { useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { BrandLogo } from "@/components/brand/BrandLogo";
 import { cn } from "@/lib/utils";
 import {
   LayoutDashboard, User, QrCode, Mail, Package,
@@ -38,12 +39,7 @@ export default function EmployeeDashboardLayout({ children }: { children: React.
       >
         {/* Logo */}
         <div className="px-6 py-5 border-b" style={{ borderColor: "rgba(6,78,59,0.08)" }}>
-          <Link href="/" className="flex items-center gap-2.5 group">
-            <div className="w-8 h-8 rounded-lg flex items-center justify-center" style={{ backgroundColor: "#064E3B" }}>
-              <NfcIcon />
-            </div>
-            <span className="font-serif text-lg font-semibold text-emerald-deep">EcoTap</span>
-          </Link>
+          <BrandLogo variant="light" iconSize="md" />
         </div>
 
         {/* User pill */}
@@ -109,12 +105,7 @@ export default function EmployeeDashboardLayout({ children }: { children: React.
         className="lg:hidden fixed top-0 inset-x-0 z-40 flex items-center justify-between px-5 h-14 border-b"
         style={{ backgroundColor: "rgba(254,252,232,0.95)", backdropFilter: "blur(12px)", borderColor: "rgba(6,78,59,0.08)" }}
       >
-        <Link href="/" className="flex items-center gap-2">
-          <div className="w-7 h-7 rounded-lg flex items-center justify-center" style={{ backgroundColor: "#064E3B" }}>
-            <NfcIcon />
-          </div>
-          <span className="font-serif text-base font-semibold text-emerald-deep">EcoTap</span>
-        </Link>
+        <BrandLogo variant="light" iconSize="sm" />
         <button
           onClick={() => setMobileOpen(v => !v)}
           className="p-2 rounded-lg text-ink-mid hover:bg-emerald-pale transition-colors"
@@ -173,16 +164,5 @@ export default function EmployeeDashboardLayout({ children }: { children: React.
         </main>
       </div>
     </div>
-  );
-}
-
-function NfcIcon() {
-  return (
-    <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
-      <rect x="2" y="2" width="5" height="5" rx="1.5" fill="white" />
-      <rect x="9" y="2" width="5" height="5" rx="1.5" fill="white" opacity=".55" />
-      <rect x="2" y="9" width="5" height="5" rx="1.5" fill="white" opacity=".55" />
-      <rect x="9" y="9" width="5" height="5" rx="1.5" fill="white" opacity=".25" />
-    </svg>
   );
 }

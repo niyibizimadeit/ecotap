@@ -4,6 +4,7 @@ import { useState, useEffect } from "react";
 import Link from "next/link";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/Button";
+import { BrandLogo } from "@/components/brand/BrandLogo";
 import { Menu, X } from "lucide-react";
 
 const NAV_LINKS = [
@@ -35,14 +36,7 @@ export function Navbar() {
         <div className="max-w-6xl mx-auto px-6 h-16 flex items-center justify-between">
 
           {/* Logo */}
-          <Link href="/" className="flex items-center gap-2.5 group">
-            <div className="w-8 h-8 bg-emerald-deep rounded-lg flex items-center justify-center transition-transform group-hover:scale-105">
-              <NfcIcon />
-            </div>
-            <span className="font-serif text-xl font-semibold text-emerald-deep tracking-tight">
-              EcoTap
-            </span>
-          </Link>
+          <BrandLogo variant="light" iconSize="md" />
 
           {/* Desktop nav */}
           <nav className="hidden md:flex items-center gap-8">
@@ -110,16 +104,5 @@ export function Navbar() {
         </div>
       )}
     </>
-  );
-}
-
-function NfcIcon() {
-  return (
-    <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
-      <rect x="2" y="2" width="5" height="5" rx="1.5" fill="white" />
-      <rect x="9" y="2" width="5" height="5" rx="1.5" fill="white" opacity=".55" />
-      <rect x="2" y="9" width="5" height="5" rx="1.5" fill="white" opacity=".55" />
-      <rect x="9" y="9" width="5" height="5" rx="1.5" fill="white" opacity=".25" />
-    </svg>
   );
 }
