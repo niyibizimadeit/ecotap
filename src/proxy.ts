@@ -9,7 +9,7 @@ import type { UserRole, UserStatus } from "@/types";
 
 // ── Route patterns ───────────────────────────────────────────────────────────
 
-const AUTH_PAGES = ["/login", "/register", "/org/login", "/org/register", "/pending"];
+const AUTH_PAGES = ["/login", "/register", "/org/login", "/org/register", "/pending", "/verify"];
 const PUBLIC_CARD_PATTERNS = [/^\/[^/]+\/[^/]+$/, /^\/[^/]+$/]; // /slug and /slug/employee
 
 function isPublicPath(pathname: string): boolean {

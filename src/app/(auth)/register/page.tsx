@@ -40,7 +40,7 @@ export default function IndividualRegisterPage() {
     if (!result.success) {
       setServerError(result.error ?? "Registration failed. Please try again.");
     } else {
-      router.push("/pending");
+      router.push(`/verify?email=${encodeURIComponent(data.email)}`);
     }
   }
 

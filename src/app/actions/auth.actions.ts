@@ -158,6 +158,60 @@ export async function signOut(): Promise<ActionResult> {
   redirect("/");
 }
 
+// ── Verify OTP (email confirmation, password reset) ────────────────────────
+
+export async function verifyOtp(
+  email: string,
+  token: string,
+  type: "signup" | "recovery" | "email" = "signup"
+): Promise<ActionResult> {
+  if (!email || !token) {
+    return { success: false, error: "Email and verification code are required." };
+  }
+
+  if (token.length !== 6 || !/^\d{6}$/.test(token)) {
+    return { success: false, error: "Please enter a valid 6-digit code." };
+  }
+
+  const supabase = await getSupabaseServerAction();
+
+  const { error } = await supabase.auth.verifyOtp({
+    email,
+    token,
+    type,
+  });
+
+  if (error) {
+    return { success: false, error: error.message };
+  }
+
+  return { success: true };
+}
+
+// ── Resend OTP ──────────────────────────────────────────────────────────────
+
+export async function resendOtp(
+  email: string,
+  type: "signup" | "email_change" = "signup"
+): Promise<ActionResult> {
+  if (!email) {
+    return { success: false, error: "Email is required." };
+  }
+
+  const supabase = await getSupabaseServerAction();
+
+  const { error } = await supabase.auth.resend({
+    type,
+    email,
+  });
+
+  if (error) {
+    return { success: false, error: error.message };
+  }
+
+  return { success: true };
+}
+
 // ── Get current session ──────────────────────────────────────────────────────
 
 export async function getSession() {

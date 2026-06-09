@@ -117,7 +117,7 @@ export default function OrgRegisterPage() {
                 setServerError(result.error ?? "Registration failed. Please try again.");
                 setIsSubmitting(false);
               } else {
-                router.push("/pending");
+                router.push(`/verify?email=${encodeURIComponent(step2Data.email)}`);
               }
             }}
           />
