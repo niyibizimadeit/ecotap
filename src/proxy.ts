@@ -54,7 +54,7 @@ function isAccessAllowed(pathname: string, role: UserRole): boolean {
 
 // ── Proxy (Next.js 16 replacement for middleware) ────────────────────────────
 
-export async function proxy(request: NextRequest) {
+export default async function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
   // Skip middleware for public and static paths
