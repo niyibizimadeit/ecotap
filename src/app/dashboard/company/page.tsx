@@ -1,6 +1,6 @@
 import { Suspense } from "react";
 import Link from "next/link";
-import { Users, CreditCard, Package, ArrowRight, UserPlus, Palette } from "lucide-react";
+import { Users, CreditCard, ArrowRight, UserPlus, Palette } from "lucide-react";
 import { StatCard, PageHeader, StatCardSkeleton, EmptyState } from "@/components/dashboard/DashboardShared";
 import { Badge } from "@/components/ui/Badge";
 import { Button } from "@/components/ui/Button";
@@ -32,7 +32,6 @@ export default function CompanyOverviewPage() {
         <h2 className="font-serif text-lg font-semibold text-emerald-deep">Quick actions</h2>
         {[
           { title: "Add employee",         sub: "Invite a new team member",             href: "/dashboard/company/employees",   icon: <UserPlus className="h-5 w-5" />, color: "#ECFDF5" },
-          { title: "Manage departments",   sub: "Organise your team structure",         href: "/dashboard/company/departments", icon: <Package className="h-5 w-5" />, color: "#FEF3C7" },
           { title: "Company branding",     sub: "Update logo and accent colour",        href: "/dashboard/company/settings",    icon: <Palette className="h-5 w-5" />, color: "#ECFDF5" },
           { title: "Billing & plan",       sub: "View subscription and usage",          href: "/dashboard/company/subscription",icon: <CreditCard className="h-5 w-5" />, color: "#FEF3C7" },
         ].map(item => (

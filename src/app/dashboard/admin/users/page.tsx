@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { PageHeader } from "@/components/dashboard/DashboardShared";
 import { Input } from "@/components/ui/Input";
 import { Badge } from "@/components/ui/Badge";
@@ -18,7 +18,7 @@ interface AdminUser {
   slug:    string;
 }
 
-const MOCK_USERS: AdminUser[] = [];
+const users: AdminUser[] = [];
 
 const ROLE_LABELS: Record<UserRole, string> = {
   super_admin:   "Super Admin",
@@ -29,11 +29,28 @@ const ROLE_LABELS: Record<UserRole, string> = {
 };
 
 export default function UsersPage() {
+  const [users,        setUsers]        = useState<AdminUser[]>([]);
   const [search,       setSearch]       = useState("");
   const [roleFilter,   setRoleFilter]   = useState<UserRole|"all">("all");
   const [statusFilter, setStatusFilter] = useState<UserStatus|"all">("all");
 
-  const filtered = MOCK_USERS.filter(u => {
+  useEffect(() => {
+    async function load() {
+      const { fetchUsers } = await import("@/app/actions/admin.actions");
+      const result = await fetchUsers();
+      if (result.success && result.data) {
+        setUsers((result.data as any[]).map((u: any) => ({
+          id: u.id, name: u.full_name ?? u.email, email: u.email,
+          role: u.role, status: u.status, company: u.company_name ?? u.company ?? null,
+          joined: u.created_at ? new Date(u.created_at).toLocaleDateString() : "—",
+          slug: u.username ?? "—",
+        })));
+      }
+    }
+    load();
+  }, []);
+
+  const filtered = users.filter(u => {
     const q = search.toLowerCase();
     const matchSearch = u.name.toLowerCase().includes(q) ||
                         u.email.toLowerCase().includes(q) ||
@@ -44,10 +61,10 @@ export default function UsersPage() {
   });
 
   const counts = {
-    all:       MOCK_USERS.length,
-    active:    MOCK_USERS.filter(u => u.status === "active").length,
-    pending:   MOCK_USERS.filter(u => u.status === "pending").length,
-    suspended: MOCK_USERS.filter(u => u.status === "suspended").length,
+    all:       users.length,
+    active:    users.filter(u => u.status === "active").length,
+    pending:   users.filter(u => u.status === "pending").length,
+    suspended: users.filter(u => u.status === "suspended").length,
   };
 
   return (
@@ -55,7 +72,7 @@ export default function UsersPage() {
       <PageHeader
         eyebrow="Users"
         title="All users"
-        subtitle={`${MOCK_USERS.length} total · ${counts.active} active · ${counts.pending} pending`}
+        subtitle={`${users.length} total · ${counts.active} active · ${counts.pending} pending`}
       />
 
       {/* Filters */}
@@ -180,7 +197,7 @@ export default function UsersPage() {
       </div>
 
       <p className="text-xs text-ink-light text-center mt-5 font-mono">
-        {filtered.length} of {MOCK_USERS.length} users shown
+        {filtered.length} of {users.length} users shown
       </p>
     </div>
   );

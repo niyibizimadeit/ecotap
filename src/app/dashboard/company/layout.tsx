@@ -5,16 +5,16 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { BrandLogo } from "@/components/brand/BrandLogo";
 import { signOut } from "@/app/actions/auth.actions";
+import { getMyCard } from "@/app/actions/cards.actions";
 import { cn } from "@/lib/utils";
 import {
-  LayoutDashboard, Users, Building2, Settings,
+  LayoutDashboard, Users, Settings,
   CreditCard, LogOut, Menu, X, ExternalLink, ChevronRight,
 } from "lucide-react";
 
 const NAV = [
   { label: "Overview",     href: "/dashboard/company",              icon: LayoutDashboard },
   { label: "Employees",    href: "/dashboard/company/employees",    icon: Users           },
-  { label: "Departments",  href: "/dashboard/company/departments",  icon: Building2       },
   { label: "Settings",     href: "/dashboard/company/settings",     icon: Settings        },
   { label: "Subscription", href: "/dashboard/company/subscription", icon: CreditCard      },
 ];
@@ -25,7 +25,6 @@ export default function CompanyDashboardLayout({ children }: { children: React.R
 
   useEffect(() => {
     async function load() {
-      const { getMyCard } = await import("@/app/actions/cards.actions");
       const result = await getMyCard();
       if (result.success && result.data?.primary_company) {
         const c = result.data.primary_company;

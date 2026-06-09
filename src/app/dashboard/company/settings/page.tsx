@@ -8,6 +8,7 @@ import { ImageUpload } from "@/components/ui/ImageUpload";
 import { Save } from "lucide-react";
 import { INDUSTRIES } from "@/constants";
 import { updateCompanyLogo } from "@/app/actions/uploads.actions";
+import { updateCompany } from "@/app/actions/admin.actions";
 
 const PRESET_COLORS = ["#064E3B","#1e3a5f","#7c2d12","#1a1a2e","#374151","#6b21a8","#b45309","#0f766e"];
 
@@ -43,10 +44,19 @@ export default function CompanySettingsPage() {
       setForm(f => ({ ...f, [field]: e.target.value }));
 
   async function save() {
+    if (!companyId) return;
     setSaving(true);
-    // Note: needs actual companyId from context — leave as no-op for now
+    await updateCompany(companyId, {
+      name: form.name,
+      slug: form.slug,
+      industry: form.industry,
+      website: form.website,
+      description: form.description,
+      brand_color: form.brand_color,
+    });
+    setSaving(false);
     setSaved(true);
-    setTimeout(() => { setSaving(false); setSaved(false); }, 1500);
+    setTimeout(() => setSaved(false), 3000);
   }
 
   return (

@@ -162,6 +162,22 @@ export async function fetchPlans(): Promise<AnyActionResult> {
   return getAllPlansAdmin();
 }
 
+export async function fetchUsers(): Promise<AnyActionResult> {
+  if (!(await requireSuperAdmin())) {
+    return { success: false, error: "Unauthorized." };
+  }
+  const { getAllUsers } = await import("@/lib/services/admin.service");
+  return getAllUsers();
+}
+
+export async function fetchDesigns(): Promise<AnyActionResult> {
+  if (!(await requireSuperAdmin())) {
+    return { success: false, error: "Unauthorized." };
+  }
+  const { getAllDesignsAdmin } = await import("@/lib/services/admin.service");
+  return getAllDesignsAdmin();
+}
+
 export async function deletePlanAction(id: string): Promise<AnyActionResult> {
   if (!(await requireSuperAdmin())) {
     return { success: false, error: "Unauthorized." };

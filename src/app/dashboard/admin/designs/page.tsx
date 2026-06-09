@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { PageHeader } from "@/components/dashboard/DashboardShared";
 import { Button } from "@/components/ui/Button";
 import { Modal } from "@/components/ui/Modal";
@@ -22,7 +22,21 @@ const INITIAL_DESIGNS: Design[] = [];
 const PRESET_COLORS = ["#064E3B","#1a1a2e","#1e3a5f","#7c2d12","#3d6b4f","#0f0f0f","#6b21a8","#b45309","#0f766e","#374151"];
 
 export default function DesignsPage() {
-  const [designs,    setDesigns]    = useState(INITIAL_DESIGNS);
+  const [designs,    setDesigns]    = useState<Design[]>([]);
+
+  useEffect(() => {
+    async function load() {
+      const { fetchDesigns } = await import("@/app/actions/admin.actions");
+      const result = await fetchDesigns();
+      if (result.success && result.data) {
+        setDesigns((result.data as any[]).map((d: any) => ({
+          id: d.id, name: d.name, color: d.accent_color ?? "#064E3B",
+          pattern: d.pattern ?? "solid", active: d.is_active ?? true, orders: 0,
+        })));
+      }
+    }
+    load();
+  }, []);
   const [modalOpen,  setModalOpen]  = useState(false);
   const [editDesign, setEditDesign] = useState<Design | null>(null);
   const [formName,   setFormName]   = useState("");
@@ -42,27 +56,37 @@ export default function DesignsPage() {
     setModalOpen(true);
   }
 
-  function save() {
+  async function save() {
     if (!formName.trim()) return;
+    const { createDesign, updateDesign } = await import("@/app/actions/admin.actions");
+    const fd = new FormData();
+    fd.set("name", formName);
+    fd.set("accent_color", formColor);
+    fd.set("pattern", "dots");
+    fd.set("is_active", "on");
+
     if (editDesign) {
-      setDesigns(ds => ds.map(d => d.id === editDesign.id
-        ? { ...d, name: formName, color: formColor }
-        : d
-      ));
+      await updateDesign(editDesign.id, Object.fromEntries(fd) as any);
     } else {
-      setDesigns(ds => [...ds, {
-        id:      String(Date.now()),
-        name:    formName,
-        color:   formColor,
-        pattern: "dots",
-        active:  true,
-        orders:  0,
-      }]);
+      await createDesign(fd);
     }
     setModalOpen(false);
+    // Reload
+    const { fetchDesigns } = await import("@/app/actions/admin.actions");
+    const result = await fetchDesigns();
+    if (result.success && result.data) {
+      setDesigns((result.data as any[]).map((d: any) => ({
+        id: d.id, name: d.name, color: d.accent_color ?? "#064E3B",
+        pattern: d.pattern ?? "solid", active: d.is_active ?? true, orders: 0,
+      })));
+    }
   }
 
-  function toggleActive(id: string) {
+  async function toggleActive(id: string) {
+    const d = designs.find(d => d.id === id);
+    if (!d) return;
+    const { updateDesign } = await import("@/app/actions/admin.actions");
+    await updateDesign(id, { is_active: !d.active } as any);
     setDesigns(ds => ds.map(d => d.id === id ? { ...d, active: !d.active } : d));
   }
 

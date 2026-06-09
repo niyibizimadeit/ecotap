@@ -1,209 +1,119 @@
-"use client";
-
-import { useState } from "react";
-import { PageHeader, SectionCard } from "@/components/dashboard/DashboardShared";
+import { Suspense } from "react";
+import Link from "next/link";
+import { PageHeader, SectionCard, EmptyState, TableSkeleton } from "@/components/dashboard/DashboardShared";
 import { Badge } from "@/components/ui/Badge";
 import { Button } from "@/components/ui/Button";
-import { Input } from "@/components/ui/Input";
-import { Search, ExternalLink, MoreHorizontal, UserPlus } from "lucide-react";
-import type { UserStatus } from "@/types";
-
-interface Employee {
-  id:     string;
-  name:   string;
-  title:  string;
-  dept:   string;
-  email:  string;
-  status: UserStatus;
-  slug:   string;
-  joined: string;
-}
-
-const MOCK_EMPLOYEES: Employee[] = [];
-
-const DEPTS = ["All", "Creative", "Engineering", "Sales", "Marketing", "Events"];
+import { Search, ExternalLink, UserPlus } from "lucide-react";
+import { getSupabase, getServiceSupabase } from "@/lib/supabase/server";
 
 export default function EmployeesPage() {
-  const [search,     setSearch]     = useState("");
-  const [deptFilter, setDeptFilter] = useState("All");
-  const [statusFilter,setStatusFilter] = useState<"all"|UserStatus>("all");
-  const [menuOpen,   setMenuOpen]   = useState<string | null>(null);
-
-  const filtered = MOCK_EMPLOYEES.filter(e => {
-    const matchSearch = e.name.toLowerCase().includes(search.toLowerCase()) ||
-                        e.email.toLowerCase().includes(search.toLowerCase()) ||
-                        e.title.toLowerCase().includes(search.toLowerCase());
-    const matchDept   = deptFilter === "All" || e.dept === deptFilter;
-    const matchStatus = statusFilter === "all" || e.status === statusFilter;
-    return matchSearch && matchDept && matchStatus;
-  });
-
   return (
     <div>
       <PageHeader
-        eyebrow="Employees"
-        title="Team members"
-        subtitle={`${MOCK_EMPLOYEES.length} employees · ${MOCK_EMPLOYEES.filter(e=>e.status==="active").length} active`}
+        eyebrow="Team"
+        title="Employees"
+        subtitle="Manage your team's cards and access."
         action={
-          <Button variant="primary" size="sm" leftIcon={<UserPlus className="h-3.5 w-3.5" />}>
-            Invite employee
-          </Button>
+          <Link href="/dashboard/company/employees">
+            <Button variant="primary" size="sm" leftIcon={<UserPlus className="h-3.5 w-3.5" />}>
+              Invite employee
+            </Button>
+          </Link>
         }
       />
-
-      <SectionCard>
-        {/* Filters row */}
-        <div className="flex flex-col sm:flex-row gap-3 mb-5">
-          <div className="flex-1">
-            <Input
-              placeholder="Search by name, email or title…"
-              value={search}
-              onChange={e => setSearch(e.target.value)}
-              leftElement={<Search className="h-4 w-4" />}
-            />
-          </div>
-          <div className="flex gap-2 flex-wrap">
-            {/* Status filter */}
-            {(["all","active","pending","suspended"] as const).map(s => (
-              <button
-                key={s}
-                onClick={() => setStatusFilter(s)}
-                className="px-3 py-1.5 rounded-xl text-xs font-medium capitalize border transition-all"
-                style={{
-                  backgroundColor: statusFilter === s ? "#064E3B" : "#FEFCE8",
-                  color:           statusFilter === s ? "#FEFCE8" : "#78716C",
-                  borderColor:     statusFilter === s ? "#064E3B" : "rgba(6,78,59,0.12)",
-                }}
-              >
-                {s === "all" ? "All status" : s}
-              </button>
-            ))}
-          </div>
-        </div>
-
-        {/* Dept tabs */}
-        <div className="flex gap-1.5 flex-wrap mb-5">
-          {DEPTS.map(d => (
-            <button
-              key={d}
-              onClick={() => setDeptFilter(d)}
-              className="px-3 py-1 rounded-lg text-xs font-mono tracking-wide transition-all border"
-              style={{
-                backgroundColor: deptFilter === d ? "#ECFDF5" : "transparent",
-                color:           deptFilter === d ? "#065F46" : "#78716C",
-                borderColor:     deptFilter === d ? "rgba(5,150,105,0.3)" : "transparent",
-              }}
-            >
-              {d}
-            </button>
-          ))}
-        </div>
-
-        {/* Table header */}
-        <div
-          className="grid grid-cols-12 gap-3 px-4 py-2 rounded-xl mb-2 text-xs font-mono tracking-wide text-ink-light uppercase"
-          style={{ backgroundColor: "#F0E6D3" }}
-        >
-          <div className="col-span-5">Employee</div>
-          <div className="col-span-2 hidden md:block">Department</div>
-          <div className="col-span-2 hidden sm:block">Status</div>
-          <div className="col-span-2 hidden lg:block">Joined</div>
-          <div className="col-span-1"></div>
-        </div>
-
-        {/* Rows */}
-        <div className="space-y-1.5">
-          {filtered.length === 0 ? (
-            <div className="text-center py-12 text-ink-light text-sm">
-              No employees match your search.
-            </div>
-          ) : filtered.map(emp => (
-            <div
-              key={emp.id}
-              className="grid grid-cols-12 gap-3 px-4 py-3.5 rounded-xl border items-center transition-all hover:shadow-card group relative"
-              style={{ backgroundColor: "#FEFCE8", borderColor: "rgba(6,78,59,0.06)" }}
-            >
-              {/* Name */}
-              <div className="col-span-5 flex items-center gap-3 min-w-0">
-                <div
-                  className="w-8 h-8 rounded-xl flex items-center justify-center flex-shrink-0 font-medium text-xs"
-                  style={{ backgroundColor: "#ECFDF5", color: "#065F46" }}
-                >
-                  {emp.name.split(" ").map(n => n[0]).join("")}
-                </div>
-                <div className="min-w-0">
-                  <p className="text-sm font-medium text-ink truncate">{emp.name}</p>
-                  <p className="text-xs text-ink-light truncate">{emp.title}</p>
-                </div>
-              </div>
-
-              {/* Dept */}
-              <div className="col-span-2 hidden md:block">
-                <span
-                  className="text-xs px-2 py-1 rounded-lg font-mono"
-                  style={{ backgroundColor: "#F0E6D3", color: "#78716C" }}
-                >
-                  {emp.dept}
-                </span>
-              </div>
-
-              {/* Status */}
-              <div className="col-span-2 hidden sm:block">
-                <Badge variant={emp.status}>{emp.status}</Badge>
-              </div>
-
-              {/* Joined */}
-              <div className="col-span-2 hidden lg:block text-xs text-ink-light">{emp.joined}</div>
-
-              {/* Actions */}
-              <div className="col-span-7 sm:col-span-3 md:col-span-1 flex justify-end items-center gap-1">
-                <a
-                  href={`/rdmc/${emp.slug}`}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="p-1.5 rounded-lg text-ink-light hover:text-emerald-bright hover:bg-emerald-pale transition-all opacity-0 group-hover:opacity-100"
-                  title="View card"
-                >
-                  <ExternalLink className="h-3.5 w-3.5" />
-                </a>
-                <div className="relative">
-                  <button
-                    onClick={() => setMenuOpen(menuOpen === emp.id ? null : emp.id)}
-                    className="p-1.5 rounded-lg text-ink-light hover:text-emerald-deep hover:bg-emerald-pale transition-all opacity-0 group-hover:opacity-100"
-                  >
-                    <MoreHorizontal className="h-3.5 w-3.5" />
-                  </button>
-                  {menuOpen === emp.id && (
-                    <div
-                      className="absolute right-0 top-8 z-10 w-36 rounded-xl border shadow-card-lg py-1"
-                      style={{ backgroundColor: "#FEF9EF", borderColor: "rgba(6,78,59,0.1)" }}
-                    >
-                      {[
-                        { label: "View card", action: () => window.open(`/rdmc/${emp.slug}`, "_blank") },
-                        { label: "Edit profile", action: () => {} },
-                        { label: emp.status === "suspended" ? "Activate" : "Suspend", action: () => {}, danger: emp.status !== "suspended" },
-                      ].map(item => (
-                        <button
-                          key={item.label}
-                          onClick={() => { item.action(); setMenuOpen(null); }}
-                          className="w-full text-left px-3 py-2 text-xs transition-colors hover:bg-emerald-pale"
-                          style={{ color: item.danger ? "#dc2626" : "#44403C" }}
-                        >
-                          {item.label}
-                        </button>
-                      ))}
-                    </div>
-                  )}
-                </div>
-              </div>
-            </div>
-          ))}
-        </div>
-
-        <p className="text-xs text-ink-light text-center mt-5 font-mono">
-          {filtered.length} of {MOCK_EMPLOYEES.length} employees shown
-        </p>
-      </SectionCard>
+      <Suspense fallback={<TableSkeleton rows={5} />}>
+        <EmployeesContent />
+      </Suspense>
     </div>
+  );
+}
+
+async function EmployeesContent() {
+  const supabase = await getSupabase();
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return null;
+
+  const { data: link } = await supabase
+    .from("profile_companies")
+    .select("company_id")
+    .eq("profile_id", user.id)
+    .eq("is_primary", true)
+    .single();
+
+  if (!link?.company_id) {
+    return <EmptyState icon="🏢" title="No company linked" description="Your account is not linked to a company." />;
+  }
+
+  const serviceClient = getServiceSupabase();
+
+  const { data: links } = await serviceClient
+    .from("profile_companies")
+    .select("profile_id, job_title, is_primary")
+    .eq("company_id", link.company_id);
+
+  if (!links?.length) {
+    return <EmptyState icon="👥" title="No employees yet" description="Invite team members to get started." />;
+  }
+
+  const profileIds = links.map(l => l.profile_id);
+  const { data: profiles } = await serviceClient
+    .from("profiles")
+    .select("id, full_name, email, status, username, created_at")
+    .in("id", profileIds);
+
+  const employees = (profiles ?? []).map(p => {
+    const l = links.find(link => link.profile_id === p.id);
+    return {
+      id: p.id,
+      name: p.full_name,
+      title: (l?.job_title as string) ?? "—",
+      email: p.email,
+      status: p.status as "active" | "pending" | "suspended",
+      slug: p.username,
+      joined: p.created_at ? new Date(p.created_at).toLocaleDateString() : "—",
+    };
+  });
+
+  return (
+    <SectionCard title={`${employees.length} employees`} subtitle={`${employees.filter(e => e.status === "active").length} active`}>
+      <div className="overflow-x-auto">
+        <table className="w-full text-left">
+          <thead>
+            <tr className="border-b" style={{ borderColor: "rgba(6,78,59,0.08)" }}>
+              <th className="px-4 py-3 text-xs font-mono tracking-widest text-ink-light uppercase">Name</th>
+              <th className="px-4 py-3 text-xs font-mono tracking-widest text-ink-light uppercase hidden sm:table-cell">Email</th>
+              <th className="px-4 py-3 text-xs font-mono tracking-widest text-ink-light uppercase">Status</th>
+              <th className="px-4 py-3 text-xs font-mono tracking-widest text-ink-light uppercase hidden md:table-cell">Joined</th>
+              <th className="px-4 py-3 text-xs font-mono tracking-widest text-ink-light uppercase text-right">Card</th>
+            </tr>
+          </thead>
+          <tbody className="divide-y" style={{ borderColor: "rgba(6,78,59,0.06)" }}>
+            {employees.map(emp => (
+              <tr key={emp.id} className="hover:bg-emerald-pale/30 transition-colors">
+                <td className="px-4 py-3">
+                  <div className="flex items-center gap-2">
+                    <div className="w-8 h-8 rounded-xl flex items-center justify-center flex-shrink-0 font-medium text-xs" style={{ backgroundColor: "#ECFDF5", color: "#065F46" }}>
+                      {emp.name.split(" ").map((n: string) => n[0]).join("")}
+                    </div>
+                    <div>
+                      <p className="text-sm font-medium text-ink">{emp.name}</p>
+                      <p className="text-xs text-ink-light">{emp.title}</p>
+                    </div>
+                  </div>
+                </td>
+                <td className="px-4 py-3 text-sm text-ink-light hidden sm:table-cell">{emp.email}</td>
+                <td className="px-4 py-3"><Badge variant={emp.status}>{emp.status}</Badge></td>
+                <td className="px-4 py-3 text-sm text-ink-light hidden md:table-cell">{emp.joined}</td>
+                <td className="px-4 py-3 text-right">
+                  <a href={`/${emp.slug}`} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1 text-xs text-emerald-bright hover:text-emerald-mid transition-colors">
+                    <ExternalLink className="h-3 w-3" /> View
+                  </a>
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    </SectionCard>
   );
 }
