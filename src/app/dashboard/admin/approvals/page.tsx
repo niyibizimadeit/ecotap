@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { PageHeader } from "@/components/dashboard/DashboardShared";
 import { Badge } from "@/components/ui/Badge";
 import { Button } from "@/components/ui/Button";
@@ -30,9 +30,35 @@ export default function ApprovalsPage() {
   const [individuals,  setIndividuals]  = useState(MOCK_INDIVIDUALS);
   const [actionStates, setActionStates] = useState<Record<string, "approving"|"rejecting"|"done_approve"|"done_reject">>({});
 
+  useEffect(() => {
+    async function load() {
+      const { fetchPendingQueue } = await import("@/app/actions/admin.actions");
+      const result = await fetchPendingQueue();
+      if (result.success && result.data) {
+        setCompanies((result.data.companies ?? []).map((c: Record<string, unknown>) => ({
+          id: c.id as string, type: "company" as const, name: c.name as string,
+          industry: (c.industry as string) ?? "", size: (c.size as string) ?? "",
+          website: (c.website as string) ?? "", admin: "", email: "", submitted: (c.created_at as string) ?? "",
+        })));
+        setIndividuals((result.data.individuals ?? []).map((p: Record<string, unknown>) => ({
+          id: p.id as string, type: "individual" as const, name: (p.full_name as string) ?? "",
+          username: (p.username as string) ?? "", email: (p.email as string) ?? "",
+          company: "", submitted: (p.created_at as string) ?? "",
+        })));
+      }
+    }
+    load();
+  }, []);
+
   async function handleAction(id: string, action: "approve"|"reject") {
     setActionStates(s => ({ ...s, [id]: action === "approve" ? "approving" : "rejecting" }));
-    await new Promise(r => setTimeout(r, 900));
+    const { approveCompany, approveIndividual, rejectUser } = await import("@/app/actions/admin.actions");
+    if (action === "approve") {
+      if (tab === "companies") await approveCompany(id);
+      else await approveIndividual(id);
+    } else {
+      await rejectUser(id);
+    }
     setActionStates(s => ({ ...s, [id]: action === "approve" ? "done_approve" : "done_reject" }));
     await new Promise(r => setTimeout(r, 600));
     if (tab === "companies") setCompanies(cs => cs.filter(c => c.id !== id));

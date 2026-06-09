@@ -135,3 +135,63 @@ export async function markOrderDelivered(orderId: string): Promise<AnyActionResu
   const { markDelivered } = await import("@/lib/services/orders.service");
   return markDelivered(orderId);
 }
+
+// ── Data fetching (server-action safe for client components) ─────────────────
+
+export async function fetchOrders(): Promise<AnyActionResult> {
+  if (!(await requireSuperAdmin())) {
+    return { success: false, error: "Unauthorized." };
+  }
+  const { getAllOrdersAdmin } = await import("@/lib/services/admin.service");
+  return getAllOrdersAdmin();
+}
+
+export async function fetchPendingQueue(): Promise<AnyActionResult> {
+  if (!(await requireSuperAdmin())) {
+    return { success: false, error: "Unauthorized." };
+  }
+  const { getPendingQueue } = await import("@/lib/services/admin.service");
+  return getPendingQueue();
+}
+
+export async function fetchPlans(): Promise<AnyActionResult> {
+  if (!(await requireSuperAdmin())) {
+    return { success: false, error: "Unauthorized." };
+  }
+  const { getAllPlansAdmin } = await import("@/lib/services/admin.service");
+  return getAllPlansAdmin();
+}
+
+export async function deletePlanAction(id: string): Promise<AnyActionResult> {
+  if (!(await requireSuperAdmin())) {
+    return { success: false, error: "Unauthorized." };
+  }
+  const { deletePlan } = await import("@/lib/services/admin.service");
+  return deletePlan(id);
+}
+
+// ── Company settings ────────────────────────────────────────────────────────
+
+export async function updateCompany(
+  companyId: string,
+  data: Record<string, unknown>
+): Promise<AnyActionResult> {
+  if (!(await requireSuperAdmin())) {
+    return { success: false, error: "Unauthorized." };
+  }
+  const { getServiceSupabase } = await import("@/lib/supabase/server");
+  const supabase = getServiceSupabase();
+  const { error } = await supabase
+    .from("companies")
+    .update({
+      name:         data.name,
+      industry:     data.industry,
+      website:      data.website,
+      description:  data.description,
+      brand_color:  data.brand_color,
+    })
+    .eq("id", companyId);
+
+  if (error) return { success: false, error: error.message };
+  return { success: true };
+}

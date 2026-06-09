@@ -4,6 +4,7 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { PageHeader } from "@/components/dashboard/DashboardShared";
 import { DesignGallery, MOCK_DESIGNS, type CardDesignOption } from "@/components/orders/DesignGallery";
+import { placeOrder } from "@/app/actions/orders.actions";
 import { OrderSummary } from "@/components/orders/OrderSummary";
 import { Button } from "@/components/ui/Button";
 import { Input, Textarea } from "@/components/ui/Input";
@@ -88,10 +89,13 @@ export default function NewOrderPage() {
     window.scrollTo({ top: 0, behavior: "smooth" });
   }
 
-  async function placeOrder() {
+  async function handlePlaceOrder() {
     setLoading(true);
-    // Phase 12: wire to orders.actions.ts
-    await new Promise(r => setTimeout(r, 1400));
+    await placeOrder({
+      design_id:        form.design_id,
+      quantity:         form.quantity,
+      shipping_address: form.shipping_address,
+    });
     setLoading(false);
     router.push("/dashboard/employee/orders/success");
   }
@@ -290,7 +294,7 @@ export default function NewOrderPage() {
                   size="lg"
                   className="flex-1"
                   loading={loading}
-                  onClick={placeOrder}
+                  onClick={handlePlaceOrder}
                   leftIcon={!loading ? <Package className="h-4 w-4" /> : undefined}
                 >
                   {loading ? "Placing order…" : "Place order"}

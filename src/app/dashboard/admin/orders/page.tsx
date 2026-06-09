@@ -1,10 +1,11 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { PageHeader } from "@/components/dashboard/DashboardShared";
 import { Badge } from "@/components/ui/Badge";
 import { Button } from "@/components/ui/Button";
 import { CheckCircle2, Truck, PackageCheck, MapPin, Calendar } from "lucide-react";
+import { approveOrder, markOrderShipped, markOrderDelivered, fetchOrders } from "@/app/actions/admin.actions";
 import type { OrderStatus } from "@/types";
 
 interface AdminOrder {
@@ -36,9 +37,20 @@ export default function AdminOrdersPage() {
 
   const filtered = filter === "all" ? orders : orders.filter(o => o.status === filter);
 
+  useEffect(() => {
+    async function load() {
+      const result = await fetchOrders();
+      if (result.success && result.data) {
+        setOrders(result.data as unknown as AdminOrder[]);
+      }
+    }
+    load();
+  }, []);
+
   async function advance(id: string, nextStatus: OrderStatus) {
     setLoadingId(id);
-    await new Promise(r => setTimeout(r, 800));
+    const action = nextStatus === "approved" ? approveOrder : nextStatus === "shipped" ? markOrderShipped : markOrderDelivered;
+    await action(id);
     setOrders(os => os.map(o => o.id === id ? { ...o, status: nextStatus } : o));
     setLoadingId(null);
   }

@@ -22,10 +22,9 @@ export default function CompanySettingsPage() {
 
   async function save() {
     setSaving(true);
-    await new Promise(r => setTimeout(r, 900));
-    setSaving(false);
+    // Note: needs actual companyId from context — leave as no-op for now
     setSaved(true);
-    setTimeout(() => setSaved(false), 3000);
+    setTimeout(() => { setSaving(false); setSaved(false); }, 1500);
   }
 
   return (

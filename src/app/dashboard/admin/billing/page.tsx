@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { PageHeader } from "@/components/dashboard/DashboardShared";
 import { Button } from "@/components/ui/Button";
 import { Modal } from "@/components/ui/Modal";
@@ -54,10 +54,32 @@ export default function BillingPage() {
     setModalOpen(true);
   }
 
+  useEffect(() => {
+    async function load() {
+      const { fetchPlans } = await import("@/app/actions/admin.actions");
+      const result = await fetchPlans();
+      if (result.success && result.data) {
+        setPlans(result.data.map((p: Record<string, unknown>) => ({
+          id: p.id as string, name: (p.name as string) ?? "",
+          billing_cycle: (p.billing_cycle as BillingCycle) ?? "monthly",
+          price_per_employee: (p.price_per_employee as number) ?? 0,
+          is_active: (p.is_active as boolean) ?? true, features: [],
+        })));
+      }
+    }
+    load();
+  }, []);
+
   async function save() {
     if (!formName.trim() || !formPrice) return;
     setSaving(true);
-    await new Promise(r => setTimeout(r, 700));
+    const { upsertPlan } = await import("@/app/actions/admin.actions");
+    const fd = new FormData();
+    fd.set("name", formName);
+    fd.set("billing_cycle", formCycle);
+    fd.set("price_per_employee", String(formPrice));
+    fd.set("is_active", "on");
+    await upsertPlan(fd);
     if (editPlan) {
       setPlans(ps => ps.map(p => p.id === editPlan.id
         ? { ...p, name: formName, billing_cycle: formCycle, price_per_employee: Number(formPrice) }
