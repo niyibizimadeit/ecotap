@@ -1,24 +1,21 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { PublicCardLayout } from "@/components/cards/PublicCardLayout";
-import { MOCK_EMPLOYEE_CARD } from "@/lib/mock/cards";
+import { getPublicCard } from "@/app/actions/cards.actions";
 
 interface Props {
   params: Promise<{ slug: string; employee: string }>;
 }
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
-  const { slug, employee } = await params;
+  const { employee } = await params;
+  const result = await getPublicCard(employee);
 
-  // Phase 12: replace with real DB fetch
-  const card =
-    slug === MOCK_EMPLOYEE_CARD.primary_company?.slug &&
-    employee === MOCK_EMPLOYEE_CARD.profile.username
-      ? MOCK_EMPLOYEE_CARD
-      : null;
+  if (!result.success || !result.data) {
+    return { title: "Card not found | EcoTap" };
+  }
 
-  if (!card) return { title: "Card not found | EcoTap" };
-
+  const card = result.data;
   const name     = card.profile.full_name;
   const titleStr = card.job_title
     ? `${name} — ${card.job_title} at ${card.primary_company?.name}`
@@ -30,23 +27,17 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
     openGraph: {
       title: titleStr,
       description: card.bio ?? `View ${name}'s digital business card on EcoTap.`,
-      url: `https://ecotap.rw/${slug}/${employee}`,
+      url: `https://ecotap.rw/${result.data.primary_company?.slug ?? "_"}/${employee}`,
       type: "profile",
     },
   };
 }
 
 export default async function EmployeeCardPage({ params }: Props) {
-  const { slug, employee } = await params;
+  const { employee } = await params;
+  const result = await getPublicCard(employee);
 
-  // Phase 12: replace with real DB fetch
-  const card =
-    slug === MOCK_EMPLOYEE_CARD.primary_company?.slug &&
-    employee === MOCK_EMPLOYEE_CARD.profile.username
-      ? MOCK_EMPLOYEE_CARD
-      : null;
+  if (!result.success || !result.data) notFound();
 
-  if (!card) notFound();
-
-  return <PublicCardLayout card={card} />;
+  return <PublicCardLayout card={result.data} />;
 }
