@@ -24,13 +24,13 @@ export function ContactExchangeForm({ cardId, accentColor, ownerName }: ContactE
 
   async function submit(e: React.FormEvent) {
     e.preventDefault();
-    if (!form.name.trim()) return;
+    if (!form.name.trim() || !form.phone.trim()) return;
     setLoading(true);
     await submitContactExchange({
       card_id:       cardId,
       visitor_name:  form.name,
+      visitor_phone: form.phone,
       visitor_email: form.email || undefined,
-      visitor_phone: form.phone || undefined,
     });
     setLoading(false);
     setSubmitted(true);
@@ -93,19 +93,19 @@ export function ContactExchangeForm({ cardId, accentColor, ownerName }: ContactE
             onChange={set("name")}
           />
           <Input
+            label="Phone number"
+            placeholder="+250 7XX XXX XXX"
+            type="tel"
+            required
+            value={form.phone}
+            onChange={set("phone")}
+          />
+          <Input
             label="Email"
             placeholder="you@email.com"
             type="email"
             value={form.email}
             onChange={set("email")}
-            hint="Optional"
-          />
-          <Input
-            label="Phone"
-            placeholder="+250 7XX XXX XXX"
-            type="tel"
-            value={form.phone}
-            onChange={set("phone")}
             hint="Optional"
           />
           <Button
