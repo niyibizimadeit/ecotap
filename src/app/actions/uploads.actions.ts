@@ -1,6 +1,6 @@
 "use server";
 
-import { getSupabase } from "@/lib/supabase/server";
+import { getSupabase, getServiceSupabase } from "@/lib/supabase/server";
 import { uploadProfilePhoto, uploadCompanyLogo, uploadDesignPreview, deleteFromR2, keyFromUrl } from "@/lib/r2/upload";
 import type { ActionResult } from "@/types";
 
@@ -25,8 +25,9 @@ export async function updateProfilePhoto(
     return { success: false, error: result.error ?? "Upload failed." };
   }
 
-  // Update profile avatar_url in DB (uses RLS — user can only update own row)
-  const { error } = await supabase
+  // Use service-role client to bypass RLS (anon-key client hits recursive RLS on profiles)
+  const serviceClient = getServiceSupabase();
+  const { error } = await serviceClient
     .from("profiles")
     .update({ avatar_url: result.url })
     .eq("id", user.id);
@@ -61,8 +62,9 @@ export async function updateCompanyLogo(
     return { success: false, error: result.error ?? "Upload failed." };
   }
 
-  // Update company logo_url in DB
-  const { error } = await supabase
+  // Use service-role client for DB update (bypasses RLS)
+  const serviceClient = getServiceSupabase();
+  const { error } = await serviceClient
     .from("companies")
     .update({ logo_url: result.url })
     .eq("id", companyId);
@@ -94,8 +96,9 @@ export async function uploadDesignImage(
     return { success: false, error: result.error ?? "Upload failed." };
   }
 
-  // Update design preview_url in DB
-  const { error } = await supabase
+  // Use service-role client for DB update (bypasses RLS)
+  const serviceClient = getServiceSupabase();
+  const { error } = await serviceClient
     .from("card_designs")
     .update({ preview_url: result.url })
     .eq("id", designId);

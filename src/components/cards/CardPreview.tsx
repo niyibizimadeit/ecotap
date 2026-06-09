@@ -20,10 +20,11 @@ interface CardPreviewProps {
   accentColor: string;
   socialLinks: SocialLinks;
   cardSlug?:   string;
+  avatarUrl?:  string | null;
 }
 
 export function CardPreview({
-  name, jobTitle, company, bio, phone, accentColor, socialLinks, cardSlug,
+  name, jobTitle, company, bio, phone, accentColor, socialLinks, cardSlug, avatarUrl,
 }: CardPreviewProps) {
   const initials    = getInitials(name || "?");
   const activeSocial = (Object.entries(socialLinks) as [keyof SocialLinks, string][])
@@ -56,12 +57,16 @@ export function CardPreview({
           <div className="px-5 pb-6 -mt-10 relative">
             {/* Avatar */}
             <div
-              className="w-20 h-20 rounded-2xl border-4 flex items-center justify-center mb-3 shadow-card"
-              style={{ backgroundColor: accentColor, borderColor: "#FEFCE8" }}
+              className="w-20 h-20 rounded-2xl border-4 flex items-center justify-center mb-3 shadow-card overflow-hidden"
+              style={{ backgroundColor: avatarUrl ? "#FEFCE8" : accentColor, borderColor: "#FEFCE8" }}
             >
-              <span className="font-serif text-2xl font-semibold" style={{ color: "#FEFCE8" }}>
-                {initials}
-              </span>
+              {avatarUrl ? (
+                <img src={avatarUrl} alt={name} className="w-full h-full object-cover" />
+              ) : (
+                <span className="font-serif text-2xl font-semibold" style={{ color: "#FEFCE8" }}>
+                  {initials}
+                </span>
+              )}
             </div>
 
             {/* Name */}

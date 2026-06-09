@@ -187,7 +187,7 @@ export default function ProfilePage() {
         <div className="xl:col-span-2">
           <div className="sticky top-8">
             <p className="text-xs font-mono tracking-widest text-ink-light uppercase text-center mb-4">Live preview</p>
-            <CardPreview name={form.full_name} jobTitle={form.job_title} company={form.company} bio={form.bio} phone={form.phone} accentColor={form.theme_color} socialLinks={form.social_links} cardSlug={form.card_slug} />
+            <CardPreview name={form.full_name} jobTitle={form.job_title} company={form.company} bio={form.bio} phone={form.phone} accentColor={form.theme_color} socialLinks={form.social_links} cardSlug={form.card_slug} avatarUrl={form.avatar_url} />
           </div>
         </div>
       </div>
