@@ -28,21 +28,24 @@ async function requireSuperAdmin(): Promise<boolean> {
 
 // ── Approvals ────────────────────────────────────────────────────────────────
 
-export async function approveCompany(companyId: string): Promise<ActionResult> {
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+type AnyActionResult = ActionResult<any>;
+
+export async function approveCompany(companyId: string): Promise<AnyActionResult> {
   if (!(await requireSuperAdmin())) {
     return { success: false, error: "Unauthorized. Super admin only." };
   }
   return onboardingService.approveCompany(companyId);
 }
 
-export async function approveIndividual(profileId: string): Promise<ActionResult> {
+export async function approveIndividual(profileId: string): Promise<AnyActionResult> {
   if (!(await requireSuperAdmin())) {
     return { success: false, error: "Unauthorized. Super admin only." };
   }
   return onboardingService.approveIndividual(profileId);
 }
 
-export async function rejectUser(profileId: string): Promise<ActionResult> {
+export async function rejectUser(profileId: string): Promise<AnyActionResult> {
   if (!(await requireSuperAdmin())) {
     return { success: false, error: "Unauthorized. Super admin only." };
   }
@@ -51,7 +54,7 @@ export async function rejectUser(profileId: string): Promise<ActionResult> {
 
 // ── Card designs ─────────────────────────────────────────────────────────────
 
-export async function createDesign(formData: FormData): Promise<ActionResult> {
+export async function createDesign(formData: FormData): Promise<AnyActionResult> {
   if (!(await requireSuperAdmin())) {
     return { success: false, error: "Unauthorized. Super admin only." };
   }
@@ -68,14 +71,14 @@ export async function createDesign(formData: FormData): Promise<ActionResult> {
 export async function updateDesign(
   id: string,
   data: Record<string, unknown>
-): Promise<ActionResult> {
+): Promise<AnyActionResult> {
   if (!(await requireSuperAdmin())) {
     return { success: false, error: "Unauthorized. Super admin only." };
   }
   return adminService.updateDesign(id, data as Parameters<typeof adminService.updateDesign>[1]);
 }
 
-export async function deleteDesign(id: string): Promise<ActionResult> {
+export async function deleteDesign(id: string): Promise<AnyActionResult> {
   if (!(await requireSuperAdmin())) {
     return { success: false, error: "Unauthorized. Super admin only." };
   }
@@ -84,7 +87,7 @@ export async function deleteDesign(id: string): Promise<ActionResult> {
 
 // ── Billing plans ────────────────────────────────────────────────────────────
 
-export async function upsertPlan(formData: FormData): Promise<ActionResult> {
+export async function upsertPlan(formData: FormData): Promise<AnyActionResult> {
   if (!(await requireSuperAdmin())) {
     return { success: false, error: "Unauthorized. Super admin only." };
   }
@@ -97,7 +100,7 @@ export async function upsertPlan(formData: FormData): Promise<ActionResult> {
   });
 }
 
-export async function deletePlan(id: string): Promise<ActionResult> {
+export async function deletePlan(id: string): Promise<AnyActionResult> {
   if (!(await requireSuperAdmin())) {
     return { success: false, error: "Unauthorized. Super admin only." };
   }
@@ -106,18 +109,18 @@ export async function deletePlan(id: string): Promise<ActionResult> {
 
 // ── Order management ─────────────────────────────────────────────────────────
 
-export async function approveOrder(orderId: string): Promise<ActionResult> {
+export async function approveOrder(orderId: string): Promise<AnyActionResult> {
   if (!(await requireSuperAdmin())) {
     return { success: false, error: "Unauthorized. Super admin only." };
   }
-  const { approveOrder } = await import("@/lib/services/orders.service");
-  return approveOrder(orderId);
+  const { approveOrder: approve } = await import("@/lib/services/orders.service");
+  return approve(orderId);
 }
 
 export async function markOrderShipped(
   orderId: string,
   trackingInfo?: string
-): Promise<ActionResult> {
+): Promise<AnyActionResult> {
   if (!(await requireSuperAdmin())) {
     return { success: false, error: "Unauthorized. Super admin only." };
   }
@@ -125,7 +128,7 @@ export async function markOrderShipped(
   return markShipped(orderId, trackingInfo);
 }
 
-export async function markOrderDelivered(orderId: string): Promise<ActionResult> {
+export async function markOrderDelivered(orderId: string): Promise<AnyActionResult> {
   if (!(await requireSuperAdmin())) {
     return { success: false, error: "Unauthorized. Super admin only." };
   }
