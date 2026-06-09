@@ -84,20 +84,28 @@ interface StatCardProps {
   // ── Empty state ─────────────────────────────────────────────────────────
 
   export function EmptyState({
-    icon = "📭",
+    icon,
     title = "Nothing here yet",
     description,
   }: {
-    icon?: string;
+    icon?: React.ReactNode;
     title?: string;
     description?: string;
   }) {
     return (
       <div className="py-16 text-center">
-        <span className="text-4xl block mb-4">{icon}</span>
+        <div className="mb-4 flex justify-center">{icon ?? <InboxIcon />}</div>
         <p className="font-serif text-lg font-semibold text-emerald-deep mb-1">{title}</p>
         {description && <p className="text-sm text-ink-light max-w-xs mx-auto">{description}</p>}
       </div>
+    );
+  }
+
+  function InboxIcon() {
+    return (
+      <svg className="h-8 w-8 text-ink-light" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="1.5">
+        <path strokeLinecap="round" strokeLinejoin="round" d="M2.25 13.5h3.86a2.25 2.25 0 012.012 1.244l.256.512a2.25 2.25 0 002.013 1.244h3.218a2.25 2.25 0 002.013-1.244l.256-.512a2.25 2.25 0 012.013-1.244h3.859M2.25 8.25h19.5M3 8.25l1.32 9.9A2.25 2.25 0 006.56 20.25h10.88a2.25 2.25 0 002.24-2.1L21 8.25" />
+      </svg>
     );
   }
 

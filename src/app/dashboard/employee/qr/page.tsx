@@ -4,7 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import { QRCodeSVG } from "qrcode.react";
 import { PageHeader, SectionCard } from "@/components/dashboard/DashboardShared";
 import { Button } from "@/components/ui/Button";
-import { Download, ExternalLink, Copy, CheckCircle2 } from "lucide-react";
+import { Download, ExternalLink, Copy, CheckCircle2, Printer, MessageCircle, Smartphone, Tag } from "lucide-react";
 import { getMyCard } from "@/app/actions/cards.actions";
 
 export default function QrPage() {
@@ -123,13 +123,13 @@ export default function QrPage() {
         <SectionCard title="How to use your QR code" subtitle="Get the most out of your digital card">
           <div className="space-y-4">
             {[
-              { emoji: "🖨️", title: "Print it", desc: "Add to email signatures, printed materials, or a desk stand." },
-              { emoji: "💬", title: "Share digitally", desc: "Screenshot and share in WhatsApp, LinkedIn, or any chat app." },
-              { emoji: "📲", title: "Display on screen", desc: "Show on your laptop at events — anyone can scan and connect." },
-              { emoji: "🏷️", title: "Combine with NFC", desc: "Your NFC card and QR both point to the same live profile." },
+              { icon: <Printer className="h-5 w-5" />, title: "Print it", desc: "Add to email signatures, printed materials, or a desk stand." },
+              { icon: <MessageCircle className="h-5 w-5" />, title: "Share digitally", desc: "Screenshot and share in WhatsApp, LinkedIn, or any chat app." },
+              { icon: <Smartphone className="h-5 w-5" />, title: "Display on screen", desc: "Show on your laptop at events — anyone can scan and connect." },
+              { icon: <Tag className="h-5 w-5" />, title: "Combine with NFC", desc: "Your NFC card and QR both point to the same live profile." },
             ].map((tip) => (
               <div key={tip.title} className="flex items-start gap-3">
-                <span className="text-xl flex-shrink-0">{tip.emoji}</span>
+                <span className="text-ink-light flex-shrink-0">{tip.icon}</span>
                 <div>
                   <p className="text-sm font-semibold text-emerald-deep">{tip.title}</p>
                   <p className="text-xs text-ink-light leading-relaxed mt-0.5">{tip.desc}</p>

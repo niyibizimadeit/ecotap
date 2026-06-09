@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { Users, CreditCard, Package, ArrowRight, CheckCircle2, Clock, AlertCircle } from "lucide-react";
+import { Users, CreditCard, Package, ArrowRight, CheckCircle2, Clock, AlertCircle, UserPlus, Palette } from "lucide-react";
 import { StatCard, PageHeader } from "@/components/dashboard/DashboardShared";
 import { Badge } from "@/components/ui/Badge";
 import { Button } from "@/components/ui/Button";
@@ -101,10 +101,10 @@ export default function CompanyOverviewPage() {
         <div className="space-y-3">
           <h2 className="font-serif text-lg font-semibold text-emerald-deep">Quick actions</h2>
           {[
-            { title: "Add employee",         sub: "Invite a new team member",             href: "/dashboard/company/employees",   icon: "👤", color: "#ECFDF5" },
-            { title: "Manage departments",   sub: "Organise your team structure",         href: "/dashboard/company/departments", icon: "🏢", color: "#FEF3C7" },
-            { title: "Company branding",     sub: "Update logo and accent colour",        href: "/dashboard/company/settings",    icon: "🎨", color: "#ECFDF5" },
-            { title: "Billing & plan",       sub: "View subscription and usage",          href: "/dashboard/company/subscription",icon: "💳", color: "#FEF3C7" },
+            { title: "Add employee",         sub: "Invite a new team member",             href: "/dashboard/company/employees",   icon: <UserPlus className="h-5 w-5" />, color: "#ECFDF5" },
+            { title: "Manage departments",   sub: "Organise your team structure",         href: "/dashboard/company/departments", icon: <Package className="h-5 w-5" />, color: "#FEF3C7" },
+            { title: "Company branding",     sub: "Update logo and accent colour",        href: "/dashboard/company/settings",    icon: <Palette className="h-5 w-5" />, color: "#ECFDF5" },
+            { title: "Billing & plan",       sub: "View subscription and usage",          href: "/dashboard/company/subscription",icon: <CreditCard className="h-5 w-5" />, color: "#FEF3C7" },
           ].map(item => (
             <Link
               key={item.href}
@@ -112,8 +112,8 @@ export default function CompanyOverviewPage() {
               className="flex items-center gap-4 p-4 rounded-2xl border group hover:-translate-y-0.5 transition-all duration-200 hover:shadow-card-lg"
               style={{ backgroundColor: "#FEF9EF", borderColor: "rgba(6,78,59,0.08)" }}
             >
-              <div className="w-10 h-10 rounded-xl flex items-center justify-center text-xl flex-shrink-0" style={{ backgroundColor: item.color }}>
-                {item.icon}
+              <div className="w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0" style={{ backgroundColor: item.color }}>
+                <span className="text-emerald-mid">{item.icon}</span>
               </div>
               <div className="flex-1 min-w-0">
                 <p className="text-sm font-semibold text-emerald-deep">{item.title}</p>

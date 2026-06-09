@@ -1,6 +1,6 @@
 import { Suspense } from "react";
 import Link from "next/link";
-import { Eye, Users, Package, ArrowRight } from "lucide-react";
+import { Eye, Users, Package, ArrowRight, Pencil } from "lucide-react";
 import { StatCard, PageHeader, StatCardSkeleton } from "@/components/dashboard/DashboardShared";
 import { EmployeeOverviewContent } from "./OverviewContent";
 
@@ -35,8 +35,8 @@ export default function EmployeeOverviewPage() {
       {/* Quick links — static, always shown */}
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mt-6">
         {[
-          { title: "Edit your card", sub: "Update your profile, bio, and social links", href: "/dashboard/employee/profile", icon: "✏️" },
-          { title: "Order more cards", sub: "Get additional NFC cards for yourself", href: "/dashboard/employee/orders", icon: "📦" },
+          { title: "Edit your card", sub: "Update your profile, bio, and social links", href: "/dashboard/employee/profile", icon: <Pencil className="h-5 w-5" /> },
+          { title: "Order more cards", sub: "Get additional NFC cards for yourself", href: "/dashboard/employee/orders", icon: <Package className="h-5 w-5" /> },
         ].map((item) => (
           <Link
             key={item.href}

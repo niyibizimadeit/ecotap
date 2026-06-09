@@ -3,7 +3,7 @@ import Link from "next/link";
 import { PageHeader, StatCard, StatCardSkeleton, EmptyState } from "@/components/dashboard/DashboardShared";
 import { Badge } from "@/components/ui/Badge";
 import { Button } from "@/components/ui/Button";
-import { Clock, Users, Package, ArrowRight, Building2, User } from "lucide-react";
+import { Clock, Users, Package, ArrowRight, Building2, User, Palette, Globe, CreditCard, CheckCircle } from "lucide-react";
 import * as adminService from "@/lib/services/admin.service";
 
 export default function AdminOverviewPage() {
@@ -22,13 +22,13 @@ export default function AdminOverviewPage() {
       {/* Quick links — static */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 mt-6">
         {[
-          { label: "Manage designs",  href: "/dashboard/admin/designs", icon: "🎨", sub: "Add or toggle card designs" },
-          { label: "All users",       href: "/dashboard/admin/users",   icon: "👥", sub: "Search and manage accounts" },
-          { label: "Billing plans",   href: "/dashboard/admin/billing", icon: "💳", sub: "Edit pricing plans" },
-          { label: "View home page",  href: "/",                        icon: "🌍", sub: "See EcoTap as a visitor" },
+          { label: "Manage designs",  href: "/dashboard/admin/designs", icon: <Palette className="h-5 w-5" />, sub: "Add or toggle card designs" },
+          { label: "All users",       href: "/dashboard/admin/users",   icon: <Users className="h-5 w-5" />, sub: "Search and manage accounts" },
+          { label: "Billing plans",   href: "/dashboard/admin/billing", icon: <CreditCard className="h-5 w-5" />, sub: "Edit pricing plans" },
+          { label: "View home page",  href: "/",                        icon: <Globe className="h-5 w-5" />, sub: "See EcoTap as a visitor" },
         ].map(item => (
           <Link key={item.href} href={item.href} className="rounded-2xl border p-4 flex flex-col gap-2 group hover:-translate-y-0.5 transition-all hover:shadow-card-lg" style={{ backgroundColor: "#FEF9EF", borderColor: "rgba(6,78,59,0.08)" }}>
-            <span className="text-2xl">{item.icon}</span>
+            <span className="text-emerald-mid">{item.icon}</span>
             <p className="text-sm font-semibold text-emerald-deep">{item.label}</p>
             <p className="text-xs text-ink-light">{item.sub}</p>
           </Link>
@@ -95,7 +95,7 @@ async function AdminOverviewContent() {
             <Link href="/dashboard/admin/approvals" className="text-xs text-emerald-bright hover:text-emerald-mid underline underline-offset-4 transition-colors">View all</Link>
           </div>
           {pendingItems.length === 0 ? (
-            <EmptyState icon="✅" title="All clear" description="No pending approvals right now." />
+            <EmptyState icon={<CheckCircle className="h-8 w-8 text-emerald-bright" />} title="All clear" description="No pending approvals right now." />
           ) : (
             <div className="divide-y" style={{ borderColor: "rgba(6,78,59,0.06)" }}>
               {pendingItems.map((item, i) => (
@@ -127,7 +127,7 @@ async function AdminOverviewContent() {
             <Link href="/dashboard/admin/orders" className="text-xs text-emerald-bright hover:text-emerald-mid underline underline-offset-4 transition-colors">View all</Link>
           </div>
           {recentOrders.length === 0 ? (
-            <EmptyState icon="📦" title="No orders yet" description="Orders will appear here once customers place them." />
+            <EmptyState icon={<Package className="h-8 w-8 text-ink-light" />} title="No orders yet" description="Orders will appear here once customers place them." />
           ) : (
             <div className="divide-y" style={{ borderColor: "rgba(6,78,59,0.06)" }}>
               {recentOrders.map((order) => (

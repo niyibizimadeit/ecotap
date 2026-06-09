@@ -1,4 +1,4 @@
-import { Eye, Users, Package, CheckCircle2, Clock, BadgeCheck } from "lucide-react";
+import { Eye, Users, Package, CheckCircle2, Clock, BadgeCheck, User, Inbox, ClipboardList } from "lucide-react";
 import Link from "next/link";
 import { getSupabase } from "@/lib/supabase/server";
 import * as analyticsService from "@/lib/services/analytics.service";
@@ -24,7 +24,7 @@ export async function EmployeeOverviewContent() {
   const username = profile?.username ?? "you";
 
   if (!profileId) {
-    return <EmptyState icon="👤" title="Profile not found" description="Please contact support." />;
+    return <EmptyState icon={<User className="h-8 w-8 text-ink-light mx-auto" />} title="Profile not found" description="Please contact support." />;
   }
 
   // ── Fetch card ────────────────────────────────────────────────────────
@@ -113,7 +113,7 @@ export async function EmployeeOverviewContent() {
             <Link href="/dashboard/employee/contacts" className="text-xs text-emerald-bright hover:text-emerald-mid underline underline-offset-4 transition-colors">View all</Link>
           </div>
           {recentContacts.length === 0 ? (
-            <EmptyState icon="📭" title="No contacts yet" description="Visitors who submit their info on your card page will appear here." />
+            <EmptyState icon={<Inbox className="h-8 w-8 text-ink-light mx-auto" />} title="No contacts yet" description="Visitors who submit their info on your card page will appear here." />
           ) : (
             <div className="divide-y" style={{ borderColor: "rgba(6,78,59,0.06)" }}>
               {recentContacts.map((c) => (
@@ -138,7 +138,7 @@ export async function EmployeeOverviewContent() {
             <h2 className="font-serif text-lg font-semibold text-emerald-deep">Recent activity</h2>
           </div>
           {activity.length === 0 ? (
-            <EmptyState icon="📋" title="No activity yet" description="Your recent actions and card interactions will appear here." />
+            <EmptyState icon={<ClipboardList className="h-8 w-8 text-ink-light mx-auto" />} title="No activity yet" description="Your recent actions and card interactions will appear here." />
           ) : (
             <div className="px-6 py-4 space-y-4">
               {activity.map((a) => (
