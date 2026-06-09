@@ -4,7 +4,6 @@
 // Shows company identity + a grid of active employee cards.
 
 import Link from "next/link";
-import Image from "next/image";
 import { Globe, Building2 } from "lucide-react";
 import type { PublicCompanyData } from "@/app/actions/public.actions";
 
@@ -34,11 +33,9 @@ export default function CompanyPublicPage({ company }: Props) {
             style={{ backgroundColor: brand_color, borderColor: "#FEFCE8" }}
           >
             {logo_url ? (
-              <Image
+              <img
                 src={logo_url}
                 alt={`${name} logo`}
-                width={112}
-                height={112}
                 className="object-cover w-full h-full"
               />
             ) : (
@@ -131,11 +128,9 @@ export default function CompanyPublicPage({ company }: Props) {
                     }}
                   >
                     {emp.avatar_url ? (
-                      <Image
+                      <img
                         src={emp.avatar_url}
                         alt={emp.full_name}
-                        width={48}
-                        height={48}
                         className="object-cover w-full h-full"
                       />
                     ) : (
