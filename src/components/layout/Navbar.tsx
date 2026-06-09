@@ -36,7 +36,7 @@ export function Navbar() {
         <div className="max-w-6xl mx-auto px-6 h-16 flex items-center justify-between">
 
           {/* Logo */}
-          <BrandLogo variant="light" iconSize="md" />
+          <BrandLogo variant="light" iconSize="md" bold />
 
           {/* Desktop nav */}
           <nav className="hidden md:flex items-center gap-8">

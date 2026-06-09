@@ -26,7 +26,7 @@ export function Footer() {
           {/* Brand */}
           <div className="md:col-span-2">
             <div className="mb-4">
-              <BrandLogo variant="dark" iconSize="md" />
+              <BrandLogo variant="white" iconSize="md" />
             </div>
             <p className="text-sm text-ivory/60 leading-relaxed max-w-xs">
               Smart NFC and QR digital business cards for companies and individuals across Rwanda.

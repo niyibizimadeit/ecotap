@@ -4,6 +4,7 @@ import { SocialIconRow }      from "./SocialIconRow";
 import { SaveContactButton }  from "./SaveContactButton";
 import { ContactExchangeForm } from "./ContactExchangeForm";
 import { getInitials }        from "@/lib/utils";
+import { BrandIcon } from "@/components/brand/BrandIcon";
 
 interface PublicCardLayoutProps {
   card: PublicCard;
@@ -130,8 +131,8 @@ export function PublicCardLayout({ card }: PublicCardLayoutProps) {
             href="/"
             className="inline-flex items-center gap-1.5 text-xs text-ink-light hover:text-emerald-bright transition-colors"
           >
-            <img src="/logo.svg" alt="" className="w-4 h-4 flex-shrink-0" />
-            <span>Powered by <strong>Eco</strong>Tap</span>
+            <BrandIcon className="w-3.5 h-3.5" />
+            <span className="text-ink-light">Powered by <strong>Eco</strong>Tap</span>
           </Link>
         </div>
       </div>
