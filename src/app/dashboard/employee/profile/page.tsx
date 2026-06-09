@@ -78,6 +78,7 @@ export default function ProfilePage() {
       bio:          form.bio,
       theme_color:  form.theme_color,
       social_links: form.social_links,
+      company:      form.company,
     });
     setSaving(false);
     if (result.success) {
@@ -144,7 +145,7 @@ export default function ProfilePage() {
               <Input label="Full name" required value={form.full_name} onChange={set("full_name")} />
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <Input label="Job title" placeholder="e.g. Software Engineer" value={form.job_title} onChange={set("job_title")} />
-                <Input label="Company" placeholder="Where you work" value={form.company} onChange={set("company")} />
+                <Input label="Company" placeholder="Where you work" value={form.company} onChange={set("company")} hint="Type a company name to add it to your profile" />
               </div>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <Input label="Phone" type="tel" placeholder="+250 7XX XXX XXX" value={form.phone} onChange={set("phone")} />
