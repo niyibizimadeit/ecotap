@@ -52,6 +52,7 @@ export async function signUp(formData: FormData): Promise<ActionResult> {
     email,
     password,
     options: {
+      emailRedirectTo: `${process.env.NEXT_PUBLIC_SITE_URL}/pending`,
       data: {
         full_name: fullName,
         username:  username,
@@ -94,6 +95,7 @@ export async function signUpOrg(formData: FormData): Promise<ActionResult> {
     email,
     password,
     options: {
+      emailRedirectTo: `${process.env.NEXT_PUBLIC_SITE_URL}/pending`,
       data: {
         full_name:          adminName,
         role:               "company_admin",
