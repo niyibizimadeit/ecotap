@@ -24,32 +24,14 @@ export default function CompanyDashboardLayout({ children }: { children: React.R
 
   useEffect(() => {
     async function load() {
-      // Use a direct fetch to the API to get current user's company
-      const { createBrowserClient } = await import("@supabase/ssr");
-      const supabase = createBrowserClient(
-        process.env.NEXT_PUBLIC_SUPABASE_URL!,
-        process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-      );
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) return;
-      const { data: link } = await supabase
-        .from("profile_companies")
-        .select("company_id, job_title")
-        .eq("profile_id", user.id)
-        .eq("is_primary", true)
-        .single();
-      if (link) {
-        const { data: company } = await supabase
-          .from("companies")
-          .select("name")
-          .eq("id", link.company_id)
-          .single();
-        if (company) {
-          setCompanyData({
-            name: company.name,
-            initials: company.name.split(" ").map((w: string) => w[0]).join("").slice(0, 2).toUpperCase(),
-          });
-        }
+      const { getMyCard } = await import("@/app/actions/cards.actions");
+      const result = await getMyCard();
+      if (result.success && result.data?.primary_company) {
+        const c = result.data.primary_company;
+        setCompanyData({
+          name: c.name,
+          initials: c.name.split(" ").map((w: string) => w[0]).join("").slice(0, 2).toUpperCase(),
+        });
       }
     }
     load();

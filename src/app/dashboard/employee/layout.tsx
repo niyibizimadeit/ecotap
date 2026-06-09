@@ -4,6 +4,7 @@ import { useState, useEffect } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { BrandLogo } from "@/components/brand/BrandLogo";
+import { getMyCard } from "@/app/actions/cards.actions";
 import { cn } from "@/lib/utils";
 import {
   LayoutDashboard, User, QrCode, Mail, Package,
@@ -25,7 +26,6 @@ export default function EmployeeDashboardLayout({ children }: { children: React.
 
   useEffect(() => {
     async function load() {
-      const { getMyCard } = await import("@/app/actions/cards.actions");
       const result = await getMyCard();
       if (result.success && result.data) {
         setUserData({

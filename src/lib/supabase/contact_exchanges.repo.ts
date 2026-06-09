@@ -2,7 +2,7 @@
 // Contact exchanges repository — SSOT for all contact_exchanges queries.
 // ─────────────────────────────────────────────────────────────────────────────
 
-import { getSupabase } from "@/lib/supabase/server";
+import { getSupabase, getServiceSupabase } from "@/lib/supabase/server";
 import type { ContactExchange, DeviceType } from "@/types";
 
 // ── Reads ────────────────────────────────────────────────────────────────────
@@ -70,7 +70,8 @@ export async function createExchange(exchange: {
   referrer?: string;
   country?: string;
 }): Promise<ContactExchange | null> {
-  const supabase = await getSupabase();
+  // Use service role — public visitors aren't authenticated, RLS blocks anon inserts
+  const supabase = getServiceSupabase();
   const { data } = await supabase
     .from("contact_exchanges")
     .insert({
