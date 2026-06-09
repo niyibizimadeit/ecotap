@@ -31,21 +31,21 @@ function generatePassword(): string {
 const DEMO_USERS = [
   {
     email:    "princeniyibizi4@gmail.com",
-    password: generatePassword(),
+    password: "EcoTapRwanda8921!",
     role:     "employee",
     full_name: "Prince Niyibizi",
     username:  "prince-niyibizi",
   },
   {
     email:    "info@rdmc.rw",
-    password: generatePassword(),
+    password: "CardQR2144!",
     role:     "super_admin",
     full_name: "RDMC Admin",
     username:  "rdmc-admin",
   },
   {
     email:    "niyibiziivprince@gmail.com",
-    password: generatePassword(),
+    password: "GreenLeaf4787!",
     role:     "company_admin",
     full_name: "Prince Niyibizi",
     username:  "prince-rdmc",

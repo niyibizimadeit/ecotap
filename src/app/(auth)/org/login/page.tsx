@@ -9,6 +9,7 @@ import { ArrowRight, Building2, AlertCircle } from "lucide-react";
 import { AuthLayout } from "@/components/auth/AuthLayout";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
+import { PasswordInput } from "@/components/ui/PasswordInput";
 import { loginSchema, type LoginData } from "@/lib/validations/auth";
 import { signIn } from "@/app/actions/auth.actions";
 
@@ -68,10 +69,9 @@ export default function OrgLoginPage() {
             {...register("email")}
           />
 
-          <Input
+          <PasswordInput
             label="Password"
             required
-            type="password"
             placeholder="Enter your password"
             error={errors.password?.message}
             {...register("password")}

@@ -12,8 +12,8 @@ import {
 
 const NAV = [
   { label: "Overview",   href: "/dashboard/admin",           icon: LayoutDashboard, badge: null },
-  { label: "Approvals",  href: "/dashboard/admin/approvals", icon: Clock,           badge: 3    },
-  { label: "Card orders",href: "/dashboard/admin/orders",    icon: Package,         badge: 2    },
+  { label: "Approvals",  href: "/dashboard/admin/approvals", icon: Clock,           badge: null },
+  { label: "Card orders",href: "/dashboard/admin/orders",    icon: Package,         badge: null },
   { label: "Designs",    href: "/dashboard/admin/designs",   icon: Palette,         badge: null },
   { label: "Users",      href: "/dashboard/admin/users",     icon: Users,           badge: null },
   { label: "Billing",    href: "/dashboard/admin/billing",   icon: CreditCard,      badge: null },

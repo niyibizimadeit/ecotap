@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { BrandLogo } from "@/components/brand/BrandLogo";
@@ -18,16 +18,24 @@ const NAV = [
   { label: "Order Card",href: "/dashboard/employee/orders",   icon: Package         },
 ];
 
-const MOCK_USER = {
-  name:     "Ntwali Frankie",
-  role:     "Founder & CEO",
-  username: "ntwali-frankie",
-  company:  null as string | null,
-};
-
 export default function EmployeeDashboardLayout({ children }: { children: React.ReactNode }) {
   const [mobileOpen, setMobileOpen] = useState(false);
+  const [userData, setUserData] = useState<{ name: string; role: string }>({ name: "", role: "" });
   const pathname = usePathname();
+
+  useEffect(() => {
+    async function load() {
+      const { getMyCard } = await import("@/app/actions/cards.actions");
+      const result = await getMyCard();
+      if (result.success && result.data) {
+        setUserData({
+          name: result.data.profile.full_name,
+          role: result.data.job_title ?? result.data.profile.role,
+        });
+      }
+    }
+    load();
+  }, []);
 
   return (
     <div className="min-h-screen flex" style={{ backgroundColor: "#FEFCE8" }}>
@@ -49,11 +57,11 @@ export default function EmployeeDashboardLayout({ children }: { children: React.
               className="w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0 font-serif font-semibold text-sm"
               style={{ backgroundColor: "#064E3B", color: "#FEFCE8" }}
             >
-              {MOCK_USER.name.split(" ").map(n => n[0]).join("")}
+              {(userData.name || "—").split(" ").map(n => n[0]).join("")}
             </div>
             <div className="min-w-0">
-              <p className="text-sm font-medium text-emerald-deep truncate">{MOCK_USER.name}</p>
-              <p className="text-xs text-ink-light truncate">{MOCK_USER.role}</p>
+              <p className="text-sm font-medium text-emerald-deep truncate">{(userData.name || "—")}</p>
+              <p className="text-xs text-ink-light truncate">{(userData.role || "—")}</p>
             </div>
           </div>
         </div>
@@ -85,7 +93,7 @@ export default function EmployeeDashboardLayout({ children }: { children: React.
         {/* Bottom actions */}
         <div className="px-3 py-4 border-t space-y-0.5" style={{ borderColor: "rgba(6,78,59,0.08)" }}>
           <a
-            href={`/${MOCK_USER.username}`}
+            href={`/${"you"}`}
             target="_blank"
             rel="noopener noreferrer"
             className="flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm text-ink-light hover:text-emerald-deep hover:bg-emerald-pale transition-all duration-150"
@@ -143,7 +151,7 @@ export default function EmployeeDashboardLayout({ children }: { children: React.
               })}
               <div className="pt-2 border-t" style={{ borderColor: "rgba(6,78,59,0.08)" }}>
                 <a
-                  href={`/${MOCK_USER.username}`}
+                  href={`/${"you"}`}
                   target="_blank"
                   rel="noopener noreferrer"
                   className="flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm text-ink-light"

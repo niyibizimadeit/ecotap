@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { BrandLogo } from "@/components/brand/BrandLogo";
@@ -18,16 +18,42 @@ const NAV = [
   { label: "Subscription", href: "/dashboard/company/subscription", icon: CreditCard      },
 ];
 
-const MOCK_COMPANY = {
-  name:    "RDMC Ltd",
-  slug:    "rdmc",
-  initials:"RD",
-  accent:  "#064E3B",
-  admin:   "Amara Uwimana",
-};
-
 export default function CompanyDashboardLayout({ children }: { children: React.ReactNode }) {
   const [mobileOpen, setMobileOpen] = useState(false);
+  const [companyData, setCompanyData] = useState<{ name: string; initials: string }>({ name: "", initials: "" });
+
+  useEffect(() => {
+    async function load() {
+      // Use a direct fetch to the API to get current user's company
+      const { createBrowserClient } = await import("@supabase/ssr");
+      const supabase = createBrowserClient(
+        process.env.NEXT_PUBLIC_SUPABASE_URL!,
+        process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+      );
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
+      const { data: link } = await supabase
+        .from("profile_companies")
+        .select("company_id, job_title")
+        .eq("profile_id", user.id)
+        .eq("is_primary", true)
+        .single();
+      if (link) {
+        const { data: company } = await supabase
+          .from("companies")
+          .select("name")
+          .eq("id", link.company_id)
+          .single();
+        if (company) {
+          setCompanyData({
+            name: company.name,
+            initials: company.name.split(" ").map((w: string) => w[0]).join("").slice(0, 2).toUpperCase(),
+          });
+        }
+      }
+    }
+    load();
+  }, []);
   const pathname = usePathname();
 
   return (
@@ -48,13 +74,13 @@ export default function CompanyDashboardLayout({ children }: { children: React.R
           <div className="flex items-center gap-3 px-3 py-3 rounded-2xl" style={{ backgroundColor: "#ECFDF5" }}>
             <div
               className="w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0 font-serif font-semibold text-sm"
-              style={{ backgroundColor: MOCK_COMPANY.accent, color: "#FEFCE8" }}
+              style={{ backgroundColor: "#064E3B", color: "#FEFCE8" }}
             >
-              {MOCK_COMPANY.initials}
+              {(companyData.initials || "—")}
             </div>
             <div className="min-w-0">
-              <p className="text-sm font-semibold text-emerald-deep truncate">{MOCK_COMPANY.name}</p>
-              <p className="text-xs text-ink-light truncate">{MOCK_COMPANY.admin}</p>
+              <p className="text-sm font-semibold text-emerald-deep truncate">{(companyData.name || "—")}</p>
+              <p className="text-xs text-ink-light truncate">{"Admin"}</p>
             </div>
           </div>
         </div>
@@ -84,7 +110,7 @@ export default function CompanyDashboardLayout({ children }: { children: React.R
         {/* Bottom */}
         <div className="px-3 py-4 border-t space-y-0.5" style={{ borderColor: "rgba(6,78,59,0.08)" }}>
           <a
-            href={`/${MOCK_COMPANY.slug}`}
+            href={`/${(companyData.name || "company")}`}
             target="_blank"
             rel="noopener noreferrer"
             className="flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm text-ink-light hover:text-emerald-deep hover:bg-emerald-pale transition-all"
@@ -107,11 +133,11 @@ export default function CompanyDashboardLayout({ children }: { children: React.R
         <div className="flex items-center gap-2.5">
           <div
             className="w-7 h-7 rounded-lg flex items-center justify-center font-serif text-xs font-semibold"
-            style={{ backgroundColor: MOCK_COMPANY.accent, color: "#FEFCE8" }}
+            style={{ backgroundColor: "#064E3B", color: "#FEFCE8" }}
           >
-            {MOCK_COMPANY.initials}
+            {(companyData.initials || "—")}
           </div>
-          <span className="font-serif text-base font-semibold text-emerald-deep">{MOCK_COMPANY.name}</span>
+          <span className="font-serif text-base font-semibold text-emerald-deep">{(companyData.name || "—")}</span>
         </div>
         <button
           onClick={() => setMobileOpen(v => !v)}

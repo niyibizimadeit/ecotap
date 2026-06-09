@@ -25,7 +25,7 @@ export default function CompanyOverviewPage() {
     <div>
       <PageHeader
         eyebrow="Company Dashboard"
-        title="RDMC Ltd"
+        title="Your Company"
         subtitle="Manage your team's digital business cards."
         action={
           <Link href="/dashboard/company/employees">

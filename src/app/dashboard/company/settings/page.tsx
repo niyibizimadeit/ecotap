@@ -10,11 +10,11 @@ import { INDUSTRIES } from "@/constants";
 const PRESET_COLORS = ["#064E3B","#1e3a5f","#7c2d12","#1a1a2e","#374151","#6b21a8","#b45309","#0f766e"];
 
 const MOCK_SETTINGS = {
-  name:         "RDMC Ltd",
-  slug:         "rdmc",
-  industry:     "Media",
-  website:      "https://rdmc.rw",
-  description:  "Full-service creative agency specialising in Digital, Labs, and Events.",
+  name:         "Your Company",
+  slug:         "your-company",
+  industry:     "Technology",
+  website:      "https://example.com",
+  description:  "Tell visitors about your company.",
   brand_color:  "#064E3B",
 };
 

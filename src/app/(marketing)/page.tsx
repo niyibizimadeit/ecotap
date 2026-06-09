@@ -114,7 +114,7 @@ function CardMockup() {
 
         {/* Info */}
         <div className="mb-6">
-          <h3 className="font-serif text-2xl font-semibold text-ivory mb-1">NTWALI Frankie</h3>
+          <h3 className="font-serif text-2xl font-semibold text-ivory mb-1">Ntwali Frankie</h3>
           <p className="text-ivory/60 text-sm">Founder & CEO</p>
           <p className="text-emerald-light/80 text-sm font-mono tracking-wide mt-0.5">ABC Group</p>
         </div>

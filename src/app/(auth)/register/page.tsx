@@ -10,6 +10,7 @@ import { ArrowRight, User, AlertCircle } from "lucide-react";
 import { AuthLayout } from "@/components/auth/AuthLayout";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
+import { PasswordInput } from "@/components/ui/PasswordInput";
 import { individualRegisterSchema, type IndividualRegisterData } from "@/lib/validations/auth";
 import { signUp } from "@/app/actions/auth.actions";
 
@@ -103,19 +104,17 @@ export default function IndividualRegisterPage() {
             {...register("phone")}
           />
 
-          <Input
+          <PasswordInput
             label="Password"
             required
-            type="password"
             placeholder="At least 8 characters"
             error={errors.password?.message}
             {...register("password")}
           />
 
-          <Input
+          <PasswordInput
             label="Confirm password"
             required
-            type="password"
             placeholder="Re-enter your password"
             error={errors.confirm_password?.message}
             {...register("confirm_password")}
