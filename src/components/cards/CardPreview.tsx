@@ -3,26 +3,27 @@
 import { getInitials } from "@/lib/utils";
 import type { SocialLinks } from "@/types";
 
-interface CardPreviewProps {
-  name:       string;
-  jobTitle:   string;
-  company:    string;
-  bio:        string;
-  phone:      string;
-  accentColor: string;
-  socialLinks: SocialLinks;
-}
-
 const SOCIAL_LABELS: Record<keyof SocialLinks, string> = {
   linkedin:  "in",
-  twitter:   "𝕏",
+  twitter:   "x",
   whatsapp:  "wa",
   instagram: "ig",
-  website:   "🌐",
+  website:   "web",
 };
 
+interface CardPreviewProps {
+  name:        string;
+  jobTitle:    string;
+  company:     string;
+  bio:         string;
+  phone:       string;
+  accentColor: string;
+  socialLinks: SocialLinks;
+  cardSlug?:   string;
+}
+
 export function CardPreview({
-  name, jobTitle, company, bio, phone, accentColor, socialLinks,
+  name, jobTitle, company, bio, phone, accentColor, socialLinks, cardSlug,
 }: CardPreviewProps) {
   const initials    = getInitials(name || "?");
   const activeSocial = (Object.entries(socialLinks) as [keyof SocialLinks, string][])
@@ -133,7 +134,7 @@ export function CardPreview({
       {/* URL badge */}
       <div className="text-center mt-4">
         <span className="text-xs font-mono text-ink-light">
-          ecotap.rw/<span style={{ color: "#059669" }}>ntwali-frankie</span>
+          ecotap.rw/<span style={{ color: "#059669" }}>{cardSlug || "you"}</span>
         </span>
       </div>
     </div>

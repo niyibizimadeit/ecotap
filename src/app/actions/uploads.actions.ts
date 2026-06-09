@@ -4,21 +4,14 @@ import { getSupabase } from "@/lib/supabase/server";
 import { uploadProfilePhoto, uploadCompanyLogo, uploadDesignPreview, deleteFromR2, keyFromUrl } from "@/lib/r2/upload";
 import type { ActionResult } from "@/types";
 
-// ── Guard ────────────────────────────────────────────────────────────────────
-
-async function getCurrentProfileId(): Promise<string | null> {
-  const supabase = await getSupabase();
-  const { data: { user } } = await supabase.auth.getUser();
-  return user?.id ?? null;
-}
-
 // ── Profile photo ────────────────────────────────────────────────────────────
 
 export async function updateProfilePhoto(
   formData: FormData
 ): Promise<ActionResult<{ url: string }>> {
-  const profileId = await getCurrentProfileId();
-  if (!profileId) return { success: false, error: "Not authenticated." };
+  const supabase = await getSupabase();
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return { success: false, error: "Not authenticated." };
 
   const file = formData.get("file") as File | null;
   if (!file || file.size === 0) {
@@ -26,20 +19,22 @@ export async function updateProfilePhoto(
   }
 
   const buffer = Buffer.from(await file.arrayBuffer());
-  const result = await uploadProfilePhoto(buffer, file.name, file.type, profileId);
+  const result = await uploadProfilePhoto(buffer, file.name, file.type, user.id);
 
   if (!result.success || !result.url) {
     return { success: false, error: result.error ?? "Upload failed." };
   }
 
-  // Update profile avatar_url in DB
-  const supabase = await getSupabase();
+  // Update profile avatar_url in DB (uses RLS — user can only update own row)
   const { error } = await supabase
     .from("profiles")
     .update({ avatar_url: result.url })
-    .eq("id", profileId);
+    .eq("id", user.id);
 
-  if (error) return { success: false, error: "Failed to save photo URL." };
+  if (error) {
+    console.error("Profile photo update failed:", error.message, error.code);
+    return { success: false, error: `Failed to save photo: ${error.message}` };
+  }
 
   return { success: true, data: { url: result.url } };
 }
@@ -50,8 +45,9 @@ export async function updateCompanyLogo(
   companyId: string,
   formData: FormData
 ): Promise<ActionResult<{ url: string }>> {
-  const profileId = await getCurrentProfileId();
-  if (!profileId) return { success: false, error: "Not authenticated." };
+  const supabase = await getSupabase();
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return { success: false, error: "Not authenticated." };
 
   const file = formData.get("file") as File | null;
   if (!file || file.size === 0) {
@@ -66,7 +62,6 @@ export async function updateCompanyLogo(
   }
 
   // Update company logo_url in DB
-  const supabase = await getSupabase();
   const { error } = await supabase
     .from("companies")
     .update({ logo_url: result.url })
@@ -83,8 +78,9 @@ export async function uploadDesignImage(
   designId: string,
   formData: FormData
 ): Promise<ActionResult<{ url: string }>> {
-  const profileId = await getCurrentProfileId();
-  if (!profileId) return { success: false, error: "Not authenticated." };
+  const supabase = await getSupabase();
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return { success: false, error: "Not authenticated." };
 
   const file = formData.get("file") as File | null;
   if (!file || file.size === 0) {
@@ -99,7 +95,6 @@ export async function uploadDesignImage(
   }
 
   // Update design preview_url in DB
-  const supabase = await getSupabase();
   const { error } = await supabase
     .from("card_designs")
     .update({ preview_url: result.url })
@@ -113,8 +108,9 @@ export async function uploadDesignImage(
 // ── Delete ───────────────────────────────────────────────────────────────────
 
 export async function deleteUpload(url: string): Promise<ActionResult> {
-  const profileId = await getCurrentProfileId();
-  if (!profileId) return { success: false, error: "Not authenticated." };
+  const supabase = await getSupabase();
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return { success: false, error: "Not authenticated." };
 
   const key = keyFromUrl(url);
   if (!key) return { success: false, error: "Invalid file URL." };

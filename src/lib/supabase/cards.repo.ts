@@ -2,7 +2,7 @@
 // Cards repository — SSOT for all cards table queries.
 // ─────────────────────────────────────────────────────────────────────────────
 
-import { getSupabase } from "@/lib/supabase/server";
+import { getSupabase, getServiceSupabase } from "@/lib/supabase/server";
 import type { Card, SocialLinks, PublicCard } from "@/types";
 
 // ── Reads ────────────────────────────────────────────────────────────────────
@@ -41,53 +41,79 @@ export async function getCardByProfileId(
 
 /**
  * Full public card page data — card + profile + primary company + all companies.
- * Single query using Supabase joins via foreign key relationships.
+ * Uses simple queries to avoid FK-join naming issues.
  */
 export async function getPublicCard(
   slug: string
 ): Promise<PublicCard | null> {
-  const supabase = await getSupabase();
+  const supabase = getServiceSupabase();
 
-  // Fetch card with profile joined
+  // 1. Fetch card
   const { data: card } = await supabase
     .from("cards")
-    .select(`
-      *,
-      profile:profiles!cards_profile_id_fkey (
-        id, username, full_name, email, avatar_url, role
-      )
-    `)
+    .select("*")
     .eq("slug", slug)
     .eq("is_public", true)
     .single();
 
   if (!card) return null;
 
-  // Fetch company associations
+  // 2. Fetch profile separately
+  const { data: profile } = await supabase
+    .from("profiles")
+    .select("id, username, full_name, email, avatar_url, role")
+    .eq("id", card.profile_id)
+    .single();
+
+  if (!profile) return null;
+
+  // 3. Fetch company associations
   const { data: profileCompanies } = await supabase
     .from("profile_companies")
-    .select(`
-      is_primary,
-      job_title,
-      company:companies!profile_companies_company_id_fkey (
-        id, name, slug, logo_url, brand_color, theme_locked
-      )
-    `)
+    .select("is_primary, job_title, company_id")
     .eq("profile_id", card.profile_id);
 
-  const allCompanies = (profileCompanies ?? []).map((pc: Record<string, unknown>) => ({
-    company:    pc.company as PublicCard["all_companies"][number]["company"],
-    job_title:  (pc.job_title as string) ?? null,
-    is_primary: (pc.is_primary as boolean) ?? false,
-  }));
+  // 4. Fetch companies in a separate query
+  let allCompanies: PublicCard["all_companies"] = [];
+  let primaryCompany: PublicCard["primary_company"] = null;
+  let primaryJobTitle: string | null = null;
 
-  const primary = allCompanies.find((c) => c.is_primary) ?? allCompanies[0] ?? null;
+  if (profileCompanies && profileCompanies.length > 0) {
+    const companyIds = [...new Set(profileCompanies.map((pc: Record<string, unknown>) => pc.company_id))];
+    const { data: companies } = await supabase
+      .from("companies")
+      .select("*")
+      .in("id", companyIds as string[]);
+
+    if (companies) {
+      const companyMap = new Map(companies.map((c) => [c.id, c]));
+
+      allCompanies = (profileCompanies as unknown as Array<Record<string, unknown>>)
+        .filter((pc) => companyMap.has(pc.company_id as string))
+        .map((pc) => ({
+          company:    companyMap.get(pc.company_id as string)!,
+          job_title:  (pc.job_title as string) ?? null,
+          is_primary: (pc.is_primary as boolean) ?? false,
+        })) as unknown as PublicCard["all_companies"];
+
+      const primary = allCompanies.find((c) => c.is_primary) ?? allCompanies[0] ?? null;
+      primaryCompany = (primary?.company ?? null) as PublicCard["primary_company"];
+      primaryJobTitle = primary?.job_title ?? card.job_title ?? null;
+    }
+  }
 
   return {
     ...card,
-    profile:           card.profile as PublicCard["profile"],
-    primary_company:   primary?.company ?? null,
-    primary_job_title: primary?.job_title ?? card.job_title ?? null,
+    profile: {
+      id:         profile.id,
+      username:   profile.username,
+      full_name:  profile.full_name,
+      email:      profile.email,
+      avatar_url: profile.avatar_url,
+      role:       profile.role,
+    },
+    primary_company:   primaryCompany,
+    primary_job_title: primaryJobTitle,
     all_companies:     allCompanies,
   } as PublicCard;
 }

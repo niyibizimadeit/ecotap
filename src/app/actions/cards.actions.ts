@@ -23,15 +23,14 @@ export async function getPublicCard(
 // ── Own card ─────────────────────────────────────────────────────────────────
 
 export async function getMyCard(): Promise<ActionResult<PublicCard>> {
-  const profileId = await getCurrentProfileId();
-  if (!profileId) return { success: false, error: "Not authenticated." };
-
-  const { getSupabase } = await import("@/lib/supabase/server");
   const supabase = await getSupabase();
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return { success: false, error: "Not authenticated." };
+
   const { data: profile } = await supabase
     .from("profiles")
     .select("username")
-    .eq("id", profileId)
+    .eq("id", user.id)
     .single();
 
   if (!profile?.username) return { success: false, error: "Profile not found." };

@@ -37,3 +37,46 @@ export async function getSupabase() {
     }
   );
 }
+
+/**
+ * Stateless Supabase client for public pages that don't need auth.
+ * No cookie handling — avoids session refresh crashes on public routes.
+ */
+export function getPublicSupabase() {
+  return createServerClient<Database>(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+    {
+      cookies: {
+        getAll() {
+          return [];
+        },
+        setAll() {
+          // no-op: public client doesn't write cookies
+        },
+      },
+    }
+  );
+}
+
+/**
+ * Service-role client for privileged server-side reads (e.g. public card pages).
+ * Bypasses RLS — use only for read operations that need cross-table data.
+ * Never expose this client to the browser.
+ */
+export function getServiceSupabase() {
+  return createServerClient<Database>(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.SUPABASE_SERVICE_ROLE_KEY!,
+    {
+      cookies: {
+        getAll() {
+          return [];
+        },
+        setAll() {
+          // no-op
+        },
+      },
+    }
+  );
+}

@@ -12,7 +12,7 @@ import { getMyCard, updateMyCard } from "@/app/actions/cards.actions";
 import { updateProfilePhoto } from "@/app/actions/uploads.actions";
 import type { SocialLinks, CardProfileForm } from "@/types";
 
-const EMPTY_FORM: CardProfileForm & { full_name: string; company: string; avatar_url?: string | null } = {
+const EMPTY_FORM: CardProfileForm & { full_name: string; company: string; avatar_url?: string | null; card_slug: string } = {
   full_name:   "",
   job_title:   "",
   company:     "",
@@ -22,6 +22,7 @@ const EMPTY_FORM: CardProfileForm & { full_name: string; company: string; avatar
   theme_color: "#064E3B",
   social_links: { linkedin: "", twitter: "", whatsapp: "", instagram: "", website: "" },
   avatar_url:  null,
+  card_slug:   "",
 };
 
 export default function ProfilePage() {
@@ -37,7 +38,7 @@ export default function ProfilePage() {
       if (result.success && result.data) {
         const card = result.data;
         setForm({
-          full_name:    card.profile.full_name,
+          full_name:    card.profile?.full_name ?? "",
           job_title:    card.job_title ?? "",
           company:      card.primary_company?.name ?? "",
           phone:        card.phone ?? "",
@@ -52,6 +53,7 @@ export default function ProfilePage() {
             website:   card.social_links?.website ?? "",
           },
           avatar_url: card.profile.avatar_url,
+          card_slug:   card.slug,
         });
       }
       setLoading(false);
@@ -185,7 +187,7 @@ export default function ProfilePage() {
         <div className="xl:col-span-2">
           <div className="sticky top-8">
             <p className="text-xs font-mono tracking-widest text-ink-light uppercase text-center mb-4">Live preview</p>
-            <CardPreview name={form.full_name} jobTitle={form.job_title} company={form.company} bio={form.bio} phone={form.phone} accentColor={form.theme_color} socialLinks={form.social_links} />
+            <CardPreview name={form.full_name} jobTitle={form.job_title} company={form.company} bio={form.bio} phone={form.phone} accentColor={form.theme_color} socialLinks={form.social_links} cardSlug={form.card_slug} />
           </div>
         </div>
       </div>
