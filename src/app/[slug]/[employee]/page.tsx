@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { PublicCardLayout } from "@/components/cards/PublicCardLayout";
+import { PageViewTracker } from "@/components/analytics/PageViewTracker";
 import { getPublicCard } from "@/app/actions/cards.actions";
 
 interface Props {
@@ -39,5 +40,10 @@ export default async function EmployeeCardPage({ params }: Props) {
 
   if (!result.success || !result.data) notFound();
 
-  return <PublicCardLayout card={result.data} />;
+  return (
+    <>
+      <PageViewTracker cardId={result.data.id} />
+      <PublicCardLayout card={result.data} />
+    </>
+  );
 }
