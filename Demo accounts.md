@@ -1,15 +1,24 @@
 # Demo Accounts
 
+## Admin & Company
+
 | Email | Role | Dashboard | Password |
 |-------|------|-----------|----------|
 | `admin@ecotap.rw` | Super Admin | `/dashboard/admin` | `EcoQR9571!` |
 | `info@rdmc.rw` | Company Admin | `/dashboard/company` | `TapCard6787!` |
-| `cyubahiro.s.caleb@gmail.com` | Employee | `/dashboard/employee` | `ProLeaf1563!` |
 
-## Details
+## RDMC Employees
 
-- **Super Admin** (`admin@ecotap.rw`) — Full platform access, manage approvals, designs, billing, users
-- **Company Admin** (`info@rdmc.rw`) — Linked to **RDMC Ltd** as CEO, manages employees & departments
-- **Employee** (`cyubahiro.s.caleb@gmail.com`) — Active profile, card at `ecotap.rw/cyubahiro-caleb`
+| Email | Full Name | Card | Password |
+|-------|-----------|------|----------|
+| `employee1@rdmc.rw` | Alice Murakoze | `ecotap.rw/alice-murakoze` | `CardTeam4521!` |
+| `employee2@rdmc.rw` | Bob Habimana | `ecotap.rw/bob-habimana` | `NFCTeam2618!` |
+| `employee3@rdmc.rw` | Claire Ingabire | `ecotap.rw/claire-ingabire` | `SafeTeam3851!` |
+| `cyubahiro.s.caleb@gmail.com` | Cyubahiro Caleb | `ecotap.rw/cyubahiro-caleb` | `ProLeaf1563!` |
 
-All accounts are email-confirmed and active — sign in directly via `/login` (employee) or `/org/login` (super admin / company admin).
+## Notes
+
+- All accounts are email-confirmed and active
+- Super admin & company admin: sign in via `/org/login`
+- Employees: sign in via `/login`
+- All RDMC employees are linked to **RDMC Ltd** and visible in the company dashboard and super admin dashboard

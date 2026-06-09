@@ -72,6 +72,7 @@ export default function ProfilePage() {
   async function save() {
     setSaving(true);
     const result = await updateMyCard({
+      full_name:    form.full_name,
       job_title:    form.job_title,
       phone:        form.phone,
       email_public: form.email_public,

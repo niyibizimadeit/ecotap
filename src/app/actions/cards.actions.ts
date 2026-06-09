@@ -32,13 +32,22 @@ export async function getMyCard(): Promise<ActionResult<PublicCard>> {
 // ── Update card ─────────────────────────────────────────────────────────────
 
 export async function updateMyCard(
-  data: CardProfileForm & { company?: string }
+  data: CardProfileForm & { full_name?: string; company?: string }
 ): Promise<ActionResult<Card>> {
   const supabase = await getSupabase();
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return { success: false, error: "Not authenticated." };
 
-  // 1. Update card fields
+  // 1. Update profile full_name if provided
+  if (data.full_name?.trim()) {
+    const serviceClient = getServiceSupabase();
+    await serviceClient
+      .from("profiles")
+      .update({ full_name: data.full_name.trim() })
+      .eq("id", user.id);
+  }
+
+  // 2. Update card fields
   const cardResult = await cardsService.updateCard(user.id, {
     job_title:    data.job_title,
     phone:        data.phone,
