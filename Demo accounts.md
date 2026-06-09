@@ -2,14 +2,14 @@
 
 | Email | Role | Dashboard | Password |
 |-------|------|-----------|----------|
-| `princeniyibizi4@gmail.com` | Employee | `/dashboard/employee` | `EcoTapRwanda8921!` |
-| `info@rdmc.rw` | Super Admin | `/dashboard/admin` | `CardQR2144!` |
-| `niyibiziivprince@gmail.com` | Company Admin | `/dashboard/company` | `GreenLeaf4787!` |
+| `admin@ecotap.rw` | Super Admin | `/dashboard/admin` | `EcoQR9571!` |
+| `info@rdmc.rw` | Company Admin | `/dashboard/company` | `TapCard6787!` |
+| `cyubahiro.s.caleb@gmail.com` | Employee | `/dashboard/employee` | `ProLeaf1563!` |
 
 ## Details
 
-- **Employee** — Active profile, card at `ecotap.rw/prince-niyibizi`
-- **Super Admin** — Full platform access, can approve/reject, manage designs & billing
-- **Company Admin** — Linked to RDMC Ltd as CEO, manages employees & departments
+- **Super Admin** (`admin@ecotap.rw`) — Full platform access, manage approvals, designs, billing, users
+- **Company Admin** (`info@rdmc.rw`) — Linked to **RDMC Ltd** as CEO, manages employees & departments
+- **Employee** (`cyubahiro.s.caleb@gmail.com`) — Active profile, card at `ecotap.rw/cyubahiro-caleb`
 
 All accounts are email-confirmed and active — sign in directly via `/login` (employee) or `/org/login` (super admin / company admin).
