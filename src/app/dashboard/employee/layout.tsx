@@ -5,6 +5,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { BrandLogo } from "@/components/brand/BrandLogo";
 import { getMyCard } from "@/app/actions/cards.actions";
+import { signOut } from "@/app/actions/auth.actions";
 import { cn } from "@/lib/utils";
 import {
   LayoutDashboard, User, QrCode, Mail, Package,
@@ -102,7 +103,7 @@ export default function EmployeeDashboardLayout({ children }: { children: React.
             <ExternalLink className="h-4 w-4" />
             View my card
           </a>
-          <button className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm text-ink-light hover:text-red-600 hover:bg-red-50 transition-all duration-150">
+          <button onClick={() => signOut()} className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm text-ink-light hover:text-red-600 hover:bg-red-50 transition-all duration-150">
             <LogOut className="h-4 w-4" />
             Sign out
           </button>

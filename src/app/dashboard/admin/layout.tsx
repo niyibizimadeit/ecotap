@@ -4,6 +4,7 @@ import { useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { BrandLogo } from "@/components/brand/BrandLogo";
+import { signOut } from "@/app/actions/auth.actions";
 import { cn } from "@/lib/utils";
 import {
   LayoutDashboard, Clock, Package, Palette,
@@ -90,6 +91,7 @@ export default function AdminDashboardLayout({ children }: { children: React.Rea
         {/* Bottom */}
         <div className="px-3 py-4 border-t" style={{ borderColor: "rgba(255,255,255,0.08)" }}>
           <button
+            onClick={() => signOut()}
             className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm transition-all"
             style={{ color: "rgba(254,252,232,0.5)" }}
             onMouseEnter={e => { (e.currentTarget as HTMLElement).style.color = "#fca5a5"; (e.currentTarget as HTMLElement).style.backgroundColor = "rgba(239,68,68,0.1)"; }}

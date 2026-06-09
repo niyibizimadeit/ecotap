@@ -4,6 +4,7 @@ import { useState, useEffect } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { BrandLogo } from "@/components/brand/BrandLogo";
+import { signOut } from "@/app/actions/auth.actions";
 import { cn } from "@/lib/utils";
 import {
   LayoutDashboard, Users, Building2, Settings,
@@ -20,7 +21,7 @@ const NAV = [
 
 export default function CompanyDashboardLayout({ children }: { children: React.ReactNode }) {
   const [mobileOpen, setMobileOpen] = useState(false);
-  const [companyData, setCompanyData] = useState<{ name: string; initials: string }>({ name: "", initials: "" });
+  const [companyData, setCompanyData] = useState<{ name: string; slug: string; initials: string }>({ name: "", slug: "", initials: "" });
 
   useEffect(() => {
     async function load() {
@@ -30,6 +31,7 @@ export default function CompanyDashboardLayout({ children }: { children: React.R
         const c = result.data.primary_company;
         setCompanyData({
           name: c.name,
+          slug: c.slug,
           initials: c.name.split(" ").map((w: string) => w[0]).join("").slice(0, 2).toUpperCase(),
         });
       }
@@ -92,7 +94,7 @@ export default function CompanyDashboardLayout({ children }: { children: React.R
         {/* Bottom */}
         <div className="px-3 py-4 border-t space-y-0.5" style={{ borderColor: "rgba(6,78,59,0.08)" }}>
           <a
-            href={`/${(companyData.name || "company")}`}
+            href={`/${(companyData.slug || "company")}`}
             target="_blank"
             rel="noopener noreferrer"
             className="flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm text-ink-light hover:text-emerald-deep hover:bg-emerald-pale transition-all"
@@ -100,7 +102,7 @@ export default function CompanyDashboardLayout({ children }: { children: React.R
             <ExternalLink className="h-4 w-4" />
             View company page
           </a>
-          <button className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm text-ink-light hover:text-red-600 hover:bg-red-50 transition-all">
+          <button onClick={() => signOut()} className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm text-ink-light hover:text-red-600 hover:bg-red-50 transition-all">
             <LogOut className="h-4 w-4" />
             Sign out
           </button>

@@ -1,20 +1,42 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { PageHeader, SectionCard } from "@/components/dashboard/DashboardShared";
 import { Input, Textarea } from "@/components/ui/Input";
 import { Button } from "@/components/ui/Button";
-import { Save, Upload } from "lucide-react";
+import { ImageUpload } from "@/components/ui/ImageUpload";
+import { Save } from "lucide-react";
 import { INDUSTRIES } from "@/constants";
+import { updateCompanyLogo } from "@/app/actions/uploads.actions";
 
 const PRESET_COLORS = ["#064E3B","#1e3a5f","#7c2d12","#1a1a2e","#374151","#6b21a8","#b45309","#0f766e"];
 
 const MOCK_SETTINGS = { name: "", slug: "", industry: "", website: "", description: "", brand_color: "#064E3B" };
 
 export default function CompanySettingsPage() {
-  const [form,    setForm]    = useState(MOCK_SETTINGS);
-  const [saving,  setSaving]  = useState(false);
-  const [saved,   setSaved]   = useState(false);
+  const [form,       setForm]       = useState(MOCK_SETTINGS);
+  const [saving,     setSaving]     = useState(false);
+  const [saved,      setSaved]      = useState(false);
+  const [companyId,  setCompanyId]  = useState<string>("");
+  const [logoUrl,    setLogoUrl]    = useState<string | null>(null);
+
+  useEffect(() => {
+    async function load() {
+      const { getMyCard } = await import("@/app/actions/cards.actions");
+      const result = await getMyCard();
+      if (result.success && result.data?.primary_company) {
+        setCompanyId(result.data.primary_company.id);
+        setLogoUrl(result.data.primary_company.logo_url);
+        setForm(f => ({
+          ...f,
+          name: result.data!.primary_company!.name,
+          slug: result.data!.primary_company!.slug,
+          brand_color: result.data!.primary_company!.brand_color ?? "#064E3B",
+        }));
+      }
+    }
+    load();
+  }, []);
 
   const set = (field: keyof typeof form) =>
     (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) =>
@@ -52,17 +74,18 @@ export default function CompanySettingsPage() {
         {/* Logo */}
         <SectionCard title="Company logo" subtitle="Shown on all employee cards and the company page.">
           <div className="flex items-center gap-5">
-            <div
-              className="w-20 h-20 rounded-2xl flex items-center justify-center font-serif text-2xl font-semibold flex-shrink-0"
-              style={{ backgroundColor: form.brand_color, color: "#FEFCE8" }}
-            >
-              {form.name.split(" ").map(w => w[0]).join("").slice(0,2)}
-            </div>
+            <ImageUpload
+              currentUrl={logoUrl}
+              size="sm"
+              onUpload={async (formData) => {
+                if (!companyId) return { success: false, error: "Loading company data…" };
+                return updateCompanyLogo(companyId, formData);
+              }}
+              onUploaded={(url) => setLogoUrl(url)}
+            />
             <div>
-              <Button variant="secondary" size="sm" leftIcon={<Upload className="h-3.5 w-3.5" />}>
-                Upload logo
-              </Button>
-              <p className="text-xs text-ink-light mt-2">PNG or SVG, min 200×200px. Wired in Phase 13.</p>
+              <p className="text-sm text-ink-mid font-medium">Upload a logo</p>
+              <p className="text-xs text-ink-light mt-1">PNG or SVG, min 200×200px. Up to 5MB.</p>
             </div>
           </div>
         </SectionCard>
