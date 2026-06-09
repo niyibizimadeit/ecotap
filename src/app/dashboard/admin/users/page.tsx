@@ -18,20 +18,7 @@ interface AdminUser {
   slug:    string;
 }
 
-const MOCK_USERS: AdminUser[] = [
-  { id:"1",  name:"Ntwali Frankie",      email:"ntwali@rdmc.rw", role:"individual",    status:"active",    company:null,            joined:"Jan 2026", slug:"ntwali-frankie"       },
-  { id:"2",  name:"Amara Uwimana",         email:"amara@rdmc.rw",              role:"company_admin", status:"active",    company:"RDMC Ltd",       joined:"Jan 2026", slug:"amara-uwimana"         },
-  { id:"3",  name:"Eric Hakizimana",       email:"eric@rdmc.rw",               role:"employee",      status:"active",    company:"RDMC Ltd",       joined:"Jan 2026", slug:"eric-hakizimana"       },
-  { id:"4",  name:"Grace Uwase",           email:"grace@rdmc.rw",              role:"employee",      status:"active",    company:"RDMC Ltd",       joined:"Feb 2026", slug:"grace-uwase"           },
-  { id:"5",  name:"James Karekezi",        email:"james@rdmc.rw",              role:"employee",      status:"pending",   company:"RDMC Ltd",       joined:"Jun 2026", slug:"james-karekezi"        },
-  { id:"6",  name:"Jean-Paul Habimana",    email:"jp@freelance.rw",            role:"individual",    status:"pending",   company:null,             joined:"Jun 2026", slug:"jeanpaul-h"            },
-  { id:"7",  name:"Vestine Murekatete",    email:"vestine@gmail.com",          role:"individual",    status:"pending",   company:null,             joined:"Jun 2026", slug:"vestine-m"             },
-  { id:"8",  name:"Claude Nkurikiye",      email:"claude@rdmc.rw",             role:"employee",      status:"suspended", company:"RDMC Ltd",       joined:"Feb 2026", slug:"claude-nkurikiye"      },
-  { id:"9",  name:"Diane Mukamana",        email:"diane@rdmc.rw",              role:"employee",      status:"active",    company:"RDMC Ltd",       joined:"Mar 2026", slug:"diane-mukamana"        },
-  { id:"10", name:"Sandrine Iradukunda",   email:"sandrine@rdmc.rw",           role:"employee",      status:"active",    company:"RDMC Ltd",       joined:"Apr 2026", slug:"sandrine-iradukunda"   },
-  { id:"11", name:"David Mugisha",         email:"david@kigalitechhub.rw",     role:"company_admin", status:"pending",   company:"Kigali Tech Hub",joined:"Jun 2026", slug:"david-mugisha"         },
-  { id:"12", name:"Marie Uwera",           email:"marie@inyange.rw",           role:"company_admin", status:"pending",   company:"Inyange Industries",joined:"Jun 2026",slug:"marie-uwera"          },
-];
+const MOCK_USERS: AdminUser[] = [];
 
 const ROLE_LABELS: Record<UserRole, string> = {
   super_admin:   "Super Admin",

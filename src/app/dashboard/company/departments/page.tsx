@@ -16,18 +16,9 @@ interface Department {
 
 const DEPT_COLORS = ["#064E3B","#1e3a5f","#7c2d12","#3d6b4f","#1a1a2e","#374151"];
 
-const INITIAL_DEPTS: Department[] = [
-  { id:"1", name:"Creative",    members:["Amara Uwimana","James Karekezi"],               color:"#064E3B" },
-  { id:"2", name:"Engineering", members:["Eric Hakizimana","Claude Nkurikiye"],           color:"#1e3a5f" },
-  { id:"3", name:"Sales",       members:["Grace Uwase","Patrick Nzeyimana"],              color:"#7c2d12" },
-  { id:"4", name:"Marketing",   members:["Diane Mukamana"],                               color:"#3d6b4f" },
-  { id:"5", name:"Events",      members:["Sandrine Iradukunda"],                          color:"#1a1a2e" },
-];
+const INITIAL_DEPTS: Department[] = [];
 
-const ALL_EMPLOYEES = [
-  "Amara Uwimana","Eric Hakizimana","Grace Uwase","James Karekezi",
-  "Diane Mukamana","Patrick Nzeyimana","Sandrine Iradukunda","Claude Nkurikiye",
-];
+const ALL_EMPLOYEES: string[] = [];
 
 export default function DepartmentsPage() {
   const [depts,     setDepts]     = useState<Department[]>(INITIAL_DEPTS);

@@ -4,18 +4,9 @@ import { StatCard, PageHeader } from "@/components/dashboard/DashboardShared";
 import { Badge } from "@/components/ui/Badge";
 import { Button } from "@/components/ui/Button";
 
-const MOCK_EMPLOYEES = [
-  { name: "Amara Uwimana",     title: "Creative Director", status: "active"  as const, dept: "Creative"   },
-  { name: "Eric Hakizimana",   title: "Dev Lead",          status: "active"  as const, dept: "Engineering" },
-  { name: "Grace Uwase",       title: "Account Manager",   status: "active"  as const, dept: "Sales"       },
-  { name: "James Karekezi",    title: "Designer",          status: "pending" as const, dept: "Creative"    },
-  { name: "Diane Mukamana",    title: "Marketing Lead",    status: "active"  as const, dept: "Marketing"   },
-];
+const MOCK_EMPLOYEES: { name: string; title: string; status: "active" | "pending" | "suspended"; dept: string }[] = [];
 
-const MOCK_ALERTS = [
-  { type: "warning", text: "James Karekezi's account is pending approval." },
-  { type: "info",    text: "Subscription renews in 12 days." },
-];
+const MOCK_ALERTS: { type: string; text: string }[] = [];
 
 export default function CompanyOverviewPage() {
   const activeCount  = MOCK_EMPLOYEES.filter(e => e.status === "active").length;

@@ -18,11 +18,7 @@ interface Plan {
   companies:          number;
 }
 
-const INITIAL_PLANS: Plan[] = [
-  { id:"p1", name:"Monthly Standard",  billing_cycle:"monthly", price_per_employee:5000,  is_active:true,  companies:14 },
-  { id:"p2", name:"Annual Standard",   billing_cycle:"annual",  price_per_employee:50000, is_active:true,  companies:4  },
-  { id:"p3", name:"Monthly Enterprise",billing_cycle:"monthly", price_per_employee:3500,  is_active:false, companies:0  },
-];
+const INITIAL_PLANS: Plan[] = [];
 
 const PLAN_FEATURES = [
   "Full company admin dashboard",

@@ -9,14 +9,7 @@ import { INDUSTRIES } from "@/constants";
 
 const PRESET_COLORS = ["#064E3B","#1e3a5f","#7c2d12","#1a1a2e","#374151","#6b21a8","#b45309","#0f766e"];
 
-const MOCK_SETTINGS = {
-  name:         "Your Company",
-  slug:         "your-company",
-  industry:     "Technology",
-  website:      "https://example.com",
-  description:  "Tell visitors about your company.",
-  brand_color:  "#064E3B",
-};
+const MOCK_SETTINGS = { name: "", slug: "", industry: "", website: "", description: "", brand_color: "#064E3B" };
 
 export default function CompanySettingsPage() {
   const [form,    setForm]    = useState(MOCK_SETTINGS);

@@ -142,7 +142,6 @@ export async function signUpOrg(formData: FormData): Promise<ActionResult> {
 export async function signIn(formData: FormData): Promise<ActionResult> {
   const email    = formData.get("email") as string;
   const password = formData.get("password") as string;
-  const redirectTo = (formData.get("redirect") as string) ?? "/dashboard/employee";
 
   if (!email || !password) {
     return { success: false, error: "Email and password are required." };
@@ -150,7 +149,7 @@ export async function signIn(formData: FormData): Promise<ActionResult> {
 
   const supabase = await getSupabaseServerAction();
 
-  const { error } = await supabase.auth.signInWithPassword({
+  const { data, error } = await supabase.auth.signInWithPassword({
     email,
     password,
   });
@@ -159,8 +158,30 @@ export async function signIn(formData: FormData): Promise<ActionResult> {
     return { success: false, error: error.message };
   }
 
-  // The redirect won't happen inside try/catch — Next.js throws a special error
-  redirect(redirectTo);
+  // Look up role to redirect to the correct dashboard
+  const userId = data.user?.id;
+  let dashboard = "/dashboard/employee"; // fallback
+
+  if (userId) {
+    const { data: profile } = await supabase
+      .from("profiles")
+      .select("role")
+      .eq("id", userId)
+      .single();
+
+    if (profile?.role) {
+      const DASHBOARD_MAP: Record<string, string> = {
+        super_admin:   "/dashboard/admin",
+        country_rep:   "/dashboard/admin",
+        company_admin: "/dashboard/company",
+        employee:      "/dashboard/employee",
+        individual:    "/dashboard/employee",
+      };
+      dashboard = DASHBOARD_MAP[profile.role] ?? dashboard;
+    }
+  }
+
+  redirect(dashboard);
 }
 
 // ── Sign out ─────────────────────────────────────────────────────────────────

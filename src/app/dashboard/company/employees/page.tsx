@@ -19,16 +19,7 @@ interface Employee {
   joined: string;
 }
 
-const MOCK_EMPLOYEES: Employee[] = [
-  { id:"1", name:"Amara Uwimana",      title:"Creative Director", dept:"Creative",    email:"amara@rdmc.rw",    status:"active",    slug:"amara-uwimana",      joined:"Jan 2026" },
-  { id:"2", name:"Eric Hakizimana",    title:"Dev Lead",          dept:"Engineering", email:"eric@rdmc.rw",     status:"active",    slug:"eric-hakizimana",    joined:"Jan 2026" },
-  { id:"3", name:"Grace Uwase",        title:"Account Manager",   dept:"Sales",       email:"grace@rdmc.rw",    status:"active",    slug:"grace-uwase",        joined:"Feb 2026" },
-  { id:"4", name:"James Karekezi",     title:"Designer",          dept:"Creative",    email:"james@rdmc.rw",    status:"pending",   slug:"james-karekezi",     joined:"Jun 2026" },
-  { id:"5", name:"Diane Mukamana",     title:"Marketing Lead",    dept:"Marketing",   email:"diane@rdmc.rw",    status:"active",    slug:"diane-mukamana",     joined:"Mar 2026" },
-  { id:"6", name:"Patrick Nzeyimana", title:"Sales Executive",   dept:"Sales",       email:"patrick@rdmc.rw",  status:"active",    slug:"patrick-nzeyimana",  joined:"Mar 2026" },
-  { id:"7", name:"Sandrine Iradukunda",title:"Events Manager",    dept:"Events",      email:"sandrine@rdmc.rw", status:"active",    slug:"sandrine-iradukunda",joined:"Apr 2026" },
-  { id:"8", name:"Claude Nkurikiye",   title:"Engineer",          dept:"Engineering", email:"claude@rdmc.rw",   status:"suspended", slug:"claude-nkurikiye",   joined:"Feb 2026" },
-];
+const MOCK_EMPLOYEES: Employee[] = [];
 
 const DEPTS = ["All", "Creative", "Engineering", "Sales", "Marketing", "Events"];
 

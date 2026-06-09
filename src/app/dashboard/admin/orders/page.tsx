@@ -14,13 +14,7 @@ interface AdminOrder {
   status: OrderStatus; submitted: string;
 }
 
-const INITIAL_ORDERS: AdminOrder[] = [
-  { id:"ORD-2026-001", user:"Ntwali Frankie",     company:null,       design:"Classic Emerald", designColor:"#064E3B", quantity:50, address:"KG 123 St, Gasabo", city:"Kigali", status:"pending",   submitted:"1 hour ago"   },
-  { id:"ORD-2026-002", user:"Amara Uwimana",        company:"RDMC Ltd", design:"Midnight Dark",   designColor:"#1a1a2e", quantity:10, address:"KN 12 Ave, Nyarugenge", city:"Kigali", status:"approved",  submitted:"3 hours ago"  },
-  { id:"ORD-2026-003", user:"Eric Hakizimana",      company:"RDMC Ltd", design:"Royal Navy",      designColor:"#1e3a5f", quantity:5,  address:"KK 15 Rd, Kicukiro",   city:"Kigali", status:"shipped",   submitted:"2 days ago"   },
-  { id:"ORD-2026-004", user:"Grace Uwase",           company:"RDMC Ltd", design:"Classic Emerald", designColor:"#064E3B", quantity:20, address:"KG 9 Ave, Gasabo",     city:"Kigali", status:"delivered", submitted:"1 week ago"   },
-  { id:"ORD-2026-005", user:"Jean-Paul Habimana",   company:null,       design:"Terracotta",      designColor:"#7c2d12", quantity:2,  address:"KN 3 St, Nyarugenge",  city:"Kigali", status:"pending",   submitted:"Yesterday"    },
-];
+const INITIAL_ORDERS: AdminOrder[] = [];
 
 const STATUS_NEXT: Partial<Record<OrderStatus, { label: string; next: OrderStatus; icon: React.ReactNode }>> = {
   pending:  { label: "Approve",      next: "approved",  icon: <CheckCircle2 className="h-3.5 w-3.5" /> },

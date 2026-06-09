@@ -17,14 +17,7 @@ interface Design {
   orders:  number;
 }
 
-const INITIAL_DESIGNS: Design[] = [
-  { id:"d1", name:"Classic Emerald", color:"#064E3B", pattern:"dots",    active:true,  orders:142 },
-  { id:"d2", name:"Midnight Dark",   color:"#1a1a2e", pattern:"grid",    active:true,  orders:87  },
-  { id:"d3", name:"Royal Navy",      color:"#1e3a5f", pattern:"lines",   active:true,  orders:54  },
-  { id:"d4", name:"Terracotta",      color:"#7c2d12", pattern:"waves",   active:true,  orders:31  },
-  { id:"d5", name:"Sage & Stone",    color:"#3d6b4f", pattern:"minimal", active:false, orders:12  },
-  { id:"d6", name:"Obsidian",        color:"#0f0f0f", pattern:"bold",    active:false, orders:5   },
-];
+const INITIAL_DESIGNS: Design[] = [];
 
 const PRESET_COLORS = ["#064E3B","#1a1a2e","#1e3a5f","#7c2d12","#3d6b4f","#0f0f0f","#6b21a8","#b45309","#0f766e","#374151"];
 

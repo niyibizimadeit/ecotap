@@ -20,17 +20,9 @@ interface PendingIndividual {
 
 type PendingItem = PendingCompany | PendingIndividual;
 
-const MOCK_COMPANIES: PendingCompany[] = [
-  { id:"c1", type:"company", name:"Kigali Tech Hub",    industry:"Technology",    size:"11–50",   website:"https://kigalitechhub.rw", admin:"David Mugisha",  email:"david@kigalitechhub.rw", submitted:"2 hours ago" },
-  { id:"c2", type:"company", name:"Inyange Industries",  industry:"Manufacturing", size:"51–200",  website:"https://inyange.rw",        admin:"Marie Uwera",    email:"marie@inyange.rw",       submitted:"Yesterday"   },
-  { id:"c3", type:"company", name:"Rwanda Airlines",     industry:"Logistics",     size:"201–500", website:"https://rwandaair.com",     admin:"Felix Kagame",   email:"felix@rwandaair.com",    submitted:"2 days ago"  },
-];
+const MOCK_COMPANIES: PendingCompany[] = [];
 
-const MOCK_INDIVIDUALS: PendingIndividual[] = [
-  { id:"i1", type:"individual", name:"Jean-Paul Habimana", username:"jeanpaul-h",    email:"jp@freelance.rw",  company:"Self-employed",         submitted:"5 hours ago" },
-  { id:"i2", type:"individual", name:"Vestine Murekatete", username:"vestine-m",     email:"vestine@gmail.com",company:"",                      submitted:"Yesterday"   },
-  { id:"i3", type:"individual", name:"Alphonse Ntirenganya",username:"alphonse-n",   email:"alphonse@rca.rw",  company:"Rwanda Cultural Academy", submitted:"3 days ago" },
-];
+const MOCK_INDIVIDUALS: PendingIndividual[] = [];
 
 export default function ApprovalsPage() {
   const [tab,          setTab]          = useState<"companies"|"individuals">("companies");

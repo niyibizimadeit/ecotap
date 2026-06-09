@@ -33,9 +33,7 @@ export default function AdminDashboardLayout({ children }: { children: React.Rea
       >
         {/* Logo */}
         <div className="px-6 py-5 border-b" style={{ borderColor: "rgba(255,255,255,0.08)" }}>
-          <Link href="/" className="flex items-center gap-2.5">
-            <BrandLogo variant="dark" iconSize="md" />
-          </Link>
+          <BrandLogo variant="dark" iconSize="md" />
         </div>
 
         {/* Admin pill */}

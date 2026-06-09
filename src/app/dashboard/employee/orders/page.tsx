@@ -5,26 +5,7 @@ import { Button } from "@/components/ui/Button";
 import { Package, ArrowRight, MapPin, Calendar } from "lucide-react";
 import type { OrderStatus } from "@/types";
 
-const MOCK_ORDERS = [
-  {
-    id:       "ORD-2026-001",
-    design:   "Classic Emerald",
-    quantity: 50,
-    status:   "delivered" as OrderStatus,
-    date:     "May 10, 2026",
-    address:  "Kigali, Rwanda",
-    tracking: "KGL-NFC-8821",
-  },
-  {
-    id:       "ORD-2026-002",
-    design:   "Midnight Dark",
-    quantity: 10,
-    status:   "shipped" as OrderStatus,
-    date:     "Jun 1, 2026",
-    address:  "Kigali, Rwanda",
-    tracking: "KGL-NFC-9104",
-  },
-];
+const MOCK_ORDERS: { id: string; design: string; quantity: number; status: OrderStatus; date: string; address: string; tracking?: string }[] = [];
 
 const STATUS_BADGE: Record<OrderStatus, "delivered" | "shipped" | "approved" | "pending"> = {
   delivered: "delivered",

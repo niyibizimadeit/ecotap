@@ -47,7 +47,7 @@ function isAccessAllowed(pathname: string, role: UserRole): boolean {
     return role === "company_admin" || role === "super_admin";
   }
   if (pathname.startsWith("/dashboard/employee")) {
-    return role === "employee" || role === "individual" || role === "super_admin";
+    return role === "employee" || role === "individual";
   }
   return true;
 }

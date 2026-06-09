@@ -3,13 +3,7 @@ import { Badge } from "@/components/ui/Badge";
 import { Button } from "@/components/ui/Button";
 import { CheckCircle2, Users, Calendar, Mail, ArrowRight } from "lucide-react";
 
-const MOCK_SUB = {
-  plan:           "Monthly",
-  status:         "active" as const,
-  employee_count: 8,
-  next_billing:   "July 6, 2026",
-  contact_email:  "billing@ecotap.rw",
-};
+const MOCK_SUB = { plan: "", status: "active" as const, employee_count: 0, billing_cycle: "monthly", next_billing: "", contact_email: "" };
 
 const PLAN_FEATURES = [
   "Per-employee billing — pay only for active cards",
