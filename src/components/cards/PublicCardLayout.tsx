@@ -41,15 +41,16 @@ export function PublicCardLayout({ card }: PublicCardLayoutProps) {
         {/* Avatar floated over the band */}
         <div className="flex items-end justify-between mb-5">
           <div
-            className="w-24 h-24 rounded-3xl border-4 flex items-center justify-center shadow-card-lg flex-shrink-0"
-            style={{ backgroundColor: accent, borderColor: "#FEFCE8" }}
+            className="w-24 h-24 rounded-3xl border-4 flex items-center justify-center shadow-card-lg flex-shrink-0 overflow-hidden"
+            style={{ backgroundColor: profile.avatar_url ? "#FEFCE8" : accent, borderColor: "#FEFCE8" }}
           >
-            <span
-              className="font-serif text-3xl font-semibold"
-              style={{ color: "#FEFCE8" }}
-            >
-              {initials}
-            </span>
+            {profile.avatar_url ? (
+              <img src={profile.avatar_url} alt={profile.full_name} className="w-full h-full object-cover" />
+            ) : (
+              <span className="font-serif text-3xl font-semibold" style={{ color: "#FEFCE8" }}>
+                {initials}
+              </span>
+            )}
           </div>
 
           {/* Company logo or badge */}

@@ -20,7 +20,7 @@ const NAV = [
 
 export default function EmployeeDashboardLayout({ children }: { children: React.ReactNode }) {
   const [mobileOpen, setMobileOpen] = useState(false);
-  const [userData, setUserData] = useState<{ name: string; role: string }>({ name: "", role: "" });
+  const [userData, setUserData] = useState<{ name: string; role: string; username: string }>({ name: "", role: "", username: "" });
   const pathname = usePathname();
 
   useEffect(() => {
@@ -31,6 +31,7 @@ export default function EmployeeDashboardLayout({ children }: { children: React.
         setUserData({
           name: result.data.profile.full_name,
           role: result.data.job_title ?? result.data.profile.role,
+          username: result.data.profile.username,
         });
       }
     }
@@ -93,7 +94,7 @@ export default function EmployeeDashboardLayout({ children }: { children: React.
         {/* Bottom actions */}
         <div className="px-3 py-4 border-t space-y-0.5" style={{ borderColor: "rgba(6,78,59,0.08)" }}>
           <a
-            href={`/${"you"}`}
+            href={`/${userData.username || "you"}`}
             target="_blank"
             rel="noopener noreferrer"
             className="flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm text-ink-light hover:text-emerald-deep hover:bg-emerald-pale transition-all duration-150"
@@ -151,7 +152,7 @@ export default function EmployeeDashboardLayout({ children }: { children: React.
               })}
               <div className="pt-2 border-t" style={{ borderColor: "rgba(6,78,59,0.08)" }}>
                 <a
-                  href={`/${"you"}`}
+                  href={`/${userData.username || "you"}`}
                   target="_blank"
                   rel="noopener noreferrer"
                   className="flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm text-ink-light"
