@@ -58,22 +58,25 @@ export async function getPublicCard(
 
   if (!card) return null;
 
-  // 2. Fetch profile separately
-  const { data: profile } = await supabase
-    .from("profiles")
-    .select("id, username, full_name, email, avatar_url, role")
-    .eq("id", card.profile_id)
-    .single();
+  // 2. Fetch profile + company associations in parallel
+  const [profileResult, pcResult] = await Promise.all([
+    supabase
+      .from("profiles")
+      .select("id, username, full_name, email, avatar_url, role")
+      .eq("id", card.profile_id)
+      .single(),
+    supabase
+      .from("profile_companies")
+      .select("is_primary, job_title, company_id")
+      .eq("profile_id", card.profile_id),
+  ]);
 
+  const profile = profileResult.data;
   if (!profile) return null;
 
-  // 3. Fetch company associations
-  const { data: profileCompanies } = await supabase
-    .from("profile_companies")
-    .select("is_primary, job_title, company_id")
-    .eq("profile_id", card.profile_id);
+  const profileCompanies = pcResult.data;
 
-  // 4. Fetch companies in a separate query
+  // 3. Fetch companies (if any profile-company links exist)
   let allCompanies: PublicCard["all_companies"] = [];
   let primaryCompany: PublicCard["primary_company"] = null;
   let primaryJobTitle: string | null = null;

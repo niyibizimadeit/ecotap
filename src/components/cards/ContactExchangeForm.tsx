@@ -4,6 +4,7 @@ import { useState } from "react";
 import { Input } from "@/components/ui/Input";
 import { Button } from "@/components/ui/Button";
 import { CheckCircle2, ArrowRight } from "lucide-react";
+import { submitContactExchange } from "@/app/actions/contacts.actions";
 
 interface ContactExchangeFormProps {
   cardId: string;
@@ -25,8 +26,12 @@ export function ContactExchangeForm({ cardId, accentColor, ownerName }: ContactE
     e.preventDefault();
     if (!form.name.trim()) return;
     setLoading(true);
-    // Wired to real action in Phase 12
-    await new Promise((r) => setTimeout(r, 900));
+    await submitContactExchange({
+      card_id:       cardId,
+      visitor_name:  form.name,
+      visitor_email: form.email || undefined,
+      visitor_phone: form.phone || undefined,
+    });
     setLoading(false);
     setSubmitted(true);
   }
