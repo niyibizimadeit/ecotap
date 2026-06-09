@@ -10,19 +10,19 @@ import { Save, Upload } from "lucide-react";
 import type { SocialLinks } from "@/types";
 
 const MOCK_PROFILE = {
-  full_name:   "Prince Niyibizi",
+  full_name:   "Ntwali Frankie",
   job_title:   "Founder & CEO",
-  company:     "AZ Soft Solutions",
+  company:     "RDMC Ltd",
   phone:       "+250 788 123 456",
-  email:       "prince@azsoftsolutions.com",
-  bio:         "Founder & software engineer building tech for Rwanda. Co-founder of AZ Soft Solutions and creator of GiraXpress.",
+  email:       "ntwali@rdmc.rw",
+  bio:         "Founder & engineer building tech for Rwanda. Co-founder of RDMC Ltd and creator of GiraXpress.",
   accent_color: "#064E3B",
   social_links: {
-    linkedin:  "https://linkedin.com/in/prince-niyibizi",
-    twitter:   "https://x.com/princeniyibizi",
+    linkedin:  "https://linkedin.com/in/ntwali-frankie",
+    twitter:   "https://x.com/ntwalifrankie",
     whatsapp:  "+250788123456",
     instagram: "",
-    website:   "https://azsoftsolutions.com",
+    website:   "https://rdmc.rw",
   } as SocialLinks,
 };
 

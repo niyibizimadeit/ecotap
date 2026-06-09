@@ -40,6 +40,7 @@ export async function signUp(formData: FormData): Promise<ActionResult> {
   const password = formData.get("password") as string;
   const fullName = formData.get("full_name") as string;
   const username = formData.get("username") as string;
+  const phone    = (formData.get("phone") as string) || undefined;
   const role     = (formData.get("role") as string) ?? "individual";
 
   if (!email || !password || !fullName || !username) {
@@ -48,7 +49,7 @@ export async function signUp(formData: FormData): Promise<ActionResult> {
 
   const supabase = await getSupabaseServerAction();
 
-  const { error } = await supabase.auth.signUp({
+  const { data, error } = await supabase.auth.signUp({
     email,
     password,
     options: {
@@ -57,12 +58,18 @@ export async function signUp(formData: FormData): Promise<ActionResult> {
         full_name: fullName,
         username:  username,
         role:      role,
+        ...(phone ? { phone } : {}),
       },
     },
   });
 
   if (error) {
     return { success: false, error: error.message };
+  }
+
+  // Detect duplicate email — Supabase returns empty identities for existing users
+  if (data.user?.identities?.length === 0) {
+    return { success: false, error: "An account with this email already exists. Please sign in instead." };
   }
 
   return { success: true };
@@ -78,6 +85,7 @@ export async function signUpOrg(formData: FormData): Promise<ActionResult> {
   const adminName     = formData.get("admin_name") as string;
   const email         = formData.get("email") as string;
   const password      = formData.get("password") as string;
+  const phone         = (formData.get("phone") as string) || undefined;
   const legalConfirmed = formData.get("legal_rep_confirmed") === "on";
 
   if (!companyName || !adminName || !email || !password) {
@@ -104,12 +112,22 @@ export async function signUpOrg(formData: FormData): Promise<ActionResult> {
         size,
         website,
         legal_rep_confirmed: true,
+        ...(phone ? { phone } : {}),
       },
     },
   });
 
-  if (authError || !authData.user) {
-    return { success: false, error: authError?.message ?? "Registration failed." };
+  if (authError) {
+    return { success: false, error: authError.message };
+  }
+
+  if (!authData.user) {
+    return { success: false, error: "Registration failed." };
+  }
+
+  // Detect duplicate email
+  if (authData.user.identities?.length === 0) {
+    return { success: false, error: "An account with this email already exists. Please sign in instead." };
   }
 
   // 2. The DB trigger creates the profiles row.

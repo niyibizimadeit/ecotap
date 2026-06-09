@@ -19,7 +19,7 @@ interface AdminUser {
 }
 
 const MOCK_USERS: AdminUser[] = [
-  { id:"1",  name:"Prince Niyibizi",      email:"prince@azsoftsolutions.com", role:"individual",    status:"active",    company:null,            joined:"Jan 2026", slug:"prince-niyibizi"       },
+  { id:"1",  name:"Ntwali Frankie",      email:"ntwali@rdmc.rw", role:"individual",    status:"active",    company:null,            joined:"Jan 2026", slug:"ntwali-frankie"       },
   { id:"2",  name:"Amara Uwimana",         email:"amara@rdmc.rw",              role:"company_admin", status:"active",    company:"RDMC Ltd",       joined:"Jan 2026", slug:"amara-uwimana"         },
   { id:"3",  name:"Eric Hakizimana",       email:"eric@rdmc.rw",               role:"employee",      status:"active",    company:"RDMC Ltd",       joined:"Jan 2026", slug:"eric-hakizimana"       },
   { id:"4",  name:"Grace Uwase",           email:"grace@rdmc.rw",              role:"employee",      status:"active",    company:"RDMC Ltd",       joined:"Feb 2026", slug:"grace-uwase"           },

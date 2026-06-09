@@ -18,9 +18,9 @@ const NAV = [
 ];
 
 const MOCK_USER = {
-  name:     "Prince Niyibizi",
+  name:     "Ntwali Frankie",
   role:     "Founder & CEO",
-  username: "prince-niyibizi",
+  username: "ntwali-frankie",
   company:  null as string | null,
 };
 

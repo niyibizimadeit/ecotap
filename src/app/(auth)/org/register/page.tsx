@@ -110,6 +110,7 @@ export default function OrgRegisterPage() {
               formData.append("admin_name", step2Data.admin_name);
               formData.append("email", step2Data.email);
               formData.append("password", step2Data.password);
+              if (step2Data.phone) formData.append("phone", step2Data.phone);
               formData.append("legal_rep_confirmed", legalConfirmed ? "on" : "off");
 
               const result = await signUpOrg(formData);
@@ -166,7 +167,7 @@ function Step1CompanyInfo({
       <Input
         label="Company name"
         required
-        placeholder="e.g., AZ Soft Solutions"
+        placeholder="e.g., RDMC Ltd"
         error={errors.company_name?.message}
         {...register("company_name")}
       />
@@ -192,7 +193,7 @@ function Step1CompanyInfo({
       <Input
         label="Website"
         hint="Optional — your company URL or domain"
-        placeholder="e.g., azsoftsolutions.com"
+        placeholder="e.g., rdmc.rw"
         error={errors.website?.message}
         {...register("website")}
       />
@@ -231,7 +232,7 @@ function Step2AdminAccount({
       <Input
         label="Full name"
         required
-        placeholder="e.g., Prince Niyibizi"
+        placeholder="e.g., Ntwali Frankie"
         error={errors.admin_name?.message}
         {...register("admin_name")}
       />
@@ -240,9 +241,17 @@ function Step2AdminAccount({
         label="Work email"
         required
         type="email"
-        placeholder="prince@azsoftsolutions.com"
+        placeholder="ntwali@rdmc.rw"
         error={errors.email?.message}
         {...register("email")}
+      />
+
+      <Input
+        label="Phone number"
+        placeholder="+250788123456"
+        hint="Optional — your contact number"
+        error={errors.phone?.message}
+        {...register("phone")}
       />
 
       <Input
@@ -252,6 +261,15 @@ function Step2AdminAccount({
         placeholder="At least 8 characters"
         error={errors.password?.message}
         {...register("password")}
+      />
+
+      <Input
+        label="Confirm password"
+        required
+        type="password"
+        placeholder="Re-enter your password"
+        error={errors.confirm_password?.message}
+        {...register("confirm_password")}
       />
 
       <div className="flex gap-3 pt-2">
@@ -310,6 +328,7 @@ function Step3Review({
         </div>
         <ReviewRow label="Name" value={data.admin_name} />
         <ReviewRow label="Email" value={data.email} />
+        <ReviewRow label="Phone" value={data.phone || "—"} />
         <ReviewRow label="Password" value={"•".repeat(12)} />
       </div>
 

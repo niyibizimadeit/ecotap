@@ -157,11 +157,11 @@ export default function ComponentsPage() {
         <section>
           <SectionLabel>Avatars</SectionLabel>
           <div className="flex flex-wrap items-end gap-4">
-            <Avatar name="Prince Niyibizi" size="xs" />
-            <Avatar name="Prince Niyibizi" size="sm" />
-            <Avatar name="Prince Niyibizi" size="md" />
-            <Avatar name="Prince Niyibizi" size="lg" />
-            <Avatar name="Prince Niyibizi" size="xl" />
+            <Avatar name="Ntwali Frankie" size="xs" />
+            <Avatar name="Ntwali Frankie" size="sm" />
+            <Avatar name="Ntwali Frankie" size="md" />
+            <Avatar name="Ntwali Frankie" size="lg" />
+            <Avatar name="Ntwali Frankie" size="xl" />
           </div>
         </section>
 

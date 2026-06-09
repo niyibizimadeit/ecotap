@@ -17,6 +17,14 @@ const fullName = z
   .min(1, "Full name is required")
   .max(100, "Name must be under 100 characters");
 
+const phone = z
+  .string()
+  .optional()
+  .refine(
+    (val) => !val || /^\+?[0-9]{7,15}$/.test(val),
+    { message: "Enter a valid phone number (e.g., +250788123456)" }
+  );
+
 // ── Organisation registration (3 steps) ─────────────────────────────────────────
 
 export const orgRegisterStep1Schema = z.object({
@@ -39,6 +47,11 @@ export const orgRegisterStep2Schema = z.object({
   admin_name: fullName,
   email,
   password,
+  confirm_password: password,
+  phone: phone.optional(),
+}).refine((data) => data.password === data.confirm_password, {
+  message: "Passwords do not match",
+  path: ["confirm_password"],
 });
 
 export const orgRegisterSchema = orgRegisterStep1Schema.merge(orgRegisterStep2Schema);
@@ -58,7 +71,12 @@ export const individualRegisterSchema = z.object({
     .regex(/^[a-z0-9_-]+$/, "Only lowercase letters, numbers, hyphens, and underscores"),
   email,
   password,
+  confirm_password: password,
+  phone: phone.optional(),
   company_name: z.string().optional(),
+}).refine((data) => data.password === data.confirm_password, {
+  message: "Passwords do not match",
+  path: ["confirm_password"],
 });
 
 export type IndividualRegisterData = z.infer<typeof individualRegisterSchema>;

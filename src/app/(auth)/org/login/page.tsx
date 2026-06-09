@@ -63,7 +63,7 @@ export default function OrgLoginPage() {
             label="Work email"
             required
             type="email"
-            placeholder="prince@azsoftsolutions.com"
+            placeholder="ntwali@rdmc.rw"
             error={errors.email?.message}
             {...register("email")}
           />

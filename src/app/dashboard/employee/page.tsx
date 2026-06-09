@@ -29,10 +29,10 @@ export default function EmployeeOverviewPage() {
     <div>
       <PageHeader
         eyebrow="Dashboard"
-        title="Welcome back, Prince"
+        title="Welcome back, Frankie"
         subtitle="Here's how your card is performing."
         action={
-          <Link href={`/prince-niyibizi`} target="_blank">
+          <Link href={`/ntwali-frankie`} target="_blank">
             <Button variant="secondary" size="sm" rightIcon={<ArrowRight className="h-3.5 w-3.5" />}>
               View my card
             </Button>
@@ -49,7 +49,7 @@ export default function EmployeeOverviewPage() {
         <div className="flex-1 min-w-0">
           <p className="text-sm font-medium text-emerald-deep">Your card is active and public</p>
           <p className="text-xs text-ink-light">
-            ecotap.rw/prince-niyibizi · NFC card delivered
+            ecotap.rw/ntwali-frankie · NFC card delivered
           </p>
         </div>
         <Badge variant="active">Active</Badge>

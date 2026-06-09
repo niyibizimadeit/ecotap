@@ -18,7 +18,7 @@ const PENDING_APPROVALS = [
 ];
 
 const RECENT_ORDERS = [
-  { user: "Prince Niyibizi",  design: "Classic Emerald", qty: 50, status: "pending"  as const, time: "1 hour ago"  },
+  { user: "Ntwali Frankie",  design: "Classic Emerald", qty: 50, status: "pending"  as const, time: "1 hour ago"  },
   { user: "Amara Uwimana",    design: "Midnight Dark",   qty: 10, status: "approved" as const, time: "3 hours ago" },
 ];
 

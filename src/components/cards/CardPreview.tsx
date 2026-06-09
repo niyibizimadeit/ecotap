@@ -133,7 +133,7 @@ export function CardPreview({
       {/* URL badge */}
       <div className="text-center mt-4">
         <span className="text-xs font-mono text-ink-light">
-          ecotap.rw/<span style={{ color: "#059669" }}>prince-niyibizi</span>
+          ecotap.rw/<span style={{ color: "#059669" }}>ntwali-frankie</span>
         </span>
       </div>
     </div>

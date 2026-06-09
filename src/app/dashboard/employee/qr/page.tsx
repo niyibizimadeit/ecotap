@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/Button";
 import { Download, ExternalLink, Copy, CheckCircle2 } from "lucide-react";
 import { useState } from "react";
 
-const CARD_URL = "https://ecotap.rw/prince-niyibizi";
+const CARD_URL = "https://ecotap.rw/ntwali-frankie";
 
 /* Simple QR code rendered as SVG using a basic matrix pattern for mock purposes.
    Phase 13 wires qrcode.react for real generation. */

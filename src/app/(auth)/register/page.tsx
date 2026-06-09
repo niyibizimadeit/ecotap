@@ -32,6 +32,7 @@ export default function IndividualRegisterPage() {
     formData.append("full_name", data.full_name);
     formData.append("username", data.username);
     formData.append("role", "individual");
+    if (data.phone) formData.append("phone", data.phone);
     if (data.company_name) {
       formData.append("company_name", data.company_name);
     }
@@ -70,7 +71,7 @@ export default function IndividualRegisterPage() {
           <Input
             label="Full name"
             required
-            placeholder="e.g., Prince Niyibizi"
+            placeholder="e.g., Ntwali Frankie"
             error={errors.full_name?.message}
             {...register("full_name")}
           />
@@ -78,8 +79,8 @@ export default function IndividualRegisterPage() {
           <Input
             label="Username"
             required
-            placeholder="prince"
-            hint="This becomes your card URL: ecotap.rw/prince"
+            placeholder="ntwali-frankie"
+            hint="This becomes your card URL: ecotap.rw/ntwali-frankie"
             leftElement={<span className="text-ink-light text-sm">@</span>}
             error={errors.username?.message}
             {...register("username")}
@@ -89,9 +90,17 @@ export default function IndividualRegisterPage() {
             label="Email"
             required
             type="email"
-            placeholder="prince@example.com"
+            placeholder="ntwali@example.com"
             error={errors.email?.message}
             {...register("email")}
+          />
+
+          <Input
+            label="Phone number"
+            placeholder="+250788123456"
+            hint="Optional — your WhatsApp or mobile number"
+            error={errors.phone?.message}
+            {...register("phone")}
           />
 
           <Input
@@ -101,6 +110,15 @@ export default function IndividualRegisterPage() {
             placeholder="At least 8 characters"
             error={errors.password?.message}
             {...register("password")}
+          />
+
+          <Input
+            label="Confirm password"
+            required
+            type="password"
+            placeholder="Re-enter your password"
+            error={errors.confirm_password?.message}
+            {...register("confirm_password")}
           />
 
           <Input

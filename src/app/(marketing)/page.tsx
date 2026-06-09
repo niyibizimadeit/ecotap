@@ -369,7 +369,7 @@ function CardShowcase() {
                   <span className="text-xs font-mono text-ink-light">12 active</span>
                 </div>
                 {[
-                  { name: "Prince Niyibizi",  role: "CEO",        status: "active" },
+                  { name: "Ntwali Frankie",  role: "CEO",        status: "active" },
                   { name: "Amara Uwimana",    role: "Designer",   status: "active" },
                   { name: "Eric Hakizimana",  role: "Dev Lead",   status: "pending" },
                 ].map((emp) => (

@@ -66,12 +66,12 @@ export function Footer() {
           <p className="text-xs text-ivory/40">
             Built by{" "}
             <a
-              href="https://azsoftsolutions.com"
+              href="https://rdmc.rw"
               target="_blank"
               rel="noopener noreferrer"
               className="text-emerald-light hover:text-ivory transition-colors"
             >
-              AZ Soft Solutions
+              RDMC Ltd
             </a>
           </p>
         </div>

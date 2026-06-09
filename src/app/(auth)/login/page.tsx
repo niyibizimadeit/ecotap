@@ -58,7 +58,7 @@ export default function IndividualLoginPage() {
             label="Email"
             required
             type="email"
-            placeholder="prince@example.com"
+            placeholder="ntwali@example.com"
             error={errors.email?.message}
             {...register("email")}
           />
