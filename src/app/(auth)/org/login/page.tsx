@@ -1,18 +1,19 @@
 "use client";
 
+import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
-import { ArrowRight, Building2 } from "lucide-react";
+import { ArrowRight, Building2, AlertCircle } from "lucide-react";
 
 import { AuthLayout } from "@/components/auth/AuthLayout";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
 import { loginSchema, type LoginData } from "@/lib/validations/auth";
+import { signIn } from "@/app/actions/auth.actions";
 
 export default function OrgLoginPage() {
-  const router = useRouter();
+  const [serverError, setServerError] = useState<string | null>(null);
   const {
     register,
     handleSubmit,
@@ -22,9 +23,17 @@ export default function OrgLoginPage() {
   });
 
   async function onSubmit(data: LoginData) {
-    // TODO Phase 11: Wire to Supabase Auth
-    await new Promise((r) => setTimeout(r, 800));
-    router.push("/dashboard/company");
+    setServerError(null);
+    const formData = new FormData();
+    formData.append("email", data.email);
+    formData.append("password", data.password);
+    formData.append("redirect", "/dashboard/company");
+
+    const result = await signIn(formData);
+    // Only reaches here on error — success triggers a server-side redirect
+    if (result && !result.success) {
+      setServerError(result.error ?? "Sign in failed. Please try again.");
+    }
   }
 
   return (
@@ -43,6 +52,13 @@ export default function OrgLoginPage() {
         </div>
 
         <form onSubmit={handleSubmit(onSubmit)} className="space-y-5">
+          {serverError && (
+            <div className="flex items-start gap-2.5 bg-red-50 border border-red-200 rounded-xl p-3">
+              <AlertCircle className="h-4 w-4 text-red-500 flex-shrink-0 mt-0.5" />
+              <p className="text-sm text-red-700">{serverError}</p>
+            </div>
+          )}
+
           <Input
             label="Work email"
             required

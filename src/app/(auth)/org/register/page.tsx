@@ -5,7 +5,7 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { ArrowRight, ArrowLeft, Building2, User, CheckCircle } from "lucide-react";
+import { ArrowRight, ArrowLeft, Building2, User, CheckCircle, AlertCircle } from "lucide-react";
 
 import { AuthLayout } from "@/components/auth/AuthLayout";
 import { Button } from "@/components/ui/Button";
@@ -18,6 +18,7 @@ import {
   type OrgRegisterStep2Data,
 } from "@/lib/validations/auth";
 import { COMPANY_SIZES, INDUSTRIES } from "@/constants";
+import { signUpOrg } from "@/app/actions/auth.actions";
 
 const STEPS = [
   { label: "Company info", icon: Building2 },
@@ -30,6 +31,7 @@ export default function OrgRegisterPage() {
   const [step1Data, setStep1Data] = useState<OrgRegisterStep1Data | null>(null);
   const [step2Data, setStep2Data] = useState<OrgRegisterStep2Data | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [serverError, setServerError] = useState<string | null>(null);
   const router = useRouter();
 
   return (
@@ -93,14 +95,30 @@ export default function OrgRegisterPage() {
         {step === 3 && step1Data && step2Data && (
           <Step3Review
             data={{ ...step1Data, ...step2Data }}
-            onBack={() => setStep(2)}
+            onBack={() => { setStep(2); setServerError(null); }}
             isSubmitting={isSubmitting}
-            onSubmit={async () => {
+            serverError={serverError}
+            onSubmit={async (legalConfirmed: boolean) => {
               setIsSubmitting(true);
-              // TODO Phase 11: Wire to Supabase Auth + onboarding service
-              await new Promise((r) => setTimeout(r, 1200));
-              setIsSubmitting(false);
-              router.push("/pending");
+              setServerError(null);
+
+              const formData = new FormData();
+              formData.append("company_name", step1Data.company_name);
+              formData.append("industry", step1Data.industry);
+              formData.append("size", step1Data.size);
+              if (step1Data.website) formData.append("website", step1Data.website);
+              formData.append("admin_name", step2Data.admin_name);
+              formData.append("email", step2Data.email);
+              formData.append("password", step2Data.password);
+              formData.append("legal_rep_confirmed", legalConfirmed ? "on" : "off");
+
+              const result = await signUpOrg(formData);
+              if (!result.success) {
+                setServerError(result.error ?? "Registration failed. Please try again.");
+                setIsSubmitting(false);
+              } else {
+                router.push("/pending");
+              }
             }}
           />
         )}
@@ -254,13 +272,17 @@ function Step3Review({
   data,
   onBack,
   isSubmitting,
+  serverError,
   onSubmit,
 }: {
   data: OrgRegisterStep1Data & OrgRegisterStep2Data;
   onBack: () => void;
   isSubmitting: boolean;
-  onSubmit: () => void;
+  serverError: string | null;
+  onSubmit: (legalConfirmed: boolean) => void;
 }) {
+  const [legalConfirmed, setLegalConfirmed] = useState(false);
+
   return (
     <div className="space-y-5">
       <div>
@@ -291,11 +313,34 @@ function Step3Review({
         <ReviewRow label="Password" value={"•".repeat(12)} />
       </div>
 
+      {/* Legal rep confirmation */}
+      <div className="bg-cream border border-cream-dark rounded-2xl p-4">
+        <label className="flex items-start gap-3 cursor-pointer">
+          <input
+            type="checkbox"
+            checked={legalConfirmed}
+            onChange={(e) => setLegalConfirmed(e.target.checked)}
+            className="mt-0.5 h-4 w-4 rounded border-cream-dark text-emerald-bright focus:ring-emerald-mid cursor-pointer"
+          />
+          <span className="text-sm text-ink-light leading-relaxed">
+            I confirm that I am the legal representative of{" "}
+            <strong className="text-ink">{data.company_name}</strong> and have the authority to register this organisation on EcoTap.
+          </span>
+        </label>
+      </div>
+
       <div className="bg-gold-pale border border-gold/20 rounded-2xl p-4">
         <p className="text-xs text-gold leading-relaxed">
           Your account will be reviewed within 24 hours. Once approved, you can access the company dashboard, add employees, and order cards.
         </p>
       </div>
+
+      {serverError && (
+        <div className="flex items-start gap-2.5 bg-red-50 border border-red-200 rounded-xl p-3">
+          <AlertCircle className="h-4 w-4 text-red-500 flex-shrink-0 mt-0.5" />
+          <p className="text-sm text-red-700">{serverError}</p>
+        </div>
+      )}
 
       <div className="flex gap-3 pt-2">
         <Button type="button" variant="secondary" size="lg" onClick={onBack} leftIcon={<ArrowLeft className="h-4 w-4" />}>
@@ -307,7 +352,8 @@ function Step3Review({
           size="lg"
           className="flex-1"
           loading={isSubmitting}
-          onClick={onSubmit}
+          disabled={!legalConfirmed}
+          onClick={() => onSubmit(legalConfirmed)}
           rightIcon={<CheckCircle className="h-4 w-4" />}
         >
           Submit registration

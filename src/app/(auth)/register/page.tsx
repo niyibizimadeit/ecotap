@@ -1,18 +1,21 @@
 "use client";
 
+import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { ArrowRight, User } from "lucide-react";
+import { ArrowRight, User, AlertCircle } from "lucide-react";
 
 import { AuthLayout } from "@/components/auth/AuthLayout";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
 import { individualRegisterSchema, type IndividualRegisterData } from "@/lib/validations/auth";
+import { signUp } from "@/app/actions/auth.actions";
 
 export default function IndividualRegisterPage() {
   const router = useRouter();
+  const [serverError, setServerError] = useState<string | null>(null);
   const {
     register,
     handleSubmit,
@@ -22,9 +25,23 @@ export default function IndividualRegisterPage() {
   });
 
   async function onSubmit(data: IndividualRegisterData) {
-    // TODO Phase 11: Wire to Supabase Auth + onboarding service
-    await new Promise((r) => setTimeout(r, 800));
-    router.push("/pending");
+    setServerError(null);
+    const formData = new FormData();
+    formData.append("email", data.email);
+    formData.append("password", data.password);
+    formData.append("full_name", data.full_name);
+    formData.append("username", data.username);
+    formData.append("role", "individual");
+    if (data.company_name) {
+      formData.append("company_name", data.company_name);
+    }
+
+    const result = await signUp(formData);
+    if (!result.success) {
+      setServerError(result.error ?? "Registration failed. Please try again.");
+    } else {
+      router.push("/pending");
+    }
   }
 
   return (
@@ -43,6 +60,13 @@ export default function IndividualRegisterPage() {
         </div>
 
         <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
+          {serverError && (
+            <div className="flex items-start gap-2.5 bg-red-50 border border-red-200 rounded-xl p-3">
+              <AlertCircle className="h-4 w-4 text-red-500 flex-shrink-0 mt-0.5" />
+              <p className="text-sm text-red-700">{serverError}</p>
+            </div>
+          )}
+
           <Input
             label="Full name"
             required
