@@ -64,7 +64,7 @@ export async function updateMyCard(
     const companyName = data.company.trim();
     const serviceClient = getServiceSupabase();
 
-    // Find or create the company
+    // Find or create the company (status: pending — requires admin approval)
     let companyId: string;
     const { data: existing } = await serviceClient
       .from("companies")
@@ -75,10 +75,14 @@ export async function updateMyCard(
     if (existing) {
       companyId = existing.id;
     } else {
-      const slug = companyName.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/(^-|-$)/g, "");
+      const slug = companyName
+        .toLowerCase()
+        .replace(/[^a-z0-9]+/g, "-")
+        .replace(/(-+)/g, "-")       // collapse consecutive hyphens
+        .replace(/(^-|-$)/g, "");
       const { data: created } = await serviceClient
         .from("companies")
-        .insert({ name: companyName, slug, status: "active" })
+        .insert({ name: companyName, slug, status: "pending" })  // MUST be pending — admin must approve
         .select("id")
         .single();
       if (!created) return { success: false, error: "Failed to create company." };

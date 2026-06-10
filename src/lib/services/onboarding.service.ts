@@ -143,6 +143,13 @@ export async function rejectUser(
 
   if (!profile) return { success: false, error: "Profile not found." };
 
+  if (!canTransition(profile.status, "suspended")) {
+    return {
+      success: false,
+      error: `Cannot reject a user that is already ${profile.status}.`,
+    };
+  }
+
   const updated = await profilesRepo.updateProfileStatus(profileId, "suspended");
   if (!updated) return { success: false, error: "Failed to reject user." };
 
@@ -155,8 +162,12 @@ export async function suspendUser(
   const profile = await profilesRepo.getProfileById(profileId);
 
   if (!profile) return { success: false, error: "Profile not found." };
-  if (profile.status === "suspended") {
-    return { success: false, error: "User is already suspended." };
+
+  if (!canTransition(profile.status, "suspended")) {
+    return {
+      success: false,
+      error: `Cannot suspend a user that is already ${profile.status}.`,
+    };
   }
 
   const updated = await profilesRepo.updateProfileStatus(profileId, "suspended");

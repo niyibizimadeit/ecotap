@@ -72,7 +72,7 @@ export async function getEventCountByType(
   const supabase = await getSupabase();
   let query = supabase
     .from("card_events")
-    .select("event_type, count")
+    .select("event_type")
     .eq("card_id", cardId);
 
   if (since) query = query.gte("created_at", since);
@@ -80,7 +80,8 @@ export async function getEventCountByType(
   const { data } = await query;
   const counts: Record<string, number> = {};
   for (const row of data ?? []) {
-    counts[row.event_type] = Number(row.count);
+    const type = row.event_type;
+    counts[type] = (counts[type] ?? 0) + 1;
   }
   return counts;
 }
@@ -353,7 +354,12 @@ export async function createEnvironmentalReport(report: {
         cumulative_co2_grams: report.cumulative_co2_grams,
         cumulative_cards:     report.cumulative_cards,
       },
-      { onConflict: "company_id,report_month" }
+      {
+        onConflict: "company_id,report_month",
+        // Preserve cumulative totals from existing row on conflict — they must be
+        // re-computed by the caller, not blindly overwritten on re-run.
+        ignoreDuplicates: false,
+      }
     )
     .select()
     .single();

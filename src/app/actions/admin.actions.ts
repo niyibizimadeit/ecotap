@@ -178,14 +178,6 @@ export async function fetchDesigns(): Promise<AnyActionResult> {
   return getAllDesignsAdmin();
 }
 
-export async function deletePlanAction(id: string): Promise<AnyActionResult> {
-  if (!(await requireSuperAdmin())) {
-    return { success: false, error: "Unauthorized." };
-  }
-  const { deletePlan } = await import("@/lib/services/admin.service");
-  return deletePlan(id);
-}
-
 // ── Company settings ────────────────────────────────────────────────────────
 
 export async function updateCompany(

@@ -12,7 +12,7 @@ export function generateVcf(card: PublicCard): string {
     "BEGIN:VCARD",
     "VERSION:3.0",
     `FN:${profile.full_name}`,
-    `N:${profile.full_name.split(" ").slice(1).join(" ")};${profile.full_name.split(" ")[0]};;;`,
+    `N:${profile.full_name.split(" ").pop()};${profile.full_name.split(" ").slice(0, -1).join(" ")};;;`,
   ];
 
   if (job_title) lines.push(`TITLE:${job_title}`);
@@ -31,10 +31,10 @@ export function generateVcf(card: PublicCard): string {
   }
 
   // Card URL
-  const slug = card.slug;
+  const siteUrl = process.env.NEXT_PUBLIC_SITE_URL ?? "https://ecotap.rw";
   const cardUrl = company
-    ? `https://ecotap.rw/${company.slug}/${profile.username}`
-    : `https://ecotap.rw/${profile.username}`;
+    ? `${siteUrl}/${company.slug}/${profile.username}`
+    : `${siteUrl}/${profile.username}`;
   lines.push(`URL;type=EcoTap:${cardUrl}`);
 
   lines.push(`REV:${new Date().toISOString()}`);

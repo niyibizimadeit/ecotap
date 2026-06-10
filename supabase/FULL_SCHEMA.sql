@@ -784,14 +784,23 @@ language plpgsql
 security definer
 set search_path = public
 as $$
+declare
+  _role text;
 begin
+  -- Sanitize role: only allow user-facing roles from signup metadata.
+  -- super_admin and country_rep must be set manually by an existing super_admin.
+  _role := coalesce(new.raw_user_meta_data->>'role', 'individual');
+  if _role not in ('individual', 'employee', 'company_admin') then
+    _role := 'individual';
+  end if;
+
   insert into profiles (id, email, full_name, username, role, status)
   values (
     new.id,
     new.email,
     coalesce(new.raw_user_meta_data->>'full_name', 'Unknown'),
     coalesce(new.raw_user_meta_data->>'username',  new.id::text),
-    coalesce(new.raw_user_meta_data->>'role',      'individual')::user_role,
+    _role::user_role,
     'pending'  -- All new users start as pending
   );
   return new;
@@ -872,6 +881,87 @@ $$;
 create trigger on_profile_activated
   after update of status on profiles
   for each row execute function handle_profile_activated();
+
+-- ----------------------------------------------------------
+-- Function: create company when a company_admin is activated
+-- Reads company metadata from auth.users raw_user_meta_data
+-- and creates the company + subscription automatically.
+-- ----------------------------------------------------------
+create or replace function handle_company_admin_activated()
+returns trigger
+language plpgsql
+security definer
+set search_path = public
+as $$
+declare
+  _meta        jsonb;
+  _company_name text;
+  _slug        text;
+  _industry    text;
+  _size        text;
+  _website     text;
+  _company_id  uuid;
+begin
+  -- Only fire for company_admin role becoming active
+  if new.role != 'company_admin' then
+    return new;
+  end if;
+  if old.status != 'active' and new.status = 'active' then
+    -- Read company metadata from auth.users
+    select raw_user_meta_data into _meta
+    from auth.users
+    where id = new.id;
+
+    _company_name := _meta->>'company_name';
+    if _company_name is null or _company_name = '' then
+      return new;  -- No company data stored; skip
+    end if;
+
+    -- Generate slug from company name
+    _slug := lower(regexp_replace(_company_name, '[^a-zA-Z0-9]+', '-', 'g'));
+    _slug := regexp_replace(_slug, '(^-|-$)', '', 'g');
+    _slug := coalesce(nullif(_slug, ''), 'company-' || replace(new.id::text, '-', ''));
+
+    _industry := _meta->>'industry';
+    _size     := _meta->>'size';
+    _website  := _meta->>'website';
+
+    -- Create the company if it doesn't already exist (by name)
+    insert into companies (name, slug, industry, size, website, status, legal_rep_confirmed)
+    values (
+      _company_name, _slug,
+      nullif(_industry, ''),
+      nullif(_size, ''),
+      nullif(_website, ''),
+      'active',  -- Auto-approved since admin already approved the profile
+      coalesce((_meta->>'legal_rep_confirmed')::boolean, false)
+    )
+    on conflict (slug) do update
+      set status = 'active'
+      where companies.status = 'pending'
+    returning id into _company_id;
+
+    -- Link the admin to the company as primary
+    if _company_id is not null then
+      insert into profile_companies (profile_id, company_id, is_primary)
+      values (new.id, _company_id, true)
+      on conflict (profile_id, company_id) do nothing;
+
+      -- Create default subscription (monthly standard plan)
+      insert into company_subscriptions (company_id, plan_id, status)
+      select _company_id, id, 'active'
+      from billing_plans
+      where name = 'Monthly Standard' and is_active = true
+      limit 1;
+    end if;
+  end if;
+  return new;
+end;
+$$;
+
+create trigger on_company_admin_activated
+  after update of status on profiles
+  for each row execute function handle_company_admin_activated();
 
 -- ----------------------------------------------------------
 -- Function: expire invitations past their expiry date

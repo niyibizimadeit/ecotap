@@ -1,6 +1,7 @@
 // ─────────────────────────────────────────────────────────────────────────────
 // Next.js middleware — session refresh + role-based route protection.
 // Runs on every matched request before the page/API handler.
+// NOTE: This file must be at src/middleware.ts for Next.js to execute it.
 // ─────────────────────────────────────────────────────────────────────────────
 
 import { createServerClient } from "@supabase/ssr";
@@ -52,9 +53,9 @@ function isAccessAllowed(pathname: string, role: UserRole): boolean {
   return true;
 }
 
-// ── Proxy (Next.js 16 replacement for middleware) ────────────────────────────
+// ── Middleware — session refresh + role-based route protection ───────────────
 
-export default async function proxy(request: NextRequest) {
+export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
   // Skip middleware for public and static paths
@@ -73,7 +74,7 @@ export default async function proxy(request: NextRequest) {
           return request.cookies.getAll();
         },
         setAll(cookiesToSet) {
-          for (const { name, value } of cookiesToSet) {
+          for (const { name, value, options } of cookiesToSet) {
             request.cookies.set(name, value);
           }
           supabaseResponse = NextResponse.next({ request });

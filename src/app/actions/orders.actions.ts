@@ -1,8 +1,8 @@
 "use server";
 
-import { getSupabase } from "@/lib/supabase/server";
+import { getSupabase, getServiceSupabase } from "@/lib/supabase/server";
 import * as ordersService from "@/lib/services/orders.service";
-import type { ActionResult, CardOrder, OrderForm } from "@/types";
+import type { ActionResult, CardOrder, CardDesign, OrderForm } from "@/types";
 
 // ── Guard ────────────────────────────────────────────────────────────────────
 
@@ -28,4 +28,22 @@ export async function getMyOrders(): Promise<ActionResult<CardOrder[]>> {
   const profileId = await getCurrentProfileId();
   if (!profileId) return { success: false, error: "Not authenticated." };
   return ordersService.getUserOrders(profileId);
+}
+
+// ── Active card designs (public) ─────────────────────────────────────────────
+
+/**
+ * Returns all active card designs. Used by the order flow to populate the
+ * design gallery. No auth required — designs are public.
+ */
+export async function getActiveDesigns(): Promise<ActionResult<CardDesign[]>> {
+  const supabase = getServiceSupabase();
+  const { data, error } = await supabase
+    .from("card_designs")
+    .select("*")
+    .eq("is_active", true)
+    .order("name");
+
+  if (error) return { success: false, error: error.message };
+  return { success: true, data: data ?? [] };
 }

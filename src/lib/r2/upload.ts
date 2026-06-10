@@ -2,11 +2,19 @@ import { S3Client, PutObjectCommand, DeleteObjectCommand } from "@aws-sdk/client
 
 // ── R2 Client (S3-compatible) ─────────────────────────────────────────────
 
-const R2_ENDPOINT = process.env.R2_ENDPOINT!;
-const R2_ACCESS_KEY_ID = process.env.R2_ACCESS_KEY_ID!;
-const R2_SECRET_ACCESS_KEY = process.env.R2_SECRET_ACCESS_KEY!;
-const R2_BUCKET_NAME = process.env.R2_BUCKET_NAME!;
-const R2_PUBLIC_URL = process.env.R2_PUBLIC_URL!;
+function requireEnv(key: string): string {
+  const value = process.env[key];
+  if (!value) {
+    throw new Error(`Missing required environment variable: ${key}. Image uploads are disabled.`);
+  }
+  return value;
+}
+
+const R2_ENDPOINT = requireEnv("R2_ENDPOINT");
+const R2_ACCESS_KEY_ID = requireEnv("R2_ACCESS_KEY_ID");
+const R2_SECRET_ACCESS_KEY = requireEnv("R2_SECRET_ACCESS_KEY");
+const R2_BUCKET_NAME = requireEnv("R2_BUCKET_NAME");
+const R2_PUBLIC_URL = requireEnv("R2_PUBLIC_URL");
 
 function getClient(): S3Client {
   return new S3Client({
@@ -19,12 +27,11 @@ function getClient(): S3Client {
   });
 }
 
-/** Generate a unique key for uploaded files */
+/** Generate a unique key for uploaded files using crypto for collision resistance */
 function generateKey(prefix: string, filename: string): string {
   const ext = filename.split(".").pop() ?? "png";
-  const timestamp = Date.now();
-  const random = Math.random().toString(36).slice(2, 8);
-  return `${prefix}/${timestamp}-${random}.${ext}`;
+  const uuid = crypto.randomUUID();
+  return `${prefix}/${uuid}.${ext}`;
 }
 
 // ── Upload ────────────────────────────────────────────────────────────────

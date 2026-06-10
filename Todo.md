@@ -340,7 +340,7 @@
 - [ ] Run `supabase db push` against the production Supabase project
 - [ ] Seed production: super admin account, two card designs, two billing plans
 - [ ] Set Supabase Auth site URL to `https://ecotap.rw` and whitelist redirect URLs
-- [ ] Delete dev-only routes: `/dev/components`, `/api/test`
+- [x] Delete dev-only routes: `/api/test` (deleted; `/dev/components` kept as design system sandbox)
 - [ ] Full end-to-end QA:
   - [ ] Register company → pending page → super admin approves → company admin accesses dashboard → creates employee card → employee edits profile → visitor taps → saves contact
   - [ ] Register individual → pending → approve → edit card → visitor taps → saves `.vcf`

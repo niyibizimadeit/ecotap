@@ -16,6 +16,7 @@ export function ContactExchangeForm({ cardId, accentColor, ownerName }: ContactE
   const [form, setForm]       = useState({ name: "", email: "", phone: "" });
   const [submitted, setSubmitted] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [error, setError]     = useState<string | null>(null);
   const [open, setOpen]       = useState(false);
 
   const set = (field: keyof typeof form) =>
@@ -26,14 +27,19 @@ export function ContactExchangeForm({ cardId, accentColor, ownerName }: ContactE
     e.preventDefault();
     if (!form.name.trim() || !form.phone.trim()) return;
     setLoading(true);
-    await submitContactExchange({
+    setError(null);
+    const result = await submitContactExchange({
       card_id:       cardId,
       visitor_name:  form.name,
       visitor_phone: form.phone,
       visitor_email: form.email || undefined,
     });
     setLoading(false);
-    setSubmitted(true);
+    if (result.success) {
+      setSubmitted(true);
+    } else {
+      setError(result.error ?? "Something went wrong. Please try again.");
+    }
   }
 
   if (submitted) {
@@ -65,6 +71,7 @@ export function ContactExchangeForm({ cardId, accentColor, ownerName }: ContactE
       <button
         className="w-full flex items-center justify-between px-5 py-4 text-left transition-colors hover:bg-emerald-pale/40"
         onClick={() => setOpen((v) => !v)}
+        aria-expanded={open}
       >
         <div>
           <p className="text-sm font-semibold text-emerald-deep">Share your contact</p>
@@ -108,11 +115,17 @@ export function ContactExchangeForm({ cardId, accentColor, ownerName }: ContactE
             onChange={set("email")}
             hint="Optional"
           />
+          {error && (
+            <p className="text-sm text-red-600 bg-red-50 rounded-lg px-3 py-2" role="alert">
+              {error}
+            </p>
+          )}
           <Button
             type="submit"
             size="lg"
             className="w-full mt-1"
             loading={loading}
+            disabled={loading}
             rightIcon={!loading ? <ArrowRight className="h-4 w-4" /> : undefined}
             style={{ backgroundColor: accentColor, color: "#FEFCE8" }}
           >

@@ -56,6 +56,27 @@ export const MOCK_DESIGNS: CardDesignOption[] = [
   },
 ];
 
+/**
+ * Converts a CardDesign from the database into the CardDesignOption format
+ * expected by the gallery component.
+ */
+export function dbDesignToOption(design: {
+  id: string;
+  name: string;
+  description: string | null;
+  accent_color: string;
+  pattern: string;
+  is_active: boolean;
+}): CardDesignOption {
+  return {
+    id:          design.id,
+    name:        design.name,
+    description: design.description ?? "",
+    accent:      design.accent_color,
+    pattern:     (design.pattern as CardDesignOption["pattern"]) ?? "dots",
+  };
+}
+
 /* Tiny SVG card preview for each design */
 function CardDesignPreview({ design }: { design: CardDesignOption }) {
   const w = 120;
@@ -123,12 +144,15 @@ function CardDesignPreview({ design }: { design: CardDesignOption }) {
 interface DesignGalleryProps {
   selected:  string;
   onSelect:  (id: string) => void;
+  designs?:  CardDesignOption[];  // From DB; falls back to MOCK_DESIGNS if not provided
 }
 
-export function DesignGallery({ selected, onSelect }: DesignGalleryProps) {
+export function DesignGallery({ selected, onSelect, designs }: DesignGalleryProps) {
+  const items = designs && designs.length > 0 ? designs : MOCK_DESIGNS;
+
   return (
     <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-      {MOCK_DESIGNS.map((design) => {
+      {items.map((design) => {
         const isSelected = selected === design.id;
         return (
           <button

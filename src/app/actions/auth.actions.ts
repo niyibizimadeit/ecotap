@@ -41,14 +41,19 @@ export async function signUp(formData: FormData): Promise<ActionResult> {
   const fullName = formData.get("full_name") as string;
   const username = formData.get("username") as string;
   const phone    = (formData.get("phone") as string) || undefined;
-  const role     = (formData.get("role") as string) ?? "individual";
 
   if (!email || !password || !fullName || !username) {
     return { success: false, error: "All fields are required." };
   }
 
+  // Validate password strength server-side
+  if (password.length < 8) {
+    return { success: false, error: "Password must be at least 8 characters." };
+  }
+
   const supabase = await getSupabaseServerAction();
 
+  // Role is hardcoded server-side — never accept role from the client
   const { data, error } = await supabase.auth.signUp({
     email,
     password,
@@ -57,7 +62,7 @@ export async function signUp(formData: FormData): Promise<ActionResult> {
       data: {
         full_name: fullName,
         username:  username,
-        role:      role,
+        role:      "individual",  // SERVER-HARDCODED to prevent privilege escalation
         ...(phone ? { phone } : {}),
       },
     },
@@ -96,8 +101,14 @@ export async function signUpOrg(formData: FormData): Promise<ActionResult> {
     return { success: false, error: "You must confirm you are the legal representative." };
   }
 
+  // Validate password strength server-side
+  if (password.length < 8) {
+    return { success: false, error: "Password must be at least 8 characters." };
+  }
+
   const supabase = await getSupabaseServerAction();
 
+  // Role is hardcoded server-side — never accept role from the client
   // 1. Create the auth user
   const { data: authData, error: authError } = await supabase.auth.signUp({
     email,
@@ -106,7 +117,7 @@ export async function signUpOrg(formData: FormData): Promise<ActionResult> {
       emailRedirectTo: `${process.env.NEXT_PUBLIC_SITE_URL}/pending`,
       data: {
         full_name:          adminName,
-        role:               "company_admin",
+        role:               "company_admin",  // SERVER-HARDCODED to prevent privilege escalation
         company_name:       companyName,
         industry,
         size,

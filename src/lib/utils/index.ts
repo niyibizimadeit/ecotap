@@ -11,11 +11,12 @@ export function slugify(text: string): string {
     .trim()
     .replace(/[^\w\s-]/g, "")
     .replace(/[\s_-]+/g, "-")
+    .replace(/-+/g, "-")        // collapse consecutive hyphens
     .replace(/^-+|-+$/g, "");
 }
 
-export function formatDate(dateString: string): string {
-  return new Intl.DateTimeFormat("en-RW", {
+export function formatDate(dateString: string, locale = "en-RW"): string {
+  return new Intl.DateTimeFormat(locale, {
     year: "numeric",
     month: "short",
     day: "numeric",

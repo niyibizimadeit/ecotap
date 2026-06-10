@@ -1,10 +1,10 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { PageHeader } from "@/components/dashboard/DashboardShared";
-import { DesignGallery, MOCK_DESIGNS, type CardDesignOption } from "@/components/orders/DesignGallery";
-import { placeOrder } from "@/app/actions/orders.actions";
+import { DesignGallery, MOCK_DESIGNS, dbDesignToOption, type CardDesignOption } from "@/components/orders/DesignGallery";
+import { placeOrder, getActiveDesigns } from "@/app/actions/orders.actions";
 import { OrderSummary } from "@/components/orders/OrderSummary";
 import { Button } from "@/components/ui/Button";
 import { Input, Textarea } from "@/components/ui/Input";
@@ -42,6 +42,7 @@ export default function NewOrderPage() {
   const [step,    setStep]    = useState<Step>(1);
   const [loading, setLoading] = useState(false);
   const [errors,  setErrors]  = useState<Record<string, string>>({});
+  const [designs, setDesigns] = useState<CardDesignOption[]>(MOCK_DESIGNS);
 
   const [form, setForm] = useState<OrderForm>({
     design_id:        "",
@@ -49,8 +50,17 @@ export default function NewOrderPage() {
     shipping_address: EMPTY_ADDRESS,
   });
 
+  // Fetch active designs from DB on mount
+  useEffect(() => {
+    getActiveDesigns().then((result) => {
+      if (result.success && result.data) {
+        setDesigns(result.data.map(dbDesignToOption));
+      }
+    });
+  }, []);
+
   /* helpers */
-  const selectedDesign = MOCK_DESIGNS.find(d => d.id === form.design_id) as CardDesignOption | undefined;
+  const selectedDesign = designs.find(d => d.id === form.design_id) as CardDesignOption | undefined;
 
   const setAddress = (field: keyof ShippingAddress) =>
     (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) =>
@@ -91,13 +101,17 @@ export default function NewOrderPage() {
 
   async function handlePlaceOrder() {
     setLoading(true);
-    await placeOrder({
+    const result = await placeOrder({
       design_id:        form.design_id,
       quantity:         form.quantity,
       shipping_address: form.shipping_address,
     });
     setLoading(false);
-    router.push("/dashboard/employee/orders/success");
+    if (result.success && result.data) {
+      router.push(`/dashboard/employee/orders/success?order=${result.data.id}`);
+    } else {
+      setErrors({ submit: result.error ?? "Failed to place order. Please try again." });
+    }
   }
 
   return (
@@ -135,6 +149,7 @@ export default function NewOrderPage() {
                   setForm(f => ({ ...f, design_id: id }));
                   setErrors({});
                 }}
+                designs={designs}
               />
               {errors.design && (
                 <p className="text-sm text-red-600 mt-3">{errors.design}</p>

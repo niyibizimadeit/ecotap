@@ -2,9 +2,13 @@ import Link from "next/link";
 import { Button } from "@/components/ui/Button";
 import { ArrowRight, Package, Clock, CheckCircle2 } from "lucide-react";
 
-export default function OrderSuccessPage() {
-  // In Phase 12 this receives a real order ID from the action result
-  const ORDER_ID = "ORD-2026-003";
+interface Props {
+  searchParams: Promise<{ order?: string }>;
+}
+
+export default async function OrderSuccessPage({ searchParams }: Props) {
+  const params = await searchParams;
+  const orderId = params.order ?? null;
 
   return (
     <div className="min-h-[80vh] flex items-center justify-center px-4">
@@ -37,13 +41,15 @@ export default function OrderSuccessPage() {
         <p className="text-ink-light leading-relaxed mb-2">
           Your card order has been submitted for review.
         </p>
-        <p
-          className="inline-flex items-center gap-2 text-sm font-mono px-4 py-2 rounded-xl mb-8"
-          style={{ backgroundColor: "#ECFDF5", color: "#065F46" }}
-        >
-          <span>Order ref:</span>
-          <span className="font-semibold">{ORDER_ID}</span>
-        </p>
+        {orderId && (
+          <p
+            className="inline-flex items-center gap-2 text-sm font-mono px-4 py-2 rounded-xl mb-8"
+            style={{ backgroundColor: "#ECFDF5", color: "#065F46" }}
+          >
+            <span>Order ref:</span>
+            <span className="font-semibold">{orderId.slice(0, 8)}</span>
+          </p>
+        )}
 
         {/* Timeline */}
         <div
