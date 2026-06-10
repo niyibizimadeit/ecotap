@@ -2,7 +2,7 @@
 // Companies repository — SSOT for all companies table queries.
 // ─────────────────────────────────────────────────────────────────────────────
 
-import { getSupabase } from "@/lib/supabase/server";
+import { getSupabase, getServiceSupabase } from "@/lib/supabase/server";
 import type { Company, UserStatus } from "@/types";
 
 // ── Reads ────────────────────────────────────────────────────────────────────
@@ -90,7 +90,7 @@ export async function updateCompanyStatus(
   id: string,
   status: UserStatus
 ): Promise<Company | null> {
-  const supabase = await getSupabase();
+  const supabase = getServiceSupabase();
   const { data } = await supabase
     .from("companies")
     .update({ status })
@@ -101,6 +101,6 @@ export async function updateCompanyStatus(
 }
 
 export async function deleteCompany(id: string): Promise<void> {
-  const supabase = await getSupabase();
+  const supabase = getServiceSupabase();
   await supabase.from("companies").delete().eq("id", id);
 }

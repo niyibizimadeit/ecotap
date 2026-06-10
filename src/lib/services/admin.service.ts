@@ -143,18 +143,25 @@ export interface AdminOverview {
 }
 
 export async function getAdminOverview(): Promise<ActionResult<AdminOverview>> {
-  const [pendingUsers, activeUsers, companies, pendingOrders] =
+  const [pendingUsers, activeUsers, companies, pendingOrders, pendingCompanies] =
     await Promise.all([
       profilesRepo.getAllPending(),
       profilesRepo.getAllProfiles({ status: "active" }),
       companiesRepo.getAllCompanies(),
       ordersRepo.getAllOrders({ status: "pending" }),
+      companiesRepo.getAllPendingCompanies(),
     ]);
+
+  // Match getPendingQueue filtering — only individual + employee registrations
+  // count as pending approvals. Company admins go through company approval.
+  const pendingIndividuals = pendingUsers.filter(
+    (p) => p.role === "individual" || p.role === "employee"
+  );
 
   return {
     success: true,
     data: {
-      pendingApprovals: pendingUsers.length + (await companiesRepo.getAllPendingCompanies()).length,
+      pendingApprovals: pendingIndividuals.length + pendingCompanies.length,
       activeUsers:      activeUsers.length,
       totalCompanies:   companies.length,
       pendingOrders:    pendingOrders.length,

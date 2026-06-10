@@ -3,7 +3,7 @@
 // No other file in the project queries profiles directly.
 // ─────────────────────────────────────────────────────────────────────────────
 
-import { getSupabase } from "@/lib/supabase/server";
+import { getSupabase, getServiceSupabase } from "@/lib/supabase/server";
 import type { Profile, UserRole, UserStatus } from "@/types";
 
 // ── Reads ────────────────────────────────────────────────────────────────────
@@ -101,7 +101,7 @@ export async function updateProfileStatus(
   id: string,
   status: UserStatus
 ): Promise<Profile | null> {
-  const supabase = await getSupabase();
+  const supabase = getServiceSupabase();
   const { data } = await supabase
     .from("profiles")
     .update({ status })

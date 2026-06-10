@@ -4,7 +4,7 @@ import { useState, useEffect } from "react";
 import { PageHeader } from "@/components/dashboard/DashboardShared";
 import { Badge } from "@/components/ui/Badge";
 import { Button } from "@/components/ui/Button";
-import { Building2, User, CheckCircle2, XCircle, ExternalLink, Clock } from "lucide-react";
+import { Building2, User, CheckCircle2, XCircle, ExternalLink, Clock, AlertTriangle } from "lucide-react";
 
 interface PendingCompany {
   id: string; type: "company";
@@ -20,44 +20,68 @@ interface PendingIndividual {
 
 type PendingItem = PendingCompany | PendingIndividual;
 
-const MOCK_COMPANIES: PendingCompany[] = [];
-
-const MOCK_INDIVIDUALS: PendingIndividual[] = [];
-
 export default function ApprovalsPage() {
   const [tab,          setTab]          = useState<"companies"|"individuals">("companies");
-  const [companies,    setCompanies]    = useState(MOCK_COMPANIES);
-  const [individuals,  setIndividuals]  = useState(MOCK_INDIVIDUALS);
+  const [companies,    setCompanies]    = useState<PendingCompany[]>([]);
+  const [individuals,  setIndividuals]  = useState<PendingIndividual[]>([]);
   const [actionStates, setActionStates] = useState<Record<string, "approving"|"rejecting"|"done_approve"|"done_reject">>({});
+  const [isLoading,    setIsLoading]    = useState(true);
+  const [error,        setError]        = useState<string | null>(null);
+  const [retryCount,   setRetryCount]   = useState(0);
+  const [actionError,  setActionError]  = useState<string | null>(null);
 
   useEffect(() => {
     async function load() {
-      const { fetchPendingQueue } = await import("@/app/actions/admin.actions");
-      const result = await fetchPendingQueue();
-      if (result.success && result.data) {
-        setCompanies((result.data.companies ?? []).map((c: Record<string, unknown>) => ({
-          id: c.id as string, type: "company" as const, name: c.name as string,
-          industry: (c.industry as string) ?? "", size: (c.size as string) ?? "",
-          website: (c.website as string) ?? "", admin: "", email: "", submitted: (c.created_at as string) ?? "",
-        })));
-        setIndividuals((result.data.individuals ?? []).map((p: Record<string, unknown>) => ({
-          id: p.id as string, type: "individual" as const, name: (p.full_name as string) ?? "",
-          username: (p.username as string) ?? "", email: (p.email as string) ?? "",
-          company: "", submitted: (p.created_at as string) ?? "",
-        })));
+      setIsLoading(true);
+      setError(null);
+      try {
+        const { fetchPendingQueue } = await import("@/app/actions/admin.actions");
+        const result = await fetchPendingQueue();
+        if (result.success && result.data) {
+          const mappedCompanies = (result.data.companies ?? []).map((c: Record<string, unknown>) => ({
+            id: c.id as string, type: "company" as const, name: c.name as string,
+            industry: (c.industry as string) ?? "", size: (c.size as string) ?? "",
+            website: (c.website as string) ?? "", admin: "", email: "", submitted: (c.created_at as string) ?? "",
+          }));
+          const mappedIndividuals = (result.data.individuals ?? []).map((p: Record<string, unknown>) => ({
+            id: p.id as string, type: "individual" as const, name: (p.full_name as string) ?? "",
+            username: (p.username as string) ?? "", email: (p.email as string) ?? "",
+            company: "", submitted: (p.created_at as string) ?? "",
+          }));
+          setCompanies(mappedCompanies);
+          setIndividuals(mappedIndividuals);
+          // Auto-select the tab that has items
+          if (mappedCompanies.length > 0) {
+            setTab("companies");
+          } else if (mappedIndividuals.length > 0) {
+            setTab("individuals");
+          }
+        } else {
+          setError(result.error ?? "Failed to load pending approvals.");
+        }
+      } catch (err) {
+        setError(err instanceof Error ? err.message : "An unexpected error occurred.");
+      } finally {
+        setIsLoading(false);
       }
     }
     load();
-  }, []);
+  }, [retryCount]);
 
   async function handleAction(id: string, action: "approve"|"reject") {
+    setActionError(null);
     setActionStates(s => ({ ...s, [id]: action === "approve" ? "approving" : "rejecting" }));
     const { approveCompany, approveIndividual, rejectUser } = await import("@/app/actions/admin.actions");
+    let result;
     if (action === "approve") {
-      if (tab === "companies") await approveCompany(id);
-      else await approveIndividual(id);
+      result = tab === "companies" ? await approveCompany(id) : await approveIndividual(id);
     } else {
-      await rejectUser(id);
+      result = await rejectUser(id);
+    }
+    if (!result.success) {
+      setActionError(result.error ?? `Failed to ${action} this application.`);
+      setActionStates(s => { const n = { ...s }; delete n[id]; return n; });
+      return;
     }
     setActionStates(s => ({ ...s, [id]: action === "approve" ? "done_approve" : "done_reject" }));
     await new Promise(r => setTimeout(r, 600));
@@ -67,16 +91,83 @@ export default function ApprovalsPage() {
   }
 
   const items: PendingItem[] = tab === "companies" ? companies : individuals;
+  const totalCount = companies.length + individuals.length;
+  const otherTab = tab === "companies" ? "individuals" : "companies";
+  const otherCount = tab === "companies" ? individuals.length : companies.length;
 
   return (
     <div>
       <PageHeader
         eyebrow="Approvals"
         title="Pending approvals"
-        subtitle={`${companies.length + individuals.length} applications waiting for review.`}
+        subtitle={isLoading ? "Loading…" : error ? "Failed to load" : `${totalCount} application${totalCount !== 1 ? "s" : ""} waiting for review.`}
       />
 
-      {/* Tabs */}
+      {/* Error banner */}
+      {error && (
+        <div
+          className="rounded-2xl border p-4 mb-5 flex items-center gap-3"
+          style={{ backgroundColor: "#FEF2F2", borderColor: "rgba(239,68,68,0.3)" }}
+        >
+          <AlertTriangle className="h-5 w-5 flex-shrink-0" style={{ color: "#EF4444" }} />
+          <div className="flex-1">
+            <p className="text-sm font-medium" style={{ color: "#991B1B" }}>{error}</p>
+          </div>
+          <Button variant="secondary" size="sm" onClick={() => setRetryCount(c => c + 1)}>Retry</Button>
+        </div>
+      )}
+
+      {/* Action error toast */}
+      {actionError && (
+        <div
+          className="rounded-2xl border p-4 mb-5 flex items-center gap-3"
+          style={{ backgroundColor: "#FEF2F2", borderColor: "rgba(239,68,68,0.3)" }}
+        >
+          <AlertTriangle className="h-5 w-5 flex-shrink-0" style={{ color: "#EF4444" }} />
+          <div className="flex-1">
+            <p className="text-sm font-medium" style={{ color: "#991B1B" }}>{actionError}</p>
+          </div>
+          <button
+            onClick={() => setActionError(null)}
+            className="text-xs font-medium px-3 py-1.5 rounded-lg hover:opacity-80 transition-opacity"
+            style={{ color: "#991B1B", backgroundColor: "rgba(239,68,68,0.1)" }}
+          >
+            Dismiss
+          </button>
+        </div>
+      )}
+
+      {/* Loading skeleton */}
+      {isLoading && (
+        <div className="space-y-4">
+          {[1, 2].map(i => (
+            <div
+              key={i}
+              className="rounded-2xl border p-8 animate-pulse"
+              style={{ backgroundColor: "#FEF9EF", borderColor: "rgba(6,78,59,0.08)" }}
+            >
+              <div className="flex items-center gap-3 mb-4">
+                <div className="w-10 h-10 rounded-xl skeleton" />
+                <div className="space-y-2 flex-1">
+                  <div className="h-4 w-48 rounded skeleton" />
+                  <div className="h-3 w-32 rounded skeleton" />
+                </div>
+              </div>
+              <div className="grid grid-cols-4 gap-4">
+                {[1, 2, 3, 4].map(j => (
+                  <div key={j} className="space-y-1">
+                    <div className="h-3 w-16 rounded skeleton" />
+                    <div className="h-4 w-24 rounded skeleton" />
+                  </div>
+                ))}
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+
+      {/* Tabs — only show when data is loaded */}
+      {!isLoading && !error && (
       <div className="flex gap-2 mb-6">
         {(["companies","individuals"] as const).map(t => (
           <button
@@ -103,18 +194,35 @@ export default function ApprovalsPage() {
           </button>
         ))}
       </div>
+      )}
 
-      {/* Cards */}
-      {items.length === 0 ? (
-        <div
-          className="rounded-2xl border p-16 text-center"
-          style={{ backgroundColor: "#FEF9EF", borderColor: "rgba(6,78,59,0.08)" }}
-        >
-          <CheckCircle2 className="h-10 w-10 mx-auto mb-3" style={{ color: "#059669" }} />
-          <p className="font-serif text-xl text-emerald-deep mb-1">All clear!</p>
-          <p className="text-sm text-ink-light">No pending {tab} to review.</p>
-        </div>
-      ) : (
+      {/* Cards — only render when not loading and no error */}
+      {!isLoading && !error && (
+        <>
+          {items.length === 0 ? (
+            <div
+              className="rounded-2xl border p-16 text-center"
+              style={{ backgroundColor: "#FEF9EF", borderColor: "rgba(6,78,59,0.08)" }}
+            >
+              <CheckCircle2 className="h-10 w-10 mx-auto mb-3" style={{ color: "#059669" }} />
+              <p className="font-serif text-xl text-emerald-deep mb-1">
+                {totalCount === 0 ? "All clear!" : `No pending ${tab}`}
+              </p>
+              <p className="text-sm text-ink-light">
+                {totalCount === 0
+                  ? "No pending applications to review."
+                  : `${otherCount} pending ${otherTab} — `}
+                {otherCount > 0 && (
+                  <button
+                    onClick={() => setTab(otherTab)}
+                    className="text-emerald-bright hover:text-emerald-mid underline underline-offset-4 transition-colors font-medium"
+                  >
+                    switch to {otherTab} tab
+                  </button>
+                )}
+              </p>
+            </div>
+          ) : (
         <div className="space-y-4">
           {items.map(item => {
             const state = actionStates[item.id];
@@ -221,6 +329,8 @@ export default function ApprovalsPage() {
             );
           })}
         </div>
+          )}
+        </>
       )}
     </div>
   );
