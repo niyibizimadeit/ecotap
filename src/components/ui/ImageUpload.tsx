@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 import { Upload, X, Loader2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -42,13 +42,30 @@ export function ImageUpload({
   const [uploading, setUploading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const inputRef = useRef<HTMLInputElement>(null);
+  const objectUrlRef = useRef<string | null>(null);
+
+  // Cleanup blob URL on unmount
+  useEffect(() => {
+    return () => {
+      if (objectUrlRef.current) URL.revokeObjectURL(objectUrlRef.current);
+    };
+  }, []);
+
+  // Sync preview when currentUrl changes from parent
+  useEffect(() => {
+    setPreview(currentUrl ?? null);
+  }, [currentUrl]);
 
   async function handleFileChange(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0];
     if (!file) return;
 
+    // Revoke previous local blob URL to prevent memory leak
+    if (objectUrlRef.current) URL.revokeObjectURL(objectUrlRef.current);
+
     // Local preview
     const previewUrl = URL.createObjectURL(file);
+    objectUrlRef.current = previewUrl;
     setPreview(previewUrl);
     setError(null);
     setUploading(true);
@@ -63,7 +80,12 @@ export function ImageUpload({
       onUploaded?.(result.data.url);
     } else {
       setError(result.error ?? "Upload failed");
-      setPreview(currentUrl ?? null); // Revert
+      setPreview(currentUrl ?? null); // Revert to server image
+      // Revoke the failed blob
+      if (objectUrlRef.current) {
+        URL.revokeObjectURL(objectUrlRef.current);
+        objectUrlRef.current = null;
+      }
     }
 
     // Reset input so the same file can be re-selected

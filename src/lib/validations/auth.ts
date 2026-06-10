@@ -19,9 +19,9 @@ const fullName = z
 
 const phone = z
   .string()
-  .optional()
+  .min(1, "Phone number is required")
   .refine(
-    (val) => !val || /^\+?[0-9]{7,15}$/.test(val),
+    (val) => /^\+?[0-9]{7,15}$/.test(val),
     { message: "Enter a valid phone number (e.g., +250788123456)" }
   );
 
@@ -48,7 +48,7 @@ export const orgRegisterStep2Schema = z.object({
   email,
   password,
   confirm_password: password,
-  phone: phone.optional(),
+  phone,
 }).refine((data) => data.password === data.confirm_password, {
   message: "Passwords do not match",
   path: ["confirm_password"],
@@ -72,7 +72,7 @@ export const individualRegisterSchema = z.object({
   email,
   password,
   confirm_password: password,
-  phone: phone.optional(),
+  phone,
   company_name: z.string().optional(),
 }).refine((data) => data.password === data.confirm_password, {
   message: "Passwords do not match",

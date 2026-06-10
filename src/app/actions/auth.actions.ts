@@ -40,10 +40,15 @@ export async function signUp(formData: FormData): Promise<ActionResult> {
   const password = formData.get("password") as string;
   const fullName = formData.get("full_name") as string;
   const username = formData.get("username") as string;
-  const phone    = (formData.get("phone") as string) || undefined;
+  const phone    = formData.get("phone") as string;
 
-  if (!email || !password || !fullName || !username) {
+  if (!email || !password || !fullName || !username || !phone) {
     return { success: false, error: "All fields are required." };
+  }
+
+  // Validate phone format server-side
+  if (!/^\+?[0-9]{7,15}$/.test(phone)) {
+    return { success: false, error: "Please enter a valid phone number." };
   }
 
   // Validate password strength server-side
@@ -62,8 +67,8 @@ export async function signUp(formData: FormData): Promise<ActionResult> {
       data: {
         full_name: fullName,
         username:  username,
+        phone,
         role:      "individual",  // SERVER-HARDCODED to prevent privilege escalation
-        ...(phone ? { phone } : {}),
       },
     },
   });
@@ -90,11 +95,16 @@ export async function signUpOrg(formData: FormData): Promise<ActionResult> {
   const adminName     = formData.get("admin_name") as string;
   const email         = formData.get("email") as string;
   const password      = formData.get("password") as string;
-  const phone         = (formData.get("phone") as string) || undefined;
+  const phone         = formData.get("phone") as string;
   const legalConfirmed = formData.get("legal_rep_confirmed") === "on";
 
-  if (!companyName || !adminName || !email || !password) {
+  if (!companyName || !adminName || !email || !password || !phone) {
     return { success: false, error: "All required fields must be filled." };
+  }
+
+  // Validate phone format server-side
+  if (!/^\+?[0-9]{7,15}$/.test(phone)) {
+    return { success: false, error: "Please enter a valid phone number." };
   }
 
   if (!legalConfirmed) {
@@ -123,7 +133,7 @@ export async function signUpOrg(formData: FormData): Promise<ActionResult> {
         size,
         website,
         legal_rep_confirmed: true,
-        ...(phone ? { phone } : {}),
+        phone,
       },
     },
   });

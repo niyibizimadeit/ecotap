@@ -11,7 +11,9 @@ import { Badge } from "@/components/ui/Badge";
 import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter } from "@/components/ui/Card";
 import { Input, Textarea, Select } from "@/components/ui/Input";
 import { Modal } from "@/components/ui/Modal";
-import { Spinner, Avatar, Skeleton } from "@/components/ui/Spinner";
+import { Spinner } from "@/components/ui/Spinner";
+import { Avatar } from "@/components/ui/Avatar";
+import { Skeleton } from "@/components/ui/Skeleton";
 import { Plus, ArrowRight, Mail, Lock } from "lucide-react";
 
 export default function ComponentsPage() {

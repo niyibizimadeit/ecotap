@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect, useRef } from "react";
 import { downloadVcf } from "@/lib/vcf/generator";
 import type { PublicCard } from "@/types";
 import { Download, CheckCircle2 } from "lucide-react";
@@ -12,11 +12,22 @@ interface SaveContactButtonProps {
 
 export function SaveContactButton({ card, accentColor }: SaveContactButtonProps) {
   const [saved, setSaved] = useState(false);
+  const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  useEffect(() => {
+    return () => {
+      if (timerRef.current) clearTimeout(timerRef.current);
+    };
+  }, []);
 
   function handleSave() {
     downloadVcf(card);
     setSaved(true);
-    setTimeout(() => setSaved(false), 3000);
+    if (timerRef.current) clearTimeout(timerRef.current);
+    timerRef.current = setTimeout(() => {
+      setSaved(false);
+      timerRef.current = null;
+    }, 3000);
   }
 
   return (

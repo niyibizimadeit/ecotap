@@ -63,7 +63,8 @@ export async function placeOrder(
 
 async function transitionOrderStatus(
   orderId: string,
-  to: OrderStatus
+  to: OrderStatus,
+  trackingInfo?: string
 ): Promise<ActionResult<CardOrder>> {
   const order = await ordersRepo.getOrderById(orderId);
 
@@ -76,7 +77,7 @@ async function transitionOrderStatus(
     };
   }
 
-  const updated = await ordersRepo.updateOrderStatus(orderId, to);
+  const updated = await ordersRepo.updateOrderStatus(orderId, to, trackingInfo);
   if (!updated) return { success: false, error: `Failed to mark order as ${to}.` };
 
   return { success: true, data: updated };
@@ -92,25 +93,7 @@ export async function markShipped(
   orderId: string,
   trackingInfo?: string
 ): Promise<ActionResult<CardOrder>> {
-  const order = await ordersRepo.getOrderById(orderId);
-
-  if (!order) return { success: false, error: "Order not found." };
-
-  if (!canTransition(order.status as OrderStatus, "shipped")) {
-    return {
-      success: false,
-      error: `Cannot mark as shipped from ${order.status}.`,
-    };
-  }
-
-  const updated = await ordersRepo.updateOrderStatus(
-    orderId,
-    "shipped",
-    trackingInfo
-  );
-  if (!updated) return { success: false, error: "Failed to mark order as shipped." };
-
-  return { success: true, data: updated };
+  return transitionOrderStatus(orderId, "shipped", trackingInfo);
 }
 
 export async function markDelivered(

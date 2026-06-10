@@ -1,5 +1,6 @@
 "use server";
 
+import { cache } from "react";
 import { getSupabase, getServiceSupabase } from "@/lib/supabase/server";
 import { revalidatePath } from "next/cache";
 
@@ -77,14 +78,15 @@ async function resolveCompanyId(): Promise<string | null> {
 /**
  * Returns all data needed to render the company admin dashboard.
  * Single round-trip pattern: one action call per page load.
+ * Uses React.cache() to deduplicate multiple calls from layout + pages
+ * within the same request (5 pages → 1 Supabase query).
  */
-export async function getCompanyDashboardData(): Promise<
+const _getCompanyDashboardData = cache(async (
+  companyId: string
+): Promise<
   { success: true; data: CompanyDashboardData } | { success: false; error: string }
-> {
+> => {
   try {
-    const companyId = await resolveCompanyId();
-    if (!companyId) return { success: false, error: "NO_COMPANY_LINKED" };
-
     const service = getServiceSupabase();
 
     // Parallel fetch: company + employee links + subscription (with plan)
@@ -188,6 +190,18 @@ export async function getCompanyDashboardData(): Promise<
   } catch {
     return { success: false, error: "UNEXPECTED_ERROR" };
   }
+});
+
+/**
+ * Public wrapper: resolves the company ID from the authenticated user,
+ * then delegates to the cached implementation for deduplication.
+ */
+export async function getCompanyDashboardData(): Promise<
+  { success: true; data: CompanyDashboardData } | { success: false; error: string }
+> {
+  const companyId = await resolveCompanyId();
+  if (!companyId) return { success: false, error: "NO_COMPANY_LINKED" };
+  return _getCompanyDashboardData(companyId);
 }
 
 // ─── Mutations ────────────────────────────────────────────────────────────────

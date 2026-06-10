@@ -4,6 +4,18 @@ import { getSupabase, getServiceSupabase } from "@/lib/supabase/server";
 import { uploadProfilePhoto, uploadCompanyLogo, uploadDesignPreview, deleteFromR2, keyFromUrl } from "@/lib/r2/upload";
 import type { ActionResult } from "@/types";
 
+// ── File validation ───────────────────────────────────────────────────────────
+
+const ALLOWED_TYPES = ["image/jpeg", "image/png", "image/webp", "image/svg+xml"];
+const MAX_FILE_SIZE = 5 * 1024 * 1024; // 5MB
+
+function validateFile(file: File | null): string | null {
+  if (!file || file.size === 0) return "No file provided.";
+  if (file.size > MAX_FILE_SIZE) return "File must be under 5MB.";
+  if (!ALLOWED_TYPES.includes(file.type)) return "Only JPEG, PNG, WebP, and SVG images are allowed.";
+  return null;
+}
+
 // ── Profile photo ────────────────────────────────────────────────────────────
 
 export async function updateProfilePhoto(
@@ -14,12 +26,11 @@ export async function updateProfilePhoto(
   if (!user) return { success: false, error: "Not authenticated." };
 
   const file = formData.get("file") as File | null;
-  if (!file || file.size === 0) {
-    return { success: false, error: "No file provided." };
-  }
+  const fileError = validateFile(file);
+  if (fileError) return { success: false, error: fileError };
 
-  const buffer = Buffer.from(await file.arrayBuffer());
-  const result = await uploadProfilePhoto(buffer, file.name, file.type, user.id);
+  const buffer = Buffer.from(await file!.arrayBuffer());
+  const result = await uploadProfilePhoto(buffer, file!.name, file!.type, user.id);
 
   if (!result.success || !result.url) {
     return { success: false, error: result.error ?? "Upload failed." };
@@ -51,12 +62,11 @@ export async function updateCompanyLogo(
   if (!user) return { success: false, error: "Not authenticated." };
 
   const file = formData.get("file") as File | null;
-  if (!file || file.size === 0) {
-    return { success: false, error: "No file provided." };
-  }
+  const fileError = validateFile(file);
+  if (fileError) return { success: false, error: fileError };
 
-  const buffer = Buffer.from(await file.arrayBuffer());
-  const result = await uploadCompanyLogo(buffer, file.name, file.type, companyId);
+  const buffer = Buffer.from(await file!.arrayBuffer());
+  const result = await uploadCompanyLogo(buffer, file!.name, file!.type, companyId);
 
   if (!result.success || !result.url) {
     return { success: false, error: result.error ?? "Upload failed." };
