@@ -125,29 +125,33 @@ function CardMockup() {
 
 function LogoBar() {
   const companies = [
-    { name: "RDMC Ltd", url: "https://rdmc.rw" },
-    { name: "Team Environment", url: "https://teamenvironment.org" },
-    { name: "KMNC Africa", url: "https://kmnc.africa" },
-    { name: "Ubumuntu Health Labs", url: "https://ubumuntuhealthlabs.rw" },
-    { name: "ICBNA", url: "https://icbna.org" },
+    { name: "RDMC Ltd", url: "https://rdmc.rw", logo: "/partners/rdmc.png" },
+    { name: "Team Environment", url: "https://teamenvironment.org", logo: "/partners/teamenvironment.png" },
+    { name: "KMNC Africa", url: "https://kmnc.africa", logo: "/partners/kmnc.png" },
+    { name: "Ubumuntu Health Labs", url: "https://ubumuntuhealthlabs.rw", logo: "/partners/ubumuntuhealthlabs.png" },
+    { name: "ICBNA", url: "https://icbna.org", logo: "/partners/icbna.png" },
   ];
 
   return (
-    <div className="border-y border-cream-dark bg-cream py-8">
+    <div className="border-y border-cream-dark bg-cream py-10">
       <div className="max-w-6xl mx-auto px-6">
-        <p className="text-center text-xs font-mono tracking-widest text-ink-light uppercase mb-6">
+        <p className="text-center text-xs font-mono tracking-widest text-ink-light uppercase mb-8">
           Trusted by teams across the world
         </p>
-        <div className="flex flex-wrap items-center justify-center gap-8 md:gap-12">
-          {companies.map(({ name, url }) => (
+        <div className="flex flex-wrap items-center justify-center gap-10 md:gap-14">
+          {companies.map(({ name, url, logo }) => (
             <a
               key={name}
               href={url}
               target="_blank"
               rel="noopener noreferrer"
-              className="font-serif text-base text-ink-light/50 hover:text-emerald-deep whitespace-nowrap transition-colors duration-150"
+              className="grayscale opacity-50 hover:grayscale-0 hover:opacity-100 transition-all duration-200"
             >
-              {name}
+              <img
+                src={logo}
+                alt={name}
+                className="h-10 md:h-12 w-auto object-contain"
+              />
             </a>
           ))}
         </div>
