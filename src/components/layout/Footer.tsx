@@ -3,17 +3,17 @@ import { BrandLogo } from "@/components/brand/BrandLogo";
 
 const FOOTER_LINKS = {
   Product: [
-    { label: "How it works", href: "/how-it-works" },
-    { label: "Features",     href: "/features" },
-    { label: "Pricing",      href: "/pricing" },
+    { label: "About Us", href: "/about" },
+    { label: "Pricing",  href: "/pricing" },
+    { label: "Impact",   href: "/impact" },
   ],
   Company: [
-    { label: "About",   href: "#" },
-    { label: "Contact", href: "#" },
+    { label: "Contact Us", href: "/contact" },
+    { label: "Enterprise", href: "/contact" },
   ],
   Legal: [
-    { label: "Privacy policy",    href: "#" },
-    { label: "Terms of service",  href: "#" },
+    { label: "Privacy Policy",   href: "/privacy" },
+    { label: "Terms of Service",  href: "/terms" },
   ],
 };
 

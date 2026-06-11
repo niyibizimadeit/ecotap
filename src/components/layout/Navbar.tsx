@@ -8,9 +8,10 @@ import { BrandLogo } from "@/components/brand/BrandLogo";
 import { Menu, X } from "lucide-react";
 
 const NAV_LINKS = [
-  { label: "How it works", href: "/how-it-works" },
-  { label: "Features",     href: "/features" },
-  { label: "Pricing",      href: "/pricing" },
+  { label: "About Us", href: "/about" },
+  { label: "Pricing",  href: "/pricing" },
+  { label: "Impact",   href: "/impact" },
+  { label: "Contact Us",  href: "/contact" },
 ];
 
 export function Navbar() {
