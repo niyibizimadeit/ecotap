@@ -58,7 +58,7 @@ export default function PricingPage() {
           ].map((plan) => (
             <div
               key={plan.name}
-              className={`relative rounded-3xl p-7 border transition-all duration-200 hover:-translate-y-1 ${
+              className={`relative rounded-3xl p-7 border transition-all duration-200 hover:-translate-y-1 flex flex-col ${
                 plan.highlight
                   ? "bg-emerald-deep text-ivory border-emerald-deep shadow-card-xl"
                   : "bg-emerald-pale/30 border-emerald-light/50 shadow-card hover:shadow-card-lg"
@@ -75,18 +75,18 @@ export default function PricingPage() {
               <p className={`text-3xl font-bold mb-2 ${plan.highlight ? "text-ivory" : "text-emerald-deep"}`}>
                 {plan.price}
               </p>
-              <p className={`text-sm mb-6 ${plan.highlight ? "text-ivory/60" : "text-ink-light"}`}>
+              <p className={`text-sm mb-5 min-h-[40px] ${plan.highlight ? "text-ivory/60" : "text-ink-light"}`}>
                 {plan.desc}
               </p>
-              <ul className="space-y-2.5 mb-8">
+              <ul className="space-y-2.5 mb-8 flex-1">
                 {plan.features.map((f) => (
-                  <li key={f} className="flex items-center gap-2.5 text-sm">
-                    <Check className={`h-4 w-4 flex-shrink-0 ${plan.highlight ? "text-emerald-light" : "text-emerald-bright"}`} />
+                  <li key={f} className="flex items-start gap-2.5 text-sm">
+                    <Check className={`h-4 w-4 flex-shrink-0 mt-0.5 ${plan.highlight ? "text-emerald-light" : "text-emerald-bright"}`} />
                     <span className={plan.highlight ? "text-ivory/80" : "text-ink-mid"}>{f}</span>
                   </li>
                 ))}
               </ul>
-              <Link href={plan.href}>
+              <Link href={plan.href} className="mt-auto">
                 <Button
                   variant={plan.highlight ? "secondary" : "primary"}
                   size="md"
