@@ -44,9 +44,9 @@ export function AuthLayout({ children, quote, quoteAuthor }: AuthLayoutProps) {
           ) : (
             <div className="space-y-4">
               {[
-                { label: "NFC + QR ready",      sub: "Works on all phones" },
-                { label: "Physical card included", sub: "We print & ship" },
-                { label: "Team management",       sub: "One dashboard for all" },
+                { label: "NFC + QR ready",        sub: "Works on all phones" },
+                { label: "Eco tap card included", sub: "We print & ship" },
+                { label: "Team management",        sub: "One dashboard for all" },
               ].map((item) => (
                 <div key={item.label} className="flex items-start gap-3">
                   <div className="mt-0.5 w-5 h-5 rounded-full bg-emerald-bright/20 border border-emerald-light/20 flex items-center justify-center flex-shrink-0">
@@ -66,7 +66,7 @@ export function AuthLayout({ children, quote, quoteAuthor }: AuthLayoutProps) {
 
         {/* Footer */}
         <p className="relative text-xs font-mono text-ivory/30 tracking-wide">
-          Built in Kigali, Rwanda
+          Eco-friendly business cards
         </p>
       </div>
 

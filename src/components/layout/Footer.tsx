@@ -3,9 +3,9 @@ import { BrandLogo } from "@/components/brand/BrandLogo";
 
 const FOOTER_LINKS = {
   Product: [
-    { label: "How it works", href: "#how-it-works" },
-    { label: "Features",     href: "#features" },
-    { label: "Pricing",      href: "#pricing" },
+    { label: "How it works", href: "/how-it-works" },
+    { label: "Features",     href: "/features" },
+    { label: "Pricing",      href: "/pricing" },
   ],
   Company: [
     { label: "About",   href: "#" },
@@ -29,10 +29,10 @@ export function Footer() {
               <BrandLogo variant="white" iconSize="md" />
             </div>
             <p className="text-sm text-ivory/60 leading-relaxed max-w-xs">
-              Smart NFC and QR digital business cards for companies and individuals across Rwanda.
+              Eco-friendly digital business cards for companies and individuals across the world.
             </p>
             <p className="text-xs text-ivory/40 mt-6 font-mono tracking-wide">
-              Built in Kigali, Rwanda
+              Eco-friendly business cards — one tap, zero waste, across the world.
             </p>
           </div>
 
@@ -57,20 +57,9 @@ export function Footer() {
         </div>
 
         {/* Bottom bar */}
-        <div className="pt-8 border-t border-ivory/10 flex flex-col md:flex-row items-center justify-between gap-4">
-          <p className="text-xs text-ivory/40">
-            © {new Date().getFullYear()} <strong>Eco</strong>Tap. All rights reserved.
-          </p>
-          <p className="text-xs text-ivory/40">
-            Built by{" "}
-            <a
-              href="https://rdmc.rw"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="text-emerald-light hover:text-ivory transition-colors"
-            >
-              RDMC Ltd
-            </a>
+        <div className="pt-8 border-t border-ivory/10">
+          <p className="text-xs text-ivory/40 text-center">
+            © {new Date().getFullYear()} EcoTap. All rights reserved.
           </p>
         </div>
       </div>
