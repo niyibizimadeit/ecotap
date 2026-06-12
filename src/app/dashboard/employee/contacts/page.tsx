@@ -83,6 +83,7 @@ async function ContactsContent() {
                 </div>
                 <div className="min-w-0">
                   <p className="text-sm font-medium text-ink truncate">{c.visitor_name}</p>
+                  {c.visitor_organization && <p className="text-xs text-ink-light truncate">{c.visitor_organization}</p>}
                   {c.message && <p className="text-xs text-ink-light truncate italic">{c.message}</p>}
                 </div>
               </div>

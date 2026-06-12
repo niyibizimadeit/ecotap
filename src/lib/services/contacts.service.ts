@@ -14,6 +14,7 @@ export async function recordExchange(data: {
   visitor_name: string;
   visitor_email?: string;
   visitor_phone?: string;
+  visitor_organization?: string;
   message?: string;
   event_id?: string;
   device_type?: DeviceType;
@@ -29,15 +30,16 @@ export async function recordExchange(data: {
   }
 
   const exchange = await exchangesRepo.createExchange({
-    card_id:       data.card_id,
-    visitor_name:  data.visitor_name,
-    visitor_email: data.visitor_email,
-    visitor_phone: data.visitor_phone,
-    message:       data.message,
-    event_id:      data.event_id,
-    device_type:   data.device_type,
-    referrer:      data.referrer,
-    country:       data.country,
+    card_id:              data.card_id,
+    visitor_name:         data.visitor_name,
+    visitor_email:        data.visitor_email,
+    visitor_phone:        data.visitor_phone,
+    visitor_organization: data.visitor_organization,
+    message:              data.message,
+    event_id:             data.event_id,
+    device_type:          data.device_type,
+    referrer:             data.referrer,
+    country:              data.country,
   });
 
   if (!exchange) return { success: false, error: "Failed to record contact exchange." };

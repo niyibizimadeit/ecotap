@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { Input } from "@/components/ui/Input";
+import { Input, Textarea } from "@/components/ui/Input";
 import { Button } from "@/components/ui/Button";
 import { CheckCircle2, ArrowRight } from "lucide-react";
 import { submitContactExchange } from "@/app/actions/contacts.actions";
@@ -13,14 +13,14 @@ interface ContactExchangeFormProps {
 }
 
 export function ContactExchangeForm({ cardId, accentColor, ownerName }: ContactExchangeFormProps) {
-  const [form, setForm]       = useState({ name: "", email: "", phone: "" });
+  const [form, setForm]       = useState({ name: "", email: "", phone: "", organization: "", notes: "" });
   const [submitted, setSubmitted] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError]     = useState<string | null>(null);
   const [open, setOpen]       = useState(false);
 
   const set = (field: keyof typeof form) =>
-    (e: React.ChangeEvent<HTMLInputElement>) =>
+    (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) =>
       setForm((f) => ({ ...f, [field]: e.target.value }));
 
   async function submit(e: React.FormEvent) {
@@ -29,10 +29,12 @@ export function ContactExchangeForm({ cardId, accentColor, ownerName }: ContactE
     setLoading(true);
     setError(null);
     const result = await submitContactExchange({
-      card_id:       cardId,
-      visitor_name:  form.name,
-      visitor_phone: form.phone,
-      visitor_email: form.email || undefined,
+      card_id:              cardId,
+      visitor_name:         form.name,
+      visitor_phone:        form.phone,
+      visitor_email:        form.email || undefined,
+      visitor_organization: form.organization || undefined,
+      message:              form.notes || undefined,
     });
     setLoading(false);
     if (result.success) {
@@ -114,6 +116,21 @@ export function ContactExchangeForm({ cardId, accentColor, ownerName }: ContactE
             value={form.email}
             onChange={set("email")}
             hint="Optional"
+          />
+          <Input
+            label="Organization"
+            placeholder="Acme Corp"
+            value={form.organization}
+            onChange={set("organization")}
+            hint="Optional — where you work"
+          />
+          <Textarea
+            label="Notes"
+            placeholder="Nice to meet you at the conference!"
+            value={form.notes}
+            onChange={set("notes")}
+            hint="Optional — add a short note"
+            className="min-h-[60px]"
           />
           {error && (
             <p className="text-sm text-red-600 bg-red-50 rounded-lg px-3 py-2" role="alert">

@@ -19,6 +19,7 @@ export async function submitContactExchange(data: {
   visitor_name: string;
   visitor_email?: string;
   visitor_phone?: string;
+  visitor_organization?: string;
   message?: string;
   event_id?: string;
   device_type?: DeviceType;

@@ -64,6 +64,7 @@ export async function createExchange(exchange: {
   visitor_name: string;
   visitor_email?: string;
   visitor_phone?: string;
+  visitor_organization?: string;
   message?: string;
   event_id?: string;
   device_type?: DeviceType;
@@ -75,15 +76,16 @@ export async function createExchange(exchange: {
   const { data } = await supabase
     .from("contact_exchanges")
     .insert({
-      card_id:       exchange.card_id,
-      visitor_name:  exchange.visitor_name,
-      visitor_email: exchange.visitor_email ?? null,
-      visitor_phone: exchange.visitor_phone ?? null,
-      message:       exchange.message ?? null,
-      event_id:      exchange.event_id ?? null,
-      device_type:   exchange.device_type ?? "unknown",
-      referrer:      exchange.referrer ?? null,
-      country:       exchange.country ?? null,
+      card_id:              exchange.card_id,
+      visitor_name:         exchange.visitor_name,
+      visitor_email:        exchange.visitor_email ?? null,
+      visitor_phone:        exchange.visitor_phone ?? null,
+      visitor_organization: exchange.visitor_organization ?? null,
+      message:              exchange.message ?? null,
+      event_id:             exchange.event_id ?? null,
+      device_type:          exchange.device_type ?? "unknown",
+      referrer:             exchange.referrer ?? null,
+      country:              exchange.country ?? null,
     })
     .select()
     .single();

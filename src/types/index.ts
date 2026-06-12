@@ -242,17 +242,18 @@ export interface DailyCardStat {
  * Enriched with device and referrer metadata for ML feature engineering.
  */
 export interface ContactExchange {
-  id:            string;
-  card_id:       string;
-  visitor_name:  string;
-  visitor_email: string | null;
-  visitor_phone: string | null;
-  message:       string | null;  // Optional short note from the visitor
-  event_id:      string | null;  // Links to the card_events row for this session
-  device_type:   DeviceType;
-  referrer:      string | null;
-  country:       string | null;
-  created_at:    string;
+  id:                   string;
+  card_id:              string;
+  visitor_name:         string;
+  visitor_email:        string | null;
+  visitor_phone:        string | null;
+  visitor_organization: string | null;  // Optional org/company from the visitor
+  message:              string | null;  // Optional short note from the visitor
+  event_id:             string | null;  // Links to the card_events row for this session
+  device_type:          DeviceType;
+  referrer:             string | null;
+  country:              string | null;
+  created_at:           string;
 }
 
 /**

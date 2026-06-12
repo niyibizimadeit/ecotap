@@ -454,6 +454,10 @@ create table contact_exchanges (
 comment on table  contact_exchanges           is 'Visitor contact submissions from public card pages.';
 comment on column contact_exchanges.event_id  is 'Links to the card_events row for this session — enables full session context.';
 comment on column contact_exchanges.message   is 'Optional short note left by the visitor (e.g. "Great meeting you at the conference!").';
+
+-- Migration 005b: Visitor organization
+alter table contact_exchanges add column if not exists visitor_organization text;
+comment on column contact_exchanges.visitor_organization is 'Optional organization/company name provided by the visitor.';
 comment on constraint chk_has_contact_info on contact_exchanges is 'Must have at least one of email or phone.';
 
 -- ----------------------------------------------------------
