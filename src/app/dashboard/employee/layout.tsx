@@ -151,7 +151,7 @@ export default function EmployeeDashboardLayout({ children }: { children: React.
                   </Link>
                 );
               })}
-              <div className="pt-2 border-t" style={{ borderColor: "rgba(6,78,59,0.08)" }}>
+              <div className="pt-2 border-t space-y-0.5" style={{ borderColor: "rgba(6,78,59,0.08)" }}>
                 <a
                   href={`/${userData.username || "you"}`}
                   target="_blank"
@@ -161,6 +161,13 @@ export default function EmployeeDashboardLayout({ children }: { children: React.
                   <ExternalLink className="h-4 w-4" />
                   View my card
                 </a>
+                <button
+                  onClick={() => signOut()}
+                  className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm text-ink-light hover:text-red-600 hover:bg-red-50 transition-all"
+                >
+                  <LogOut className="h-4 w-4" />
+                  Sign out
+                </button>
               </div>
             </div>
           </div>

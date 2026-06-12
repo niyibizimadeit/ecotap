@@ -154,6 +154,21 @@ export default function AdminDashboardLayout({ children }: { children: React.Rea
                 );
               })}
             </div>
+
+            {/* Bottom */}
+            <div
+              className="px-4 py-3 border-t"
+              style={{ borderColor: "rgba(255,255,255,0.08)" }}
+            >
+              <button
+                onClick={() => signOut()}
+                className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm"
+                style={{ color: "rgba(254,252,232,0.5)" }}
+              >
+                <LogOut className="h-4 w-4" />
+                Sign out
+              </button>
+            </div>
           </div>
         </div>
       )}

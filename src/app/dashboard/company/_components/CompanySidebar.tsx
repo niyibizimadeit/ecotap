@@ -191,6 +191,27 @@ export default function CompanySidebar({
           >
             <div className="px-4 py-3 space-y-0.5">
               <NavLinks onClick={() => setMobileOpen(false)} />
+              <div
+                className="pt-2 border-t space-y-0.5"
+                style={{ borderColor: "rgba(6,78,59,0.08)" }}
+              >
+                <a
+                  href={`/${companySlug}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm text-ink-light"
+                >
+                  <ExternalLink className="h-4 w-4" />
+                  View company page
+                </a>
+                <button
+                  onClick={() => signOut()}
+                  className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm text-ink-light hover:text-red-600 hover:bg-red-50 transition-all"
+                >
+                  <LogOut className="h-4 w-4" />
+                  Sign out
+                </button>
+              </div>
             </div>
           </div>
         </div>
