@@ -80,9 +80,9 @@ export function SocialIconRow({ links, accentColor }: SocialIconsProps) {
           aria-label={label}
           className="group flex items-center gap-2 px-3 py-2 rounded-xl border transition-all duration-200 hover:-translate-y-0.5"
           style={{
-            backgroundColor: "rgba(254,252,232,0.7)",
-            borderColor: "rgba(6,78,59,0.12)",
-            color: "#78716C",
+            backgroundColor: "#ECFDF5",
+            borderColor: "rgba(6,78,59,0.08)",
+            color: "#065F46",
           }}
           onMouseEnter={(e) => {
             (e.currentTarget as HTMLAnchorElement).style.backgroundColor = accentColor;
@@ -90,9 +90,9 @@ export function SocialIconRow({ links, accentColor }: SocialIconsProps) {
             (e.currentTarget as HTMLAnchorElement).style.color           = "#FEFCE8";
           }}
           onMouseLeave={(e) => {
-            (e.currentTarget as HTMLAnchorElement).style.backgroundColor = "rgba(254,252,232,0.7)";
-            (e.currentTarget as HTMLAnchorElement).style.borderColor     = "rgba(6,78,59,0.12)";
-            (e.currentTarget as HTMLAnchorElement).style.color           = "#78716C";
+            (e.currentTarget as HTMLAnchorElement).style.backgroundColor = "#ECFDF5";
+            (e.currentTarget as HTMLAnchorElement).style.borderColor     = "rgba(6,78,59,0.08)";
+            (e.currentTarget as HTMLAnchorElement).style.color           = "#065F46";
           }}
         >
           {icon}

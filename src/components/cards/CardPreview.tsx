@@ -115,7 +115,7 @@ export function CardPreview({
                   <div
                     key={key}
                     className="w-7 h-7 rounded-lg flex items-center justify-center text-[10px] border"
-                    style={{ backgroundColor: "#FEF9EF", borderColor: "rgba(6,78,59,0.1)", color: "#78716C" }}
+                    style={{ backgroundColor: "#ECFDF5", borderColor: "rgba(6,78,59,0.08)", color: "#065F46" }}
                   >
                     {SOCIAL_LABELS[key]}
                   </div>
@@ -134,7 +134,7 @@ export function CardPreview({
                       <div
                         key={`co-${key}`}
                         className="w-7 h-7 rounded-lg flex items-center justify-center text-[10px] border"
-                        style={{ backgroundColor: accentColor, borderColor: "transparent", color: "#FEFCE8", opacity: 0.75 }}
+                        style={{ backgroundColor: "#D1FAE5", borderColor: "rgba(6,78,59,0.12)", color: "#065F46" }}
                       >
                         {SOCIAL_LABELS[key]}
                       </div>
