@@ -34,7 +34,7 @@ export default function PricingPage() {
               desc: "One-off purchase (≈ 50,000 RWF) — Executives, consultants, entrepreneurs.",
               features: ["1× Premium rPVC Smart Card", "NTAG213 NFC chip (100,000+ taps)", "Laser-engraved EcoTap professional branding", "Full sync with free Personal Dashboard"],
               cta: "Order Your Card",
-              href: "/org/register",
+              href: "/register",
               highlight: true,
             },
             {
@@ -61,7 +61,7 @@ export default function PricingPage() {
               desc: "Enterprises, conglomerates, multinationals.",
               features: ["Domain routing: tap.yourcompany.rw", "Custom API endpoints → Salesforce, HubSpot", "Dedicated RDMC technical account manager", "Full white-label branding"],
               cta: "Request Quote",
-              href: "/contact",
+              href: "/org/register",
               highlight: false,
             },
             {
