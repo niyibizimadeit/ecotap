@@ -1,7 +1,8 @@
 "use server";
 
 import { getSupabase, getServiceSupabase } from "@/lib/supabase/server";
-import { uploadProfilePhoto, uploadCompanyLogo, uploadDesignPreview, deleteFromR2, keyFromUrl } from "@/lib/r2/upload";
+import { uploadProfilePhoto, uploadCompanyLogo, uploadDesignPreview, uploadToR2, deleteFromR2, keyFromUrl } from "@/lib/r2/upload";
+import { uploadPaymentScreenshot as uploadPaymentScreenshotService } from "@/lib/services/orders.service";
 import type { ActionResult } from "@/types";
 
 // ── File validation ───────────────────────────────────────────────────────────
@@ -116,6 +117,53 @@ export async function uploadDesignImage(
   if (error) return { success: false, error: "Failed to save preview URL." };
 
   return { success: true, data: { url: result.url } };
+}
+
+// ── Payment screenshot ────────────────────────────────────────────────────────
+
+/**
+ * Upload a payment screenshot to R2. Does NOT link to any order yet —
+ * returns the URL so the caller can attach it when placing the order.
+ */
+export async function uploadPaymentScreenshot(
+  formData: FormData
+): Promise<ActionResult<{ url: string }>> {
+  const supabase = await getSupabase();
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return { success: false, error: "Not authenticated." };
+
+  const file = formData.get("file") as File | null;
+  const fileError = validateFile(file);
+  if (fileError) return { success: false, error: fileError };
+
+  const buffer = Buffer.from(await file!.arrayBuffer());
+  const result = await uploadToR2(buffer, file!.name, file!.type, "orders/pending");
+
+  if (!result.success || !result.url) {
+    return { success: false, error: result.error ?? "Upload failed." };
+  }
+
+  return { success: true, data: { url: result.url } };
+}
+
+/**
+ * Link a previously-uploaded payment screenshot to an order and mark it as paid.
+ * Called after the order is created.
+ */
+export async function linkPaymentToOrder(
+  orderId: string,
+  screenshotUrl: string
+): Promise<ActionResult<{ url: string }>> {
+  const supabase = await getSupabase();
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return { success: false, error: "Not authenticated." };
+
+  const updated = await uploadPaymentScreenshotService(orderId, screenshotUrl);
+  if (!updated.success) {
+    return { success: false, error: updated.error ?? "Failed to record payment." };
+  }
+
+  return { success: true, data: { url: screenshotUrl } };
 }
 
 // ── Delete ───────────────────────────────────────────────────────────────────

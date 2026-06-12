@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { Button } from "@/components/ui/Button";
-import { ArrowRight, Package, Clock, CheckCircle2 } from "lucide-react";
+import { ArrowRight, Package, Clock, CheckCircle2, CreditCard, Truck } from "lucide-react";
 
 interface Props {
   searchParams: Promise<{ order?: string }>;
@@ -36,10 +36,10 @@ export default async function OrderSuccessPage({ searchParams }: Props) {
           Order placed
         </p>
         <h1 className="font-serif text-display-md text-emerald-deep mb-3">
-          You're all set!
+          You&apos;re all set!
         </h1>
         <p className="text-ink-light leading-relaxed mb-2">
-          Your card order has been submitted for review.
+          Your order and payment screenshot have been submitted for review.
         </p>
         {orderId && (
           <p
@@ -61,18 +61,24 @@ export default async function OrderSuccessPage({ searchParams }: Props) {
             {[
               {
                 icon: <CheckCircle2 className="h-4 w-4" style={{ color: "#059669" }} />,
-                title: "Order submitted",
-                desc:  "Your order is in the queue for review.",
+                title: "Order & payment submitted",
+                desc:  "Your order and payment screenshot are in the queue.",
                 done:  true,
               },
               {
-                icon: <Clock className="h-4 w-4" style={{ color: "#D97706" }} />,
-                title: "Admin approval",
-                desc:  "Our team will review and approve within 24 hours.",
+                icon: <CreditCard className="h-4 w-4" style={{ color: "#D97706" }} />,
+                title: "Payment verification",
+                desc:  "Our team will verify your payment within 24 hours.",
                 done:  false,
               },
               {
-                icon: <Package className="h-4 w-4" style={{ color: "#78716C" }} />,
+                icon: <Clock className="h-4 w-4" style={{ color: "#78716C" }} />,
+                title: "Admin approval",
+                desc:  "Once payment is verified, your order goes into production.",
+                done:  false,
+              },
+              {
+                icon: <Truck className="h-4 w-4" style={{ color: "#78716C" }} />,
                 title: "Production & shipping",
                 desc:  "Cards printed and shipped to your address in 3–5 days.",
                 done:  false,

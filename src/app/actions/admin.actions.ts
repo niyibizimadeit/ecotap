@@ -136,6 +136,14 @@ export async function markOrderDelivered(orderId: string): Promise<AnyActionResu
   return markDelivered(orderId);
 }
 
+export async function verifyPayment(orderId: string): Promise<AnyActionResult> {
+  if (!(await requireSuperAdmin())) {
+    return { success: false, error: "Unauthorized. Super admin only." };
+  }
+  const { verifyPayment: verify } = await import("@/lib/services/orders.service");
+  return verify(orderId);
+}
+
 // ── Data fetching (server-action safe for client components) ─────────────────
 
 export async function fetchOrders(): Promise<AnyActionResult> {

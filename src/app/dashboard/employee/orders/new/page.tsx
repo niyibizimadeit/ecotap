@@ -1,24 +1,29 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { PageHeader } from "@/components/dashboard/DashboardShared";
 import { DesignGallery, MOCK_DESIGNS, dbDesignToOption, type CardDesignOption } from "@/components/orders/DesignGallery";
 import { placeOrder, getActiveDesigns } from "@/app/actions/orders.actions";
+import { uploadPaymentScreenshot, linkPaymentToOrder } from "@/app/actions/uploads.actions";
 import { OrderSummary } from "@/components/orders/OrderSummary";
 import { Button } from "@/components/ui/Button";
 import { Input, Textarea } from "@/components/ui/Input";
 import { cn } from "@/lib/utils";
-import { ArrowLeft, ArrowRight, Package } from "lucide-react";
+import { CARD_PRICES, USD_TO_RWF_RATE, MOMO_PAY, usdToRwf } from "@/constants";
+import { ArrowLeft, ArrowRight, Package, Copy, Check, Upload, Banknote, Smartphone } from "lucide-react";
 import type { ShippingAddress } from "@/types";
 
 /* ── Types ── */
-type Step = 1 | 2 | 3;
+type Step = 1 | 2 | 3 | 4;
+type Currency = "USD" | "RWF";
 
 interface OrderForm {
   design_id:        string;
   quantity:         number;
   shipping_address: ShippingAddress;
+  currency:         Currency;
+  screenshot_url:   string | null;
 }
 
 const EMPTY_ADDRESS: ShippingAddress = {
@@ -32,8 +37,19 @@ const EMPTY_ADDRESS: ShippingAddress = {
 const STEPS = [
   { number: 1, label: "Choose design"   },
   { number: 2, label: "Shipping details" },
-  { number: 3, label: "Review & place"  },
+  { number: 3, label: "Payment"          },
+  { number: 4, label: "Review & place"   },
 ];
+
+/* ── Price helpers ── */
+function getPricePerCard(currency: Currency): number {
+  return currency === "USD" ? CARD_PRICES.individual : usdToRwf(CARD_PRICES.individual);
+}
+
+function formatCurrency(amount: number, currency: Currency): string {
+  if (currency === "USD") return `$${amount}`;
+  return `${amount.toLocaleString()} RWF`;
+}
 
 /* ── Main component ── */
 export default function NewOrderPage() {
@@ -43,11 +59,16 @@ export default function NewOrderPage() {
   const [loading, setLoading] = useState(false);
   const [errors,  setErrors]  = useState<Record<string, string>>({});
   const [designs, setDesigns] = useState<CardDesignOption[]>(MOCK_DESIGNS);
+  const [screenshotUploading, setScreenshotUploading] = useState(false);
+  const [copied, setCopied]   = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const [form, setForm] = useState<OrderForm>({
     design_id:        "",
     quantity:         1,
     shipping_address: EMPTY_ADDRESS,
+    currency:         "RWF",
+    screenshot_url:   null,
   });
 
   // Fetch active designs from DB on mount
@@ -61,6 +82,8 @@ export default function NewOrderPage() {
 
   /* helpers */
   const selectedDesign = designs.find(d => d.id === form.design_id) as CardDesignOption | undefined;
+  const pricePerCard   = getPricePerCard(form.currency);
+  const totalPrice     = pricePerCard * form.quantity;
 
   const setAddress = (field: keyof ShippingAddress) =>
     (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) =>
@@ -87,9 +110,19 @@ export default function NewOrderPage() {
     return Object.keys(errs).length === 0;
   }
 
+  function validateStep3(): boolean {
+    if (!form.screenshot_url) {
+      setErrors({ screenshot: "Please upload your payment screenshot before continuing." });
+      return false;
+    }
+    setErrors({});
+    return true;
+  }
+
   function next() {
     if (step === 1 && !validateStep1()) return;
     if (step === 2 && !validateStep2()) return;
+    if (step === 3 && !validateStep3()) return;
     setStep(s => (s + 1) as Step);
     window.scrollTo({ top: 0, behavior: "smooth" });
   }
@@ -99,17 +132,57 @@ export default function NewOrderPage() {
     window.scrollTo({ top: 0, behavior: "smooth" });
   }
 
+  /* screenshot upload */
+  async function handleScreenshotUpload(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    setScreenshotUploading(true);
+    setErrors({});
+
+    const fd = new FormData();
+    fd.append("file", file);
+
+    const result = await uploadPaymentScreenshot(fd);
+
+    setScreenshotUploading(false);
+
+    if (result.success && result.data) {
+      setForm(f => ({ ...f, screenshot_url: result.data!.url }));
+    } else {
+      setErrors({ screenshot: result.error ?? "Upload failed. Please try again." });
+    }
+  }
+
+  /* copy momo ussd code */
+  async function copyMomoCode() {
+    await navigator.clipboard.writeText(MOMO_PAY.code);
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000);
+  }
+
+  /* place order */
   async function handlePlaceOrder() {
     setLoading(true);
     const result = await placeOrder({
       design_id:        form.design_id,
       quantity:         form.quantity,
       shipping_address: form.shipping_address,
+      payment_currency: form.currency,
+      payment_amount:   totalPrice,
+      momo_phone:       form.currency === "RWF" ? MOMO_PAY.code : undefined,
     });
-    setLoading(false);
     if (result.success && result.data) {
+      // Link the payment screenshot to the newly created order
+      if (form.screenshot_url) {
+        const linkResult = await linkPaymentToOrder(result.data.id, form.screenshot_url);
+        if (!linkResult.success) {
+          console.error("Failed to link payment screenshot:", linkResult.error);
+        }
+      }
       router.push(`/dashboard/employee/orders/success?order=${result.data.id}`);
     } else {
+      setLoading(false);
       setErrors({ submit: result.error ?? "Failed to place order. Please try again." });
     }
   }
@@ -272,17 +345,214 @@ export default function NewOrderPage() {
                   Back
                 </Button>
                 <Button variant="primary" size="lg" rightIcon={<ArrowRight className="h-4 w-4" />} onClick={next} className="flex-1">
+                  Continue to payment
+                </Button>
+              </div>
+            </div>
+          )}
+
+          {/* Step 3 — Payment */}
+          {step === 3 && selectedDesign && (
+            <div className="animate-fade-up space-y-5">
+              <SectionHeading
+                number={3}
+                title="Complete your payment"
+                subtitle="Pay via mobile money or bank transfer, then upload your receipt."
+              />
+
+              {/* Currency toggle */}
+              <div
+                className="rounded-2xl border p-5"
+                style={{ backgroundColor: "#FEF9EF", borderColor: "rgba(6,78,59,0.08)" }}
+              >
+                <p className="text-sm font-semibold text-emerald-deep mb-3">Select currency</p>
+                <div className="flex gap-2">
+                  {(["RWF", "USD"] as Currency[]).map(c => (
+                    <button
+                      key={c}
+                      onClick={() => setForm(f => ({ ...f, currency: c, screenshot_url: null }))}
+                      className={cn(
+                        "flex-1 py-3 px-4 rounded-xl text-sm font-semibold border transition-all",
+                        form.currency === c
+                          ? "border-emerald-deep text-ivory"
+                          : "border-emerald-light/50 text-emerald-deep hover:bg-emerald-pale/50"
+                      )}
+                      style={form.currency === c ? { backgroundColor: "#064E3B" } : { backgroundColor: "transparent" }}
+                    >
+                      {c === "RWF" ? "RWF (MoMo)" : "USD (Bank)"}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* Price summary */}
+              <div
+                className="rounded-2xl border p-5"
+                style={{ backgroundColor: form.currency === "RWF" ? "#ECFDF5" : "#EFF6FF", borderColor: "rgba(6,78,59,0.08)" }}
+              >
+                <p className="text-xs font-mono tracking-widest text-ink-light uppercase mb-3">Order total</p>
+                <div className="flex items-baseline justify-between">
+                  <div>
+                    <p className="font-serif text-3xl font-bold text-emerald-deep">
+                      {formatCurrency(totalPrice, form.currency)}
+                    </p>
+                    <p className="text-sm text-ink-light mt-0.5">
+                      {form.quantity} card{form.quantity !== 1 ? "s" : ""} × {formatCurrency(pricePerCard, form.currency)} each
+                    </p>
+                  </div>
+                  {form.currency === "RWF" && (
+                    <p className="text-xs text-ink-light text-right">
+                      ≈ ${CARD_PRICES.individual * form.quantity} USD
+                    </p>
+                  )}
+                </div>
+              </div>
+
+              {/* Payment instructions */}
+              {form.currency === "RWF" ? (
+                <div
+                  className="rounded-2xl border p-5 space-y-4"
+                  style={{ backgroundColor: "#FEF9EF", borderColor: "rgba(6,78,59,0.08)" }}
+                >
+                  <div className="flex items-center gap-2">
+                    <div
+                      className="w-8 h-8 rounded-lg flex items-center justify-center"
+                      style={{ backgroundColor: "#064E3B" }}
+                    >
+                      <Smartphone className="h-4 w-4" style={{ color: "#FEFCE8" }} />
+                    </div>
+                    <p className="text-sm font-semibold text-emerald-deep">MoMo Pay</p>
+                  </div>
+
+                  {/* USSD code display */}
+                  <div
+                    className="rounded-xl border-2 border-dashed p-4 text-center"
+                    style={{ borderColor: "rgba(6,78,59,0.2)", backgroundColor: "#FEFCE8" }}
+                  >
+                    <p className="text-xs text-ink-light mb-1">Dial this USSD code</p>
+                    <p className="font-mono text-2xl font-bold text-emerald-deep tracking-wider">
+                      {MOMO_PAY.code}
+                    </p>
+                    <p className="text-xs text-ink-light mt-1">{MOMO_PAY.name}</p>
+                    <button
+                      onClick={copyMomoCode}
+                      className="mt-3 inline-flex items-center gap-1.5 text-xs font-medium transition-colors"
+                      style={{ color: copied ? "#059669" : "#064E3B" }}
+                    >
+                      {copied ? (
+                        <><Check className="h-3.5 w-3.5" /> Copied</>
+                      ) : (
+                        <><Copy className="h-3.5 w-3.5" /> Copy code</>
+                      )}
+                    </button>
+                  </div>
+
+                  <p className="text-xs text-ink-light leading-relaxed">
+                    {MOMO_PAY.instructions}
+                  </p>
+                </div>
+              ) : (
+                <div
+                  className="rounded-2xl border p-5 space-y-3"
+                  style={{ backgroundColor: "#EFF6FF", borderColor: "rgba(37,99,235,0.15)" }}
+                >
+                  <div className="flex items-center gap-2">
+                    <div
+                      className="w-8 h-8 rounded-lg flex items-center justify-center"
+                      style={{ backgroundColor: "#1E40AF" }}
+                    >
+                      <Banknote className="h-4 w-4" style={{ color: "#FEFCE8" }} />
+                    </div>
+                    <p className="text-sm font-semibold" style={{ color: "#1E3A8A" }}>Bank Transfer / Card</p>
+                  </div>
+                  <p className="text-xs leading-relaxed" style={{ color: "#1E40AF" }}>
+                    For USD payments, call or WhatsApp us at{" "}
+                    <a href="tel:+250783757699" className="font-semibold underline hover:opacity-80">+250 783 757 699</a>
+                    {" "}for bank details. Once you&apos;ve made the transfer,
+                    upload your confirmation below.
+                  </p>
+                </div>
+              )}
+
+              {/* Screenshot upload */}
+              <div
+                className="rounded-2xl border p-5 space-y-3"
+                style={{ backgroundColor: "#FEF9EF", borderColor: "rgba(6,78,59,0.08)" }}
+              >
+                <p className="text-sm font-semibold text-emerald-deep">
+                  Upload payment confirmation
+                </p>
+
+                {form.screenshot_url ? (
+                  <div className="space-y-3">
+                    <img
+                      src={form.screenshot_url}
+                      alt="Payment screenshot"
+                      className="w-full max-w-sm rounded-xl border"
+                      style={{ borderColor: "rgba(6,78,59,0.1)" }}
+                    />
+                    <div className="flex gap-2">
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => setForm(f => ({ ...f, screenshot_url: null }))}
+                      >
+                        Remove
+                      </Button>
+                    </div>
+                  </div>
+                ) : (
+                  <div
+                    className="rounded-xl border-2 border-dashed p-8 text-center cursor-pointer transition-all hover:border-emerald-bright/40"
+                    style={{ borderColor: "rgba(6,78,59,0.15)" }}
+                    onClick={() => fileInputRef.current?.click()}
+                  >
+                    {screenshotUploading ? (
+                      <div className="space-y-2">
+                        <div
+                          className="w-8 h-8 border-2 border-t-transparent rounded-full animate-spin mx-auto"
+                          style={{ borderColor: "rgba(6,78,59,0.2)", borderTopColor: "#064E3B" }}
+                        />
+                        <p className="text-xs text-ink-light">Uploading…</p>
+                      </div>
+                    ) : (
+                      <div className="space-y-2">
+                        <Upload className="h-8 w-8 mx-auto text-ink-light" />
+                        <p className="text-sm text-ink-mid">Click to upload screenshot</p>
+                        <p className="text-xs text-ink-light">JPEG, PNG, or WebP — max 5MB</p>
+                      </div>
+                    )}
+                    <input
+                      ref={fileInputRef}
+                      type="file"
+                      accept="image/jpeg,image/png,image/webp"
+                      className="hidden"
+                      onChange={handleScreenshotUpload}
+                    />
+                  </div>
+                )}
+
+                {errors.screenshot && (
+                  <p className="text-sm text-red-600">{errors.screenshot}</p>
+                )}
+              </div>
+
+              <div className="flex gap-3">
+                <Button variant="secondary" size="lg" leftIcon={<ArrowLeft className="h-4 w-4" />} onClick={back}>
+                  Back
+                </Button>
+                <Button variant="primary" size="lg" rightIcon={<ArrowRight className="h-4 w-4" />} onClick={next} className="flex-1">
                   Review order
                 </Button>
               </div>
             </div>
           )}
 
-          {/* Step 3 — Review */}
-          {step === 3 && selectedDesign && (
+          {/* Step 4 — Review */}
+          {step === 4 && selectedDesign && (
             <div className="animate-fade-up space-y-5">
               <SectionHeading
-                number={3}
+                number={4}
                 title="Review your order"
                 subtitle="Check everything looks right before placing."
               />
@@ -291,15 +561,53 @@ export default function NewOrderPage() {
                 quantity={form.quantity}
                 address={form.shipping_address}
               />
+
+              {/* Payment summary */}
+              <div
+                className="rounded-2xl border p-4 space-y-3"
+                style={{ backgroundColor: "#FEF9EF", borderColor: "rgba(6,78,59,0.08)" }}
+              >
+                <p className="text-xs font-mono tracking-widest text-ink-light uppercase">Payment</p>
+                <div className="flex items-center justify-between">
+                  <p className="text-sm text-ink">Amount</p>
+                  <p className="text-sm font-semibold text-emerald-deep">
+                    {formatCurrency(totalPrice, form.currency)}
+                  </p>
+                </div>
+                <div className="flex items-center justify-between">
+                  <p className="text-sm text-ink">Method</p>
+                  <p className="text-sm font-medium text-ink">
+                    {form.currency === "RWF" ? "MoMo Pay" : "Bank Transfer"}
+                  </p>
+                </div>
+                {form.screenshot_url && (
+                  <div>
+                    <p className="text-xs text-ink-light mb-1.5">Receipt</p>
+                    <img
+                      src={form.screenshot_url}
+                      alt="Payment receipt"
+                      className="w-full max-w-[200px] rounded-lg border"
+                      style={{ borderColor: "rgba(6,78,59,0.1)" }}
+                    />
+                  </div>
+                )}
+              </div>
+
               <div
                 className="rounded-2xl border p-4 text-sm"
                 style={{ backgroundColor: "#FEF3C7", borderColor: "rgba(146,64,14,0.15)", color: "#92400E" }}
               >
-                <p className="font-medium mb-0.5">Pricing note</p>
+                <p className="font-medium mb-0.5">What happens next</p>
                 <p className="text-xs leading-relaxed" style={{ color: "rgba(146,64,14,0.8)" }}>
-                  Pricing is calculated based on your subscription plan and quantity. The Super Admin will confirm the cost when approving your order.
+                  Your payment screenshot will be reviewed by the EcoTap team. Once verified, your order
+                  will be approved for production. You&apos;ll receive updates as your cards are printed and shipped.
                 </p>
               </div>
+
+              {errors.submit && (
+                <p className="text-sm text-red-600 text-center">{errors.submit}</p>
+              )}
+
               <div className="flex gap-3">
                 <Button variant="secondary" size="lg" leftIcon={<ArrowLeft className="h-4 w-4" />} onClick={back}>
                   Back
@@ -358,6 +666,19 @@ export default function NewOrderPage() {
               <p className="font-serif text-xl font-semibold text-emerald-deep">{form.quantity}</p>
             </div>
 
+            {/* Price */}
+            {step >= 3 && (
+              <div
+                className="rounded-2xl border px-4 py-3"
+                style={{ backgroundColor: "#ECFDF5", borderColor: "rgba(6,78,59,0.08)" }}
+              >
+                <p className="text-xs text-ink-light mb-0.5">Total ({form.currency})</p>
+                <p className="font-serif text-xl font-semibold text-emerald-deep">
+                  {formatCurrency(totalPrice, form.currency)}
+                </p>
+              </div>
+            )}
+
             {/* Shipping */}
             {form.shipping_address.city && (
               <div
@@ -366,6 +687,19 @@ export default function NewOrderPage() {
               >
                 <p className="text-xs text-ink-light mb-1">Shipping to</p>
                 <p className="text-sm font-medium text-ink">{form.shipping_address.city}, {form.shipping_address.country}</p>
+              </div>
+            )}
+
+            {/* Payment status in sidebar */}
+            {step >= 3 && (
+              <div
+                className="rounded-2xl border px-4 py-3"
+                style={{ backgroundColor: form.screenshot_url ? "#ECFDF5" : "#FEF9EF", borderColor: "rgba(6,78,59,0.08)" }}
+              >
+                <p className="text-xs text-ink-light mb-1">Payment proof</p>
+                <p className={`text-xs font-medium ${form.screenshot_url ? "text-emerald-bright" : "text-gold"}`}>
+                  {form.screenshot_url ? "✓ Uploaded" : "○ Pending"}
+                </p>
               </div>
             )}
           </div>
@@ -379,12 +713,12 @@ export default function NewOrderPage() {
 
 function StepIndicator({ current }: { current: Step }) {
   return (
-    <div className="flex items-center gap-0 mb-2">
+    <div className="flex items-center gap-0 mb-2 overflow-x-auto">
       {STEPS.map((s, i) => {
         const done   = current > s.number;
         const active = current === s.number;
         return (
-          <div key={s.number} className="flex items-center">
+          <div key={s.number} className="flex items-center flex-shrink-0">
             <div className="flex items-center gap-2">
               <div
                 className={cn(
@@ -406,7 +740,7 @@ function StepIndicator({ current }: { current: Step }) {
             </div>
             {i < STEPS.length - 1 && (
               <div
-                className="h-px w-6 mx-2 transition-all duration-300"
+                className="h-px w-4 sm:w-6 mx-1 sm:mx-2 transition-all duration-300"
                 style={{ backgroundColor: done ? "#064E3B" : "#F0E6D3" }}
               />
             )}

@@ -334,6 +334,19 @@ comment on table  card_orders                 is 'Physical NFC card orders. Admi
 comment on column card_orders.shipping_address is 'JSONB: {street, city, country, postal_code?, notes?}.';
 comment on column card_orders.admin_notes      is 'Internal notes added by Super Admin during processing.';
 
+-- Migration 004b: Payment fields for MoMo Pay integration
+alter table card_orders add column if not exists payment_screenshot_url text;
+alter table card_orders add column if not exists payment_status         text not null default 'unpaid';
+alter table card_orders add column if not exists payment_amount         integer;
+alter table card_orders add column if not exists payment_currency       text not null default 'USD';
+alter table card_orders add column if not exists momo_phone             text;
+
+comment on column card_orders.payment_screenshot_url is 'R2 URL of the uploaded MoMo Pay / bank transfer screenshot.';
+comment on column card_orders.payment_status         is 'unpaid → paid (screenshot uploaded) → verified (admin confirmed).';
+comment on column card_orders.payment_amount         is 'Amount paid, in the currency specified by payment_currency.';
+comment on column card_orders.payment_currency       is 'USD or RWF — chosen by the user at payment time.';
+comment on column card_orders.momo_phone             is 'Phone number used for MoMo payment, if paid in RWF.';
+
 
 -- ============================================================
 -- EcoTap Migration 005: Analytics & ML Tables
@@ -1345,6 +1358,11 @@ create policy "card_orders: own read"
 create policy "card_orders: own insert"
   on card_orders for insert
   with check (profile_id = auth.uid());
+
+-- Users can update their own orders (e.g. attach payment screenshot)
+create policy "card_orders: own update"
+  on card_orders for update
+  using (profile_id = auth.uid());
 
 -- Super admin manages all orders
 create policy "card_orders: super admin all"

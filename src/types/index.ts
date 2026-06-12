@@ -166,16 +166,21 @@ export interface ShippingAddress {
 }
 
 export interface CardOrder {
-  id:               string;
-  profile_id:       string;
-  design_id:        string;
-  quantity:         number;
-  shipping_address: ShippingAddress;
-  status:           OrderStatus;
-  tracking_info:    string | null;
-  admin_notes:      string | null;
-  created_at:       string;
-  updated_at:       string;
+  id:                     string;
+  profile_id:             string;
+  design_id:              string;
+  quantity:               number;
+  shipping_address:       ShippingAddress;
+  status:                 OrderStatus;
+  tracking_info:          string | null;
+  admin_notes:            string | null;
+  payment_screenshot_url: string | null;
+  payment_status:         string;      // 'unpaid' | 'paid' | 'verified'
+  payment_amount:         number | null;
+  payment_currency:       string;      // 'USD' | 'RWF'
+  momo_phone:             string | null;
+  created_at:             string;
+  updated_at:             string;
 }
 
 // ── Analytics & ML ────────────────────────────────────────────────────────────
@@ -419,6 +424,9 @@ export interface OrderForm {
   design_id:        string;
   quantity:         number;
   shipping_address: ShippingAddress;
+  payment_currency?: string;  // 'USD' | 'RWF'
+  payment_amount?:   number;
+  momo_phone?:       string;
 }
 
 export interface RecordEventPayload {

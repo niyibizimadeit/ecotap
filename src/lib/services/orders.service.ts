@@ -44,6 +44,9 @@ export async function placeOrder(
     design_id:        data.design_id,
     quantity:         data.quantity,
     shipping_address: data.shipping_address as unknown as Record<string, unknown>,
+    payment_amount:   data.payment_amount,
+    payment_currency: data.payment_currency,
+    momo_phone:       data.momo_phone,
   });
 
   if (!order) return { success: false, error: "Failed to place order." };
@@ -116,4 +119,44 @@ export async function getAllOrders(
 ): Promise<ActionResult<CardOrderWithDesign[]>> {
   const orders = await ordersRepo.getAllOrders(filters);
   return { success: true, data: orders };
+}
+
+// ── Payment ────────────────────────────────────────────────────────────────────
+
+export async function uploadPaymentScreenshot(
+  orderId: string,
+  screenshotUrl: string
+): Promise<ActionResult<CardOrder>> {
+  const order = await ordersRepo.getOrderById(orderId);
+  if (!order) return { success: false, error: "Order not found." };
+
+  if (order.payment_status === "verified") {
+    return { success: false, error: "Payment already verified. Cannot change screenshot." };
+  }
+
+  const updated = await ordersRepo.updateOrderPayment(orderId, {
+    payment_screenshot_url: screenshotUrl,
+    payment_status: "paid",
+  });
+
+  if (!updated) return { success: false, error: "Failed to update payment." };
+  return { success: true, data: updated };
+}
+
+export async function verifyPayment(
+  orderId: string
+): Promise<ActionResult<CardOrder>> {
+  const order = await ordersRepo.getOrderById(orderId);
+  if (!order) return { success: false, error: "Order not found." };
+
+  if (order.payment_status !== "paid") {
+    return { success: false, error: "Order must be in 'paid' status before verification." };
+  }
+
+  const updated = await ordersRepo.updateOrderPayment(orderId, {
+    payment_status: "verified",
+  });
+
+  if (!updated) return { success: false, error: "Failed to verify payment." };
+  return { success: true, data: updated };
 }

@@ -69,6 +69,39 @@ export const MAX_CARD_QUANTITY = 100;
 /** Invite link expiry in days */
 export const INVITATION_EXPIRY_DAYS = 7;
 
+// ── Card pricing ──────────────────────────────────────────────────────────────
+
+/** 1 USD = 1,500 RWF */
+export const USD_TO_RWF_RATE = 1500;
+
+/** Base card prices in USD per card */
+export const CARD_PRICES = {
+  individual: 40,   // Personal hardware
+  corporate:  28,   // Corporate bulk hardware
+} as const;
+
+/** Compute the RWF equivalent of a USD price */
+export function usdToRwf(usd: number): number {
+  return Math.round(usd * USD_TO_RWF_RATE);
+}
+
+// ── MoMo Pay ───────────────────────────────────────────────────────────────────
+
+export const MOMO_PAY = {
+  code: "*182*8*1*04404#",
+  name: "RDMC Ltd",
+  instructions:
+    "Dial the USSD code above on your phone to pay via MTN Mobile Money or Airtel Money. Enter the total amount shown below, then upload your payment confirmation screenshot.",
+} as const;
+
+// ── Payment status labels ──────────────────────────────────────────────────────
+
+export const PAYMENT_STATUS_LABELS: Record<string, string> = {
+  unpaid:   "Unpaid",
+  paid:     "Paid",
+  verified: "Verified",
+};
+
 // ── Social links config ───────────────────────────────────────────────────────
 
 export const SOCIAL_LINKS = [

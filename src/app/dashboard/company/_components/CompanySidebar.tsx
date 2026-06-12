@@ -21,11 +21,13 @@ import {
   X,
   ExternalLink,
   ChevronRight,
+  Package,
 } from "lucide-react";
 
 const NAV = [
   { label: "Overview",     href: "/dashboard/company",              icon: LayoutDashboard },
   { label: "Employees",    href: "/dashboard/company/employees",    icon: Users           },
+  { label: "Order Cards",  href: "/dashboard/company/orders",       icon: Package         },
   { label: "Settings",     href: "/dashboard/company/settings",     icon: Settings        },
   { label: "Subscription", href: "/dashboard/company/subscription", icon: CreditCard      },
 ];
