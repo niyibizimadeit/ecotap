@@ -118,3 +118,30 @@ export async function deleteCompany(id: string): Promise<void> {
   const supabase = getServiceSupabase();
   await supabase.from("companies").delete().eq("id", id);
 }
+
+/** Cascade-delete a company and all its related records. Each step is try/caught so one failure doesn't block others. */
+export async function deleteCompanyCascade(companyId: string): Promise<{
+  success: boolean;
+  errors: string[];
+}> {
+  const supabase = getServiceSupabase();
+  const errors: string[] = [];
+
+  const steps = [
+    { name: "profile_companies", fn: () => supabase.from("profile_companies").delete().eq("company_id", companyId) },
+    { name: "departments",        fn: () => supabase.from("departments").delete().eq("company_id", companyId) },
+    { name: "company_subscriptions", fn: () => supabase.from("company_subscriptions").delete().eq("company_id", companyId) },
+    { name: "environmental_reports", fn: () => supabase.from("environmental_reports").delete().eq("company_id", companyId) },
+    { name: "company",           fn: () => supabase.from("companies").delete().eq("id", companyId) },
+  ];
+
+  for (const step of steps) {
+    try {
+      await step.fn();
+    } catch (err) {
+      errors.push(`${step.name}: ${err instanceof Error ? err.message : String(err)}`);
+    }
+  }
+
+  return { success: errors.length === 0, errors };
+}

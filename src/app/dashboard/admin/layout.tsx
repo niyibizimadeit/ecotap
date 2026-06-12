@@ -9,6 +9,7 @@ import { cn } from "@/lib/utils";
 import {
   LayoutDashboard, Clock, Package, Palette,
   Users, CreditCard, LogOut, Menu, X, ChevronRight, Shield,
+  MessageCircle, QrCode,
 } from "lucide-react";
 
 const NAV = [
@@ -17,6 +18,8 @@ const NAV = [
   { label: "Card orders",href: "/dashboard/admin/orders",    icon: Package,         badge: null },
   { label: "Designs",    href: "/dashboard/admin/designs",   icon: Palette,         badge: null },
   { label: "Users",      href: "/dashboard/admin/users",     icon: Users,           badge: null },
+  { label: "Contacts",   href: "/dashboard/admin/contacts",  icon: MessageCircle,   badge: null },
+  { label: "QR Codes",   href: "/dashboard/admin/qr-codes",  icon: QrCode,          badge: null },
   { label: "Billing",    href: "/dashboard/admin/billing",   icon: CreditCard,      badge: null },
 ];
 

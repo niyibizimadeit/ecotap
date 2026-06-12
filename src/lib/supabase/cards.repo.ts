@@ -182,3 +182,22 @@ export async function deleteCard(id: string): Promise<void> {
   const supabase = await getSupabase();
   await supabase.from("cards").delete().eq("id", id);
 }
+
+// ── Admin / service-role operations ────────────────────────────────────────────
+
+/** Get card by profile_id using service role (bypasses RLS for admin use) */
+export async function getCardByProfileIdService(profileId: string): Promise<Card | null> {
+  const supabase = getServiceSupabase();
+  const { data } = await supabase
+    .from("cards")
+    .select("*")
+    .eq("profile_id", profileId)
+    .maybeSingle();
+  return data;
+}
+
+/** Delete card using service role (bypasses RLS for admin use) */
+export async function deleteCardService(id: string): Promise<void> {
+  const supabase = getServiceSupabase();
+  await supabase.from("cards").delete().eq("id", id);
+}

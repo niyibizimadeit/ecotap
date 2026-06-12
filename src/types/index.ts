@@ -391,6 +391,43 @@ export interface ProfileWithCompanies extends Profile {
   }>;
 }
 
+// ── Admin dashboard types ──────────────────────────────────────────────────────
+
+/** Full profile detail with card, orders, and company associations */
+export interface ProfileFull extends Profile {
+  card: Card | null;
+  orders: CardOrderWithDesign[];
+  companies: Array<ProfileCompany & {
+    company: Company;
+    department: Department | null;
+  }>;
+}
+
+/** Company with related counts for admin detail views */
+export interface CompanyWithRelations extends Company {
+  memberCount: number;
+  subscription: (CompanySubscription & { plan: BillingPlan }) | null;
+  departmentCount: number;
+}
+
+/** Contact exchange enriched with card owner info for admin view */
+export interface ContactExchangeWithOwner extends ContactExchange {
+  card_owner: {
+    profile_id: string;
+    full_name: string;
+    email: string;
+    username: string;
+  } | null;
+}
+
+/** Generic paginated result */
+export interface PaginatedResult<T> {
+  data: T[];
+  total: number;
+  page: number;
+  totalPages: number;
+}
+
 // ── Form types ────────────────────────────────────────────────────────────────
 
 export interface OrgRegisterForm {

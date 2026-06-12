@@ -211,3 +211,94 @@ export async function updateCompany(
   if (error) return { success: false, error: error.message };
   return { success: true };
 }
+
+// ── User management (CRUD) ────────────────────────────────────────────────────
+
+export async function fetchUserProfile(profileId: string): Promise<AnyActionResult> {
+  if (!(await requireSuperAdmin())) {
+    return { success: false, error: "Unauthorized." };
+  }
+  const { getUserProfileFull } = await import("@/lib/services/admin.service");
+  return getUserProfileFull(profileId);
+}
+
+export async function updateUserRoleAction(
+  profileId: string,
+  newRole: string
+): Promise<AnyActionResult> {
+  if (!(await requireSuperAdmin())) {
+    return { success: false, error: "Unauthorized." };
+  }
+  const { updateUserRole } = await import("@/lib/services/admin.service");
+  return updateUserRole(profileId, newRole as import("@/types").UserRole);
+}
+
+export async function toggleUserStatusAction(profileId: string): Promise<AnyActionResult> {
+  if (!(await requireSuperAdmin())) {
+    return { success: false, error: "Unauthorized." };
+  }
+  const { toggleUserStatus } = await import("@/lib/services/admin.service");
+  return toggleUserStatus(profileId);
+}
+
+export async function deleteUserAction(profileId: string): Promise<AnyActionResult> {
+  if (!(await requireSuperAdmin())) {
+    return { success: false, error: "Unauthorized." };
+  }
+  const supabase = await getSupabase();
+  const { data: { user } } = await supabase.auth.getUser();
+  const currentUserId = user?.id;
+  if (!currentUserId) return { success: false, error: "Not authenticated." };
+
+  const { deleteUser } = await import("@/lib/services/admin.service");
+  return deleteUser(currentUserId, profileId);
+}
+
+export async function deleteCompanyAction(companyId: string): Promise<AnyActionResult> {
+  if (!(await requireSuperAdmin())) {
+    return { success: false, error: "Unauthorized." };
+  }
+  const { deleteCompany } = await import("@/lib/services/admin.service");
+  return deleteCompany(companyId);
+}
+
+// ── Contact exchanges (admin-wide) ────────────────────────────────────────────
+
+export async function fetchAllContactExchanges(options: {
+  search?: string;
+  page?: number;
+  pageSize?: number;
+  sortDir?: "asc" | "desc";
+}): Promise<AnyActionResult> {
+  if (!(await requireSuperAdmin())) {
+    return { success: false, error: "Unauthorized." };
+  }
+  const { getAllContactExchangesAdmin } = await import("@/lib/services/admin.service");
+  return getAllContactExchangesAdmin(options);
+}
+
+export async function fetchContactExchangesCount(): Promise<AnyActionResult> {
+  if (!(await requireSuperAdmin())) {
+    return { success: false, error: "Unauthorized." };
+  }
+  const { getContactExchangesCount } = await import("@/lib/services/admin.service");
+  return getContactExchangesCount();
+}
+
+// ── QR code lookup (admin) ────────────────────────────────────────────────────
+
+export async function lookupUserForQR(query: string): Promise<AnyActionResult> {
+  if (!(await requireSuperAdmin())) {
+    return { success: false, error: "Unauthorized." };
+  }
+  const { lookupUserByQuery } = await import("@/lib/services/admin.service");
+  return lookupUserByQuery(query);
+}
+
+export async function fetchUserCardUrl(profileId: string): Promise<AnyActionResult> {
+  if (!(await requireSuperAdmin())) {
+    return { success: false, error: "Unauthorized." };
+  }
+  const { getUserCardUrl } = await import("@/lib/services/admin.service");
+  return getUserCardUrl(profileId);
+}

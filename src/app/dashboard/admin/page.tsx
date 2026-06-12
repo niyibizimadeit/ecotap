@@ -3,7 +3,7 @@ import Link from "next/link";
 import { PageHeader, StatCard, StatCardSkeleton, EmptyState } from "@/components/dashboard/DashboardShared";
 import { Badge } from "@/components/ui/Badge";
 import { Button } from "@/components/ui/Button";
-import { Clock, Users, Package, ArrowRight, Building2, User, Palette, Globe, CreditCard, CheckCircle } from "lucide-react";
+import { Clock, Users, Package, ArrowRight, Building2, User, Palette, Globe, CreditCard, CheckCircle, Inbox, QrCode } from "lucide-react";
 import * as adminService from "@/lib/services/admin.service";
 
 export default function AdminOverviewPage() {
@@ -22,10 +22,12 @@ export default function AdminOverviewPage() {
       {/* Quick links — static */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 mt-6">
         {[
-          { label: "Manage designs",  href: "/dashboard/admin/designs", icon: <Palette className="h-5 w-5" />, sub: "Add or toggle card designs" },
-          { label: "All users",       href: "/dashboard/admin/users",   icon: <Users className="h-5 w-5" />, sub: "Search and manage accounts" },
-          { label: "Billing plans",   href: "/dashboard/admin/billing", icon: <CreditCard className="h-5 w-5" />, sub: "Edit pricing plans" },
-          { label: "View home page",  href: "/",                        icon: <Globe className="h-5 w-5" />, sub: "See EcoTap as a visitor" },
+          { label: "Manage designs",  href: "/dashboard/admin/designs",  icon: <Palette className="h-5 w-5" />, sub: "Add or toggle card designs" },
+          { label: "All users",       href: "/dashboard/admin/users",    icon: <Users className="h-5 w-5" />, sub: "Search and manage accounts" },
+          { label: "All contacts",    href: "/dashboard/admin/contacts", icon: <Inbox className="h-5 w-5" />, sub: "View contact exchanges" },
+          { label: "QR Codes",        href: "/dashboard/admin/qr-codes", icon: <QrCode className="h-5 w-5" />, sub: "Generate printable QR codes" },
+          { label: "Billing plans",   href: "/dashboard/admin/billing",  icon: <CreditCard className="h-5 w-5" />, sub: "Edit pricing plans" },
+          { label: "View home page",  href: "/",                         icon: <Globe className="h-5 w-5" />, sub: "See EcoTap as a visitor" },
         ].map(item => (
           <Link key={item.href} href={item.href} className="rounded-2xl border p-4 flex flex-col gap-2 group hover:-translate-y-0.5 transition-all hover:shadow-card-lg" style={{ backgroundColor: "#FEF9EF", borderColor: "rgba(6,78,59,0.08)" }}>
             <span className="text-emerald-mid">{item.icon}</span>
@@ -42,7 +44,7 @@ function AdminOverviewSkeleton() {
   return (
     <>
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
-        {Array.from({ length: 4 }).map((_, i) => <StatCardSkeleton key={i} />)}
+        {Array.from({ length: 5 }).map((_, i) => <StatCardSkeleton key={i} />)}
       </div>
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         <div className="h-64 rounded-2xl skeleton" />
@@ -53,10 +55,11 @@ function AdminOverviewSkeleton() {
 }
 
 async function AdminOverviewContent() {
-  const [overview, queue, orders] = await Promise.all([
+  const [overview, queue, orders, contactsCount] = await Promise.all([
     adminService.getAdminOverview(),
     adminService.getPendingQueue(),
     adminService.getAllOrdersAdmin({ status: "pending" }),
+    adminService.getContactExchangesCount(),
   ]);
 
   const stats = overview.success ? overview.data : null;
@@ -82,6 +85,7 @@ async function AdminOverviewContent() {
         <StatCard label="Active users" value={stats?.activeUsers ?? 0} sub="Companies + individuals" icon={<Users className="h-5 w-5" />} />
         <StatCard label="Open card orders" value={stats?.pendingOrders ?? 0} sub="Awaiting approval" icon={<Package className="h-5 w-5" />} accent="#D97706" />
         <StatCard label="Active companies" value={stats?.totalCompanies ?? 0} sub="On platform" icon={<Building2 className="h-5 w-5" />} />
+        <StatCard label="Contact exchanges" value={contactsCount.success ? contactsCount.data ?? 0 : 0} sub="Across all cards" icon={<Inbox className="h-5 w-5" />} />
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">

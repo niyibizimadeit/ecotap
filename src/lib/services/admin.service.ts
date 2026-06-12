@@ -9,19 +9,32 @@ import * as companiesRepo from "@/lib/supabase/companies.repo";
 import * as ordersRepo from "@/lib/supabase/card_orders.repo";
 import * as designsRepo from "@/lib/supabase/card_designs.repo";
 import * as billingRepo from "@/lib/supabase/billing.repo";
+import * as exchangesRepo from "@/lib/supabase/contact_exchanges.repo";
+import * as cardsRepo from "@/lib/supabase/cards.repo";
 import type {
   ActionResult,
   Profile,
+  ProfileFull,
   Company,
   CardOrderWithDesign,
   CardDesign,
   BillingPlan,
   CompanySubscription,
+  ContactExchangeWithOwner,
+  PaginatedResult,
   UserRole,
   UserStatus,
   OrderStatus,
   SubscriptionStatus,
 } from "@/types";
+
+// ── Status transition guard (mirrors onboarding.service.ts) ───────────────────
+
+const VALID_TRANSITIONS: Record<UserStatus, UserStatus[]> = {
+  pending:   ["active", "suspended"],
+  active:    ["suspended"],
+  suspended: ["active"],
+};
 
 // ── Pending queue ────────────────────────────────────────────────────────────
 
@@ -165,6 +178,230 @@ export async function getAdminOverview(): Promise<ActionResult<AdminOverview>> {
       activeUsers:      activeUsers.length,
       totalCompanies:   companies.length,
       pendingOrders:    pendingOrders.length,
+    },
+  };
+}
+
+// ── User management (CRUD) ────────────────────────────────────────────────────
+
+/** Full profile detail with card, orders, and companies */
+export async function getUserProfileFull(
+  profileId: string
+): Promise<ActionResult<ProfileFull>> {
+  const result = await profilesRepo.getProfileFull(profileId);
+  if (!result) return { success: false, error: "User not found." };
+
+  // Flatten: repo returns { profile, card, orders, companies }, ProfileFull extends Profile
+  const { profile, card, orders, companies } = result as {
+    profile: Record<string, unknown>;
+    card: unknown;
+    orders: unknown;
+    companies: unknown;
+  };
+
+  const flat = {
+    ...profile,
+    card: card ?? null,
+    orders: orders ?? [],
+    companies: companies ?? [],
+  } as ProfileFull;
+
+  return { success: true, data: flat };
+}
+
+/** Change a user's role (super admin only). Prevents demoting the last super_admin. */
+export async function updateUserRole(
+  profileId: string,
+  newRole: UserRole
+): Promise<ActionResult<Profile>> {
+  const profile = await profilesRepo.getProfileById(profileId);
+  if (!profile) return { success: false, error: "User not found." };
+
+  // Prevent demoting the last super_admin
+  if (profile.role === "super_admin" && newRole !== "super_admin") {
+    const allAdmins = await profilesRepo.getAllProfiles({ role: "super_admin" });
+    if (allAdmins.length <= 1) {
+      return { success: false, error: "Cannot change role: this is the last super admin." };
+    }
+  }
+
+  const updated = await profilesRepo.updateProfileRoleService(profileId, newRole);
+  if (!updated) return { success: false, error: "Failed to update role." };
+  return { success: true, data: updated };
+}
+
+/** Toggle a user between active and suspended status */
+export async function toggleUserStatus(
+  profileId: string
+): Promise<ActionResult<Profile>> {
+  const profile = await profilesRepo.getProfileById(profileId);
+  if (!profile) return { success: false, error: "User not found." };
+
+  const newStatus: UserStatus = profile.status === "active" ? "suspended" : "active";
+
+  if (!VALID_TRANSITIONS[profile.status]?.includes(newStatus)) {
+    return { success: false, error: `Cannot transition from ${profile.status} to ${newStatus}.` };
+  }
+
+  const updated = await profilesRepo.updateProfileStatus(profileId, newStatus);
+  if (!updated) return { success: false, error: "Failed to update status." };
+  return { success: true, data: updated };
+}
+
+/** Delete a user and all associated data. Prevents self-delete and deleting the last super_admin. */
+export async function deleteUser(
+  currentUserId: string,
+  targetProfileId: string
+): Promise<ActionResult<void>> {
+  // Prevent self-delete
+  if (currentUserId === targetProfileId) {
+    return { success: false, error: "You cannot delete your own account." };
+  }
+
+  const profile = await profilesRepo.getProfileById(targetProfileId);
+  if (!profile) return { success: false, error: "User not found." };
+
+  // Prevent deleting the last super_admin
+  if (profile.role === "super_admin") {
+    const allAdmins = await profilesRepo.getAllProfiles({ role: "super_admin" });
+    if (allAdmins.length <= 1) {
+      return { success: false, error: "Cannot delete the last super admin." };
+    }
+  }
+
+  const errors: string[] = [];
+
+  // 1. Delete card (if exists)
+  try {
+    const card = await cardsRepo.getCardByProfileIdService(targetProfileId);
+    if (card) {
+      await cardsRepo.deleteCardService(card.id);
+    }
+  } catch (err) {
+    errors.push(`card: ${err instanceof Error ? err.message : String(err)}`);
+  }
+
+  // 2. Delete profile_companies links
+  try {
+    const supabase = (await import("@/lib/supabase/server")).getServiceSupabase();
+    await supabase.from("profile_companies").delete().eq("profile_id", targetProfileId);
+  } catch (err) {
+    errors.push(`profile_companies: ${err instanceof Error ? err.message : String(err)}`);
+  }
+
+  // 3. Delete card orders
+  try {
+    const supabase = (await import("@/lib/supabase/server")).getServiceSupabase();
+    await supabase.from("card_orders").delete().eq("profile_id", targetProfileId);
+  } catch (err) {
+    errors.push(`card_orders: ${err instanceof Error ? err.message : String(err)}`);
+  }
+
+  // 4. Delete profile activity
+  try {
+    const supabase = (await import("@/lib/supabase/server")).getServiceSupabase();
+    await supabase.from("profile_activity").delete().eq("profile_id", targetProfileId);
+  } catch (err) {
+    errors.push(`profile_activity: ${err instanceof Error ? err.message : String(err)}`);
+  }
+
+  // 5. Delete the profile itself
+  try {
+    await profilesRepo.deleteProfileService(targetProfileId);
+  } catch (err) {
+    errors.push(`profile: ${err instanceof Error ? err.message : String(err)}`);
+  }
+
+  if (errors.length > 0) {
+    return { success: false, error: `Partial deletion: ${errors.join("; ")}` };
+  }
+
+  return { success: true };
+}
+
+/** Delete a company and all related records (profile_companies, departments, subscriptions, etc.) */
+export async function deleteCompany(
+  companyId: string
+): Promise<ActionResult<{ errors: string[] }>> {
+  const result = await companiesRepo.deleteCompanyCascade(companyId);
+  if (!result.success) {
+    return { success: false, error: `Partial deletion: ${result.errors.join("; ")}`, data: { errors: result.errors } };
+  }
+  return { success: true, data: { errors: [] } };
+}
+
+// ── Contact exchanges (admin-wide) ────────────────────────────────────────────
+
+/** Total count of contact exchanges (no filters) */
+export async function getContactExchangesCount(): Promise<ActionResult<number>> {
+  const count = await exchangesRepo.getExchangesCount();
+  return { success: true, data: count };
+}
+
+/** Paginated list of all contact exchanges, enriched with card owner info */
+export async function getAllContactExchangesAdmin(options: {
+  search?: string;
+  page?: number;
+  pageSize?: number;
+  sortDir?: "asc" | "desc";
+}): Promise<ActionResult<PaginatedResult<ContactExchangeWithOwner>>> {
+  const { search, page = 1, pageSize = 25, sortDir = "desc" } = options;
+  const offset = (page - 1) * pageSize;
+
+  const [exchanges, total] = await Promise.all([
+    exchangesRepo.getAllExchangesAdmin({ search, limit: pageSize, offset, sortDir }),
+    exchangesRepo.getExchangesCount({ search }),
+  ]);
+
+  return {
+    success: true,
+    data: {
+      data: exchanges as ContactExchangeWithOwner[],
+      total,
+      page,
+      totalPages: Math.ceil(total / pageSize),
+    },
+  };
+}
+
+// ── QR code lookup (admin) ────────────────────────────────────────────────────
+
+/** Search profiles by username or email — for QR code lookup */
+export async function lookupUserByQuery(
+  query: string
+): Promise<ActionResult<Pick<Profile, "id" | "username" | "full_name" | "email">[]>> {
+  const results = await profilesRepo.searchProfilesByQuery(query.trim());
+  return { success: true, data: results as Pick<Profile, "id" | "username" | "full_name" | "email">[] };
+}
+
+/** Construct a user's public card URL for QR code generation */
+export async function getUserCardUrl(
+  profileId: string
+): Promise<ActionResult<{ cardUrl: string; profile: Profile; card: CardDesign | null }>> {
+  const result = await profilesRepo.getProfileFull(profileId);
+  if (!result) return { success: false, error: "User not found." };
+
+  const profile = result.profile as Profile;
+
+  // Determine primary company slug from profile_companies
+  let companySlug: string | null = null;
+  const companies = result.companies as Array<Record<string, unknown>>;
+  if (companies?.length > 0) {
+    const primary = companies.find((c) => c.is_primary === true) ?? companies[0];
+    const company = primary?.company as Record<string, unknown> | undefined;
+    companySlug = (company?.slug as string) ?? null;
+  }
+
+  const cardUrl = companySlug
+    ? `https://ecotap.rw/${companySlug}/${profile.username}`
+    : `https://ecotap.rw/${profile.username}`;
+
+  return {
+    success: true,
+    data: {
+      cardUrl,
+      profile,
+      card: (result.card ?? null) as CardDesign | null,
     },
   };
 }

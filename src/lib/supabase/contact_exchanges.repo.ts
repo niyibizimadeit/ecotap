@@ -96,3 +96,87 @@ export async function deleteExchange(id: string): Promise<void> {
   const supabase = await getSupabase();
   await supabase.from("contact_exchanges").delete().eq("id", id);
 }
+
+// ── Admin queries (service role — platform-wide, no auth filter) ───────────────
+
+export interface AdminExchangeOptions {
+  search?: string;
+  limit?: number;
+  offset?: number;
+  sortDir?: "asc" | "desc";
+}
+
+/** All contact exchanges across the platform, enriched with card owner info */
+export async function getAllExchangesAdmin(
+  options: AdminExchangeOptions = {}
+) {
+  const supabase = getServiceSupabase();
+  const { search, limit = 25, offset = 0, sortDir = "desc" } = options;
+
+  // Build the main query
+  let query = supabase
+    .from("contact_exchanges")
+    .select("*")
+    .order("created_at", { ascending: sortDir === "asc" })
+    .range(offset, offset + limit - 1);
+
+  if (search) {
+    const q = `%${search}%`;
+    query = query.or(`visitor_name.ilike.${q},visitor_email.ilike.${q}`);
+  }
+
+  const { data: exchanges } = await query;
+
+  if (!exchanges?.length) return [];
+
+  // Enrich with card owner info — fetch all unique card_ids then batch-lookup
+  const cardIds = [...new Set(exchanges.map((e: Record<string, unknown>) => e.card_id))];
+  const { data: cards } = await supabase
+    .from("cards")
+    .select("id, profile_id")
+    .in("id", cardIds as string[]);
+
+  const profileIds = [...new Set((cards ?? []).map((c: Record<string, unknown>) => c.profile_id))];
+  const { data: profiles } = await supabase
+    .from("profiles")
+    .select("id, full_name, email, username")
+    .in("id", profileIds as string[]);
+
+  const cardToProfile = new Map<string, Record<string, unknown> | null>();
+  const profileMap = new Map<string, Record<string, unknown>>();
+  (profiles ?? []).forEach((p: Record<string, unknown>) => profileMap.set(p.id as string, p));
+  (cards ?? []).forEach((c: Record<string, unknown>) => {
+    cardToProfile.set(c.id as string, profileMap.get(c.profile_id as string) ?? null);
+  });
+
+  return exchanges.map((e: Record<string, unknown>) => {
+    const owner = cardToProfile.get(e.card_id as string) ?? null;
+    return {
+      ...e,
+      card_owner: owner
+        ? {
+            profile_id: owner.id,
+            full_name: owner.full_name,
+            email: owner.email,
+            username: owner.username,
+          }
+        : null,
+    };
+  });
+}
+
+/** Count of contact exchanges matching optional search filter */
+export async function getExchangesCount(options: { search?: string } = {}): Promise<number> {
+  const supabase = getServiceSupabase();
+  const { search } = options;
+
+  let query = supabase.from("contact_exchanges").select("*", { count: "exact", head: true });
+
+  if (search) {
+    const q = `%${search}%`;
+    query = query.or(`visitor_name.ilike.${q},visitor_email.ilike.${q}`);
+  }
+
+  const { count } = await query;
+  return count ?? 0;
+}

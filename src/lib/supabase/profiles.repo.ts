@@ -129,3 +129,108 @@ export async function deleteProfile(id: string): Promise<void> {
   const supabase = await getSupabase();
   await supabase.from("profiles").delete().eq("id", id);
 }
+
+// ── Admin / service-role operations ────────────────────────────────────────────
+
+/** Update profile role using service role (bypasses RLS for admin actions) */
+export async function updateProfileRoleService(
+  id: string,
+  role: UserRole
+): Promise<Profile | null> {
+  const supabase = getServiceSupabase();
+  const { data } = await supabase
+    .from("profiles")
+    .update({ role })
+    .eq("id", id)
+    .select()
+    .single();
+  return data;
+}
+
+/** Delete profile using service role (bypasses RLS for admin actions) */
+export async function deleteProfileService(id: string): Promise<void> {
+  const supabase = getServiceSupabase();
+  await supabase.from("profiles").delete().eq("id", id);
+}
+
+/**
+ * Full profile detail — profile + card + orders + company associations.
+ * Uses multiple queries joined client-side for reliability.
+ */
+export async function getProfileFull(profileId: string) {
+  const supabase = getServiceSupabase();
+
+  const { data: profile } = await supabase
+    .from("profiles")
+    .select("*")
+    .eq("id", profileId)
+    .single();
+
+  if (!profile) return null;
+
+  const [cardResult, ordersResult, pcResult] = await Promise.all([
+    supabase.from("cards").select("*").eq("profile_id", profileId).maybeSingle(),
+    supabase
+      .from("card_orders")
+      .select("*, design:card_designs(*)")
+      .eq("profile_id", profileId)
+      .order("created_at", { ascending: false }),
+    supabase
+      .from("profile_companies")
+      .select("*")
+      .eq("profile_id", profileId),
+  ]);
+
+  // Resolve companies + departments for profile-company links
+  let companies: Array<Record<string, unknown>> = [];
+  const pcRows = pcResult.data;
+  if (pcRows && pcRows.length > 0) {
+    const companyIds = [...new Set(pcRows.map((pc: Record<string, unknown>) => pc.company_id))];
+    const deptIds = [...new Set(pcRows.map((pc: Record<string, unknown>) => pc.department_id).filter(Boolean))];
+
+    const [compResult, deptResult] = await Promise.all([
+      supabase.from("companies").select("*").in("id", companyIds as string[]),
+      deptIds.length > 0
+        ? supabase.from("departments").select("id, name").in("id", deptIds as string[])
+        : Promise.resolve({ data: [] }),
+    ]);
+
+    const compMap = new Map((compResult.data ?? []).map((c: Record<string, unknown>) => [c.id, c]));
+    const deptMap = new Map((deptResult.data ?? []).map((d: Record<string, unknown>) => [d.id, d]));
+
+    companies = pcRows.map((pc: Record<string, unknown>) => ({
+      ...pc,
+      company: compMap.get(pc.company_id as string) ?? null,
+      department: deptMap.get(pc.department_id as string) ?? null,
+    }));
+  }
+
+  return {
+    profile,
+    card: cardResult.data ?? null,
+    orders: ordersResult.data ?? [],
+    companies,
+  };
+}
+
+/** Search profiles by username or email (ilike), limited to 10 results */
+export async function searchProfilesByQuery(query: string): Promise<Profile[]> {
+  const supabase = getServiceSupabase();
+  const q = `%${query}%`;
+
+  const [byEmail, byUsername] = await Promise.all([
+    supabase.from("profiles").select("*").ilike("email", q).limit(10),
+    supabase.from("profiles").select("*").ilike("username", q).limit(10),
+  ]);
+
+  // Deduplicate by id, preferring email matches first
+  const seen = new Set<string>();
+  const results: Profile[] = [];
+  for (const p of [...(byEmail.data ?? []), ...(byUsername.data ?? [])]) {
+    if (!seen.has(p.id)) {
+      seen.add(p.id);
+      results.push(p as Profile);
+    }
+  }
+  return results.slice(0, 10);
+}
