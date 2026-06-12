@@ -41,9 +41,9 @@ export default function ContactPage() {
                 <div className="space-y-5">
                   {[
                     { icon: <Mail className="h-5 w-5" />, label: "Email", value: "hello@ecotap.rw", href: "mailto:hello@ecotap.rw" },
-                    { icon: <Phone className="h-5 w-5" />, label: "Phone", value: "+250 788 000 000", href: "tel:+250788000000" },
+                    { icon: <Phone className="h-5 w-5" />, label: "Phone", value: "+250 783 757 699", href: "tel:+250783757699" },
                     { icon: <MapPin className="h-5 w-5" />, label: "Location", value: "Kigali, Rwanda", href: null },
-                    { icon: <MessageCircle className="h-5 w-5" />, label: "WhatsApp", value: "+250 788 000 000", href: "https://wa.me/250788000000" },
+                    { icon: <MessageCircle className="h-5 w-5" />, label: "WhatsApp", value: "+250 783 757 699", href: "https://wa.me/250783757699" },
                   ].map((item) => (
                     <div key={item.label} className="flex items-start gap-4">
                       <div className="w-10 h-10 rounded-xl bg-emerald-pale flex items-center justify-center text-emerald-deep flex-shrink-0">
