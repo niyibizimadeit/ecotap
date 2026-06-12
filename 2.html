@@ -1,0 +1,626 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <title>EcoTap | The Green Professional Identity Revolution</title>
+    <!-- Google Fonts & Simple CSS Reset -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:opsz,wght@14..32,300;14..32,400;14..32,600;14..32,700;14..32,800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #F9FCF8;
+            color: #1A2E1A;
+            overflow-x: hidden;
+            line-height: 1.5;
+        }
+
+        /* Smooth Scroll & Transitions */
+        html {
+            scroll-behavior: smooth;
+        }
+
+        /* Reusable Classes */
+        .container {
+            max-width: 1280px;
+            margin: 0 auto;
+            padding: 0 2rem;
+        }
+
+        .btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            padding: 0.8rem 1.8rem;
+            border-radius: 40px;
+            font-weight: 600;
+            transition: all 0.3s ease;
+            cursor: pointer;
+            border: none;
+            font-size: 0.95rem;
+            text-decoration: none;
+        }
+
+        .btn-primary {
+            background: #0F5C3F;
+            color: white;
+            box-shadow: 0 8px 20px rgba(15, 92, 63, 0.2);
+        }
+
+        .btn-primary:hover {
+            background: #0A4530;
+            transform: translateY(-3px);
+            box-shadow: 0 15px 25px rgba(15, 92, 63, 0.3);
+        }
+
+        .btn-outline {
+            background: transparent;
+            border: 1.5px solid #0F5C3F;
+            color: #0F5C3F;
+        }
+
+        .btn-outline:hover {
+            background: #0F5C3F;
+            color: white;
+            transform: translateY(-3px);
+        }
+
+        .btn-sm {
+            padding: 0.5rem 1.2rem;
+            font-size: 0.85rem;
+        }
+
+        /* Page Transitions */
+        .page {
+            display: none;
+            opacity: 0;
+            transform: translateY(20px);
+            transition: opacity 0.5s ease, transform 0.5s ease;
+            animation-duration: 0.5s;
+            animation-fill-mode: forwards;
+        }
+
+        .page.active-page {
+            display: block;
+            animation-name: fadeInUp;
+        }
+
+        @keyframes fadeInUp {
+            from {
+                opacity: 0;
+                transform: translateY(30px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        /* Navbar */
+        .navbar {
+            background: rgba(255, 255, 255, 0.96);
+            backdrop-filter: blur(10px);
+            position: sticky;
+            top: 0;
+            z-index: 1000;
+            border-bottom: 1px solid #E0ECDF;
+            padding: 1rem 0;
+        }
+
+        .nav-container {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .logo h2 {
+            font-size: 1.8rem;
+            font-weight: 800;
+            background: linear-gradient(135deg, #0F5C3F, #2C9B6E);
+            -webkit-background-clip: text;
+            background-clip: text;
+            color: transparent;
+        }
+        .logo span {
+            font-size: 0.75rem;
+            font-weight: 400;
+            color: #5F7A5A;
+            display: block;
+        }
+
+        .nav-links {
+            display: flex;
+            gap: 2rem;
+            align-items: center;
+        }
+
+        .nav-links a {
+            text-decoration: none;
+            font-weight: 600;
+            color: #1E3A2F;
+            transition: color 0.2s;
+            cursor: pointer;
+        }
+
+        .nav-links a:hover, .nav-links a.active-nav {
+            color: #0F5C3F;
+        }
+
+        .mobile-menu {
+            display: none;
+            font-size: 1.8rem;
+            cursor: pointer;
+        }
+
+        /* Cards & Grids */
+        .grid-3, .grid-2, .pricing-grid, .features-grid, .tech-grid, .impact-grid, .roadmap-timeline {
+            display: grid;
+            gap: 2rem;
+            margin: 3rem 0;
+        }
+        .grid-3 { grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); }
+        .grid-2 { grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); }
+        .pricing-grid { grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); }
+        .features-grid { grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); }
+        .tech-grid { grid-template-columns: repeat(auto-fit, minmax(350px, 1fr)); }
+        .impact-grid { grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); }
+        .roadmap-timeline { grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); }
+
+        .pricing-card, .card {
+            background: white;
+            border-radius: 28px;
+            padding: 2rem;
+            box-shadow: 0 12px 30px rgba(0, 0, 0, 0.05);
+            transition: transform 0.3s ease, box-shadow 0.3s;
+            border: 1px solid #e9f0e7;
+            display: flex;
+            flex-direction: column;
+            height: 100%;
+        }
+        .pricing-card:hover, .card:hover {
+            transform: translateY(-8px);
+            box-shadow: 0 25px 40px rgba(0, 0, 0, 0.1);
+        }
+        .pricing-card .price {
+            font-size: 2rem;
+            font-weight: 800;
+            color: #0F5C3F;
+            margin: 0.5rem 0;
+        }
+        .pricing-card h3, .card h3 {
+            font-size: 1.5rem;
+            margin-top: 0.5rem;
+        }
+        .pricing-card .badge-tier, .card-badge {
+            display: inline-block;
+            background: #0F5C3F10;
+            color: #0F5C3F;
+            padding: 0.2rem 0.8rem;
+            border-radius: 50px;
+            font-size: 0.7rem;
+            font-weight: 600;
+            margin-bottom: 1rem;
+        }
+        .pricing-card ul, .card ul {
+            list-style: none;
+            margin: 1rem 0;
+            flex-grow: 1;
+        }
+        .pricing-card li, .card li {
+            padding: 0.5rem 0;
+            display: flex;
+            align-items: center;
+            gap: 0.6rem;
+            font-size: 0.9rem;
+        }
+        .pricing-card li i, .card li i {
+            color: #0F5C3F;
+            width: 20px;
+        }
+        .bulk-incentive {
+            background: #F0F7ED;
+            border-radius: 16px;
+            padding: 1rem;
+            margin-top: 1rem;
+            font-size: 0.85rem;
+        }
+
+        .stat-grid {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: space-between;
+            gap: 2rem;
+            background: #EFF7EC;
+            border-radius: 48px;
+            padding: 3rem 2rem;
+            margin: 3rem 0;
+        }
+        .stat-item {
+            text-align: center;
+            flex: 1;
+        }
+        .stat-number {
+            font-size: 2.8rem;
+            font-weight: 800;
+            color: #0F5C3F;
+        }
+
+        .hero-banner {
+            background: linear-gradient(135deg, #0C2A1D 0%, #1A5C3F 100%);
+            border-radius: 32px;
+            padding: 3rem;
+            color: white;
+            margin: 2rem 0;
+        }
+
+        .tech-icon-large {
+            font-size: 2.5rem;
+            color: #0F5C3F;
+            margin-bottom: 1rem;
+        }
+
+        .impact-stat {
+            text-align: center;
+            padding: 1.5rem;
+        }
+
+        .timeline-phase {
+            position: relative;
+            padding-left: 1.5rem;
+            border-left: 3px solid #0F5C3F;
+        }
+
+        footer {
+            background: #0C2A1D;
+            color: #C7E0C0;
+            padding: 3rem 0 2rem;
+            margin-top: 4rem;
+        }
+
+        @media (max-width: 768px) {
+            .nav-links {
+                position: fixed;
+                top: 70px;
+                left: -100%;
+                background: white;
+                width: 100%;
+                flex-direction: column;
+                padding: 2rem;
+                transition: 0.3s;
+                box-shadow: 0 20px 30px rgba(0,0,0,0.1);
+                z-index: 999;
+            }
+            .nav-links.mobile-open {
+                left: 0;
+            }
+            .mobile-menu {
+                display: block;
+            }
+            .container {
+                padding: 0 1.5rem;
+            }
+            .hero h1 {
+                font-size: 2.2rem;
+            }
+            .hero-banner {
+                padding: 1.5rem;
+            }
+            .pricing-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+
+<nav class="navbar">
+    <div class="container nav-container">
+        <div class="logo">
+            <h2>EcoTap</h2>
+            <span>Together for Green Technology</span>
+        </div>
+        <div class="mobile-menu" id="mobileMenuBtn">
+            <i class="fas fa-bars"></i>
+        </div>
+        <div class="nav-links" id="navLinks">
+            <a data-page="home" class="nav-link active-nav">Home</a>
+            <a data-page="about" class="nav-link">About Us</a>
+            <a data-page="tech" class="nav-link">The Tech</a>
+            <a data-page="impact" class="nav-link">Impact</a>
+            <a data-page="pricing" class="nav-link">Pricing</a>
+            <a data-page="roadmap" class="nav-link">Roadmap</a>
+            <a class="btn btn-primary" style="padding: 0.6rem 1.4rem;">Get Your Card</a>
+        </div>
+    </div>
+</nav>
+
+<main>
+    <!-- HOME PAGE -->
+    <section id="home" class="page active-page">
+        <div class="container" style="padding: 3rem 0 5rem;">
+            <div class="hero" style="text-align: center; max-width: 800px; margin: 0 auto;">
+                <h1 style="font-size: 3.2rem; font-weight: 800; line-height: 1.2;">The Green Professional Identity Revolution</h1>
+                <p style="font-size: 1.2rem; margin: 1.5rem 0; color: #2C4A2E;">One card. Infinite connections. Zero waste. Engineered by <strong>Team Environment Rwanda</strong> and <strong>RDMC Ltd</strong>.</p>
+                <div style="display: flex; gap: 1rem; justify-content: center; flex-wrap: wrap;">
+                    <a class="btn btn-primary"><i class="fas fa-tap"></i> Switch to EcoTap Now</a>
+                    <a class="btn btn-outline">Explore Enterprise Solutions</a>
+                </div>
+            </div>
+            <div style="margin: 4rem 0; text-align: center;">
+                <img src="https://placehold.co/900x500/DFF0DC/1A3B2A?text=EcoTap+Smart+Card+Demo" alt="EcoTap card demo" style="max-width: 100%; border-radius: 36px; box-shadow: 0 30px 50px rgba(0,0,0,0.1);">
+            </div>
+            <div class="grid-2">
+                <div class="card"><i class="fas fa-chart-line" style="font-size: 2rem; color:#0F5C3F;"></i><h3>The Broken Tradition</h3><p>100 Billion paper cards printed yearly. 88% discarded within one week. Draining forestry, water, and waste systems.</p></div>
+                <div class="card"><i class="fas fa-recycle" style="font-size: 2rem; color:#0F5C3F;"></i><h3>The EcoTap Solution</h3><p>Recycled PVC NFC card. Tap to share live digital profile. Update anytime. Zero deforestation, zero waste.</p></div>
+            </div>
+        </div>
+    </section>
+
+    <!-- ABOUT US - EXTENSIVELY EXPANDED -->
+    <section id="about" class="page">
+        <div class="container" style="padding: 3rem 0;">
+            <div class="hero-banner">
+                <div class="badge" style="background: rgba(255,255,255,0.2); color: white; display: inline-block; padding: 0.3rem 1rem; border-radius: 50px;">♻️ The Future of Networking</div>
+                <h2 style="font-size: 2.5rem; margin-bottom: 1rem; margin-top: 1rem;">EcoTap: Your Eco-Friendly Business Card</h2>
+                <p style="font-size: 1.2rem; opacity: 0.9;">A single, sustainable NFC card that replaces thousands of paper cards. Smart, circular, and built for the modern professional who cares about the planet.</p>
+            </div>
+
+            <!-- Expanded About Section -->
+            <div style="margin: 3rem 0;">
+                <h3 style="font-size: 1.8rem; margin-bottom: 1rem;">Our Story: Born from a Vision for a Paperless Africa</h3>
+                <p style="margin-bottom: 1.5rem; line-height: 1.7;">Project EcoTap was conceived at the intersection of environmental urgency and technological innovation. In 2024, Team Environment Rwanda and RDMC Ltd joined forces after witnessing the staggering waste generated by traditional business cards at Kigali's international trade summits. What began as a pilot program for 500 local entrepreneurs has now evolved into a nationwide movement, positioning Rwanda as the first paperless-networking economy in Africa.</p>
+                <p style="margin-bottom: 1.5rem; line-height: 1.7;">Our name, EcoTap, embodies our dual promise: ecological responsibility and the simple tap that connects professionals. We are not just selling a product — we are building an infrastructure for sustainable digital identity across the continent.</p>
+            </div>
+
+            <div class="features-grid">
+                <div class="card"><i class="fas fa-seedling" style="font-size: 2rem; color:#0F5C3F;"></i><h3>100% Recycled Materials</h3><p>Post-consumer recycled PVC (rPVC) — diverting plastic waste from landfills. Each card represents approximately 8 plastic bottles intercepted from waste streams.</p></div>
+                <div class="card"><i class="fas fa-leaf" style="font-size: 2rem; color:#0F5C3F;"></i><h3>Carbon Negative Production</h3><p>Renewable energy manufacturing + one tree planted per card sold. Our Gishwati Forest partnership has already restored 5,000+ native trees.</p></div>
+                <div class="card"><i class="fas fa-charging-station" style="font-size: 2rem; color:#0F5C3F;"></i><h3>Battery-Free Technology</h3><p>Passive NFC chip — lasts a lifetime without e-waste. No charging, no batteries, no planned obsolescence.</p></div>
+                <div class="card"><i class="fas fa-hand-holding-heart" style="font-size: 2rem; color:#0F5C3F;"></i><h3>Community First</h3><p>5% of profits fund digital literacy programs for Rwandan youth and women-led MSMEs. We believe green tech must also be inclusive tech.</p></div>
+            </div>
+
+            <h2 style="font-size: 1.8rem; margin-top: 2rem;">The Power Behind EcoTap</h2>
+            <div class="grid-2" style="margin-top: 1rem;">
+                <div class="card"><i class="fas fa-leaf"></i> <h3>Team Environment Rwanda</h3><p>Premier environmental advocacy organization with a decade of experience in circular economy projects. Oversees our material chains, carbon auditing, and national environmental compliance. Their network spans 30+ partner organizations across East Africa.</p></div>
+                <div class="card"><i class="fas fa-laptop-code"></i> <h3>Rwanda Digital Marketing Co.</h3><p>Market-leading technology enterprise with 50+ engineers. Specializes in scalable cloud architecture, secure NFC encryption, and enterprise dashboard ecosystems. RDMC's infrastructure powers over 200 businesses across Rwanda.</p></div>
+            </div>
+            
+            <div style="background: #EFF7EC; border-radius: 36px; padding: 2rem; margin: 2rem 0;">
+                <div class="grid-2" style="gap: 2rem;">
+                    <div>
+                        <h3><i class="fas fa-eye"></i> Our Vision</h3>
+                        <p>To establish a fully paperless corporate networking ecosystem across the African continent, positioning Rwanda as the foundational global benchmark for tech-enabled environmental conservation and advanced sustainable digital enterprise. By 2030, we aim to save 10 million trees across Africa.</p>
+                    </div>
+                    <div>
+                        <h3><i class="fas fa-bullseye"></i> Our Mission</h3>
+                        <p>To systematically eradicate paper business card waste by equipping millions of professionals with smart, recycled-material alternatives — simultaneously lowering corporate operational overheads while driving quantifiable, verified reductions in regional deforestation and industrial carbon footprints.</p>
+                    </div>
+                </div>
+            </div>
+
+            <div style="margin: 2rem 0; text-align: center; padding: 2rem; background: white; border-radius: 28px;">
+                <i class="fas fa-chart-line" style="font-size: 2.5rem; color:#0F5C3F;"></i>
+                <h3 style="margin-top: 1rem;">Join the Movement</h3>
+                <p>Over 5,000 professionals have already switched to EcoTap in our pilot phase. Together, we've prevented an estimated 2.5 million paper cards from entering landfills.</p>
+            </div>
+        </div>
+    </section>
+
+    <!-- TECH PAGE - EXTENSIVELY EXPANDED -->
+    <section id="tech" class="page">
+        <div class="container" style="padding: 3rem 0;">
+            <h2 style="font-size: 2.2rem;">Technical Methodology & Dashboard Architecture</h2>
+            <p style="margin-bottom: 2rem; font-size: 1.1rem;">Built on enterprise-grade infrastructure with circular hardware at its core.</p>
+            
+            <div class="tech-grid">
+                <div class="card"><i class="fas fa-microchip tech-icon-large"></i> <h3>Hardware Matrix</h3><p>Premium post-consumer rPVC cards embedded with NTAG213 NFC chips. Rated for 100,000+ read/write cycles. Passive, battery-free operation. Water-resistant and durable for daily use.</p><ul><li><i class="fas fa-check"></i> 13.56 MHz frequency</li><li><i class="fas fa-check"></i> 144-byte user memory</li><li><i class="fas fa-check"></i> 10+ year lifespan</li></ul></div>
+                <div class="card"><i class="fas fa-cloud-upload-alt tech-icon-large"></i> <h3>Digital Tap Protocol</h3><p>Encrypted unique token transmitted via NFC. Cloud directory resolves to dynamic web profile within 0.3 seconds. Supports VCF contact download, media kit display, and social link aggregation.</p><ul><li><i class="fas fa-check"></i> TLS 1.3 encryption</li><li><i class="fas fa-check"></i> GDPR-compliant analytics</li><li><i class="fas fa-check"></i> Offline QR fallback</li></ul></div>
+                <div class="card"><i class="fas fa-shield-alt tech-icon-large"></i> <h3>RDMC Admin Tower</h3><p>Central command system managed by RDMC engineers. Global security protocols, cryptographic key management, platform health audits, and automated backup systems with 99.9% uptime SLA.</p><ul><li><i class="fas fa-check"></i> SOC2 Type II compliance (pending)</li><li><i class="fas fa-check"></i> 24/7 monitoring</li><li><i class="fas fa-check"></i> Automated disaster recovery</li></ul></div>
+                <div class="card"><i class="fas fa-building tech-icon-large"></i> <h3>Enterprise Dashboard</h3><p>Centralized control for HR managers and team leads. Features include brand lock (force company colors/fonts), automated onboarding/offboarding, team analytics, and event ROI tracking.</p><ul><li><i class="fas fa-check"></i> Bulk employee provisioning</li><li><i class="fas fa-check"></i> Real-time sync with HRIS</li><li><i class="fas fa-check"></i> Exportable analytics dashboards</li></ul></div>
+                <div class="card"><i class="fas fa-user-tie tech-icon-large"></i> <h3>Personal Executive Dashboard</h3><p>End-user control panel for individual cardholders. Update contact info, portfolio links, and social profiles in real time. No need to reprint cards when job titles or numbers change.</p><ul><li><i class="fas fa-check"></i> Live profile preview</li><li><i class="fas fa-check"></i> Tap analytics (time, location, frequency)</li><li><i class="fas fa-check"></i> Built-in lead capture form</li></ul></div>
+                <div class="card"><i class="fas fa-chart-line tech-icon-large"></i> <h3>ESG & Carbon Reporting Engine</h3><p>Automatically calculates your environmental impact: trees saved, CO₂ emissions avoided, and water preserved. Export ready for sustainability reports and B Corp certification.</p><ul><li><i class="fas fa-check"></i> Real-time metrics</li><li><i class="fas fa-check"></i> Customizable report periods</li><li><i class="fas fa-check"></i> PDF/CSV exports</li></ul></div>
+            </div>
+
+            <div style="background: #0C2A1D; color: white; border-radius: 28px; padding: 2rem; margin-top: 2rem;">
+                <h3 style="color: white;"><i class="fas fa-link"></i> How the Tap Works</h3>
+                <div style="display: flex; flex-wrap: wrap; gap: 1.5rem; margin-top: 1rem; justify-content: space-between;">
+                    <div style="flex: 1; text-align: center;"><i class="fas fa-tap" style="font-size: 2rem;"></i><br><strong>1. Tap</strong><br>Card meets phone</div>
+                    <div style="flex: 1; text-align: center;"><i class="fas fa-lock" style="font-size: 2rem;"></i><br><strong>2. Encrypt</strong><br>Secure token transmission</div>
+                    <div style="flex: 1; text-align: center;"><i class="fas fa-cloud" style="font-size: 2rem;"></i><br><strong>3. Resolve</strong><br>Cloud directory lookup</div>
+                    <div style="flex: 1; text-align: center;"><i class="fas fa-mobile-alt" style="font-size: 2rem;"></i><br><strong>4. Display</strong><br>Profile opens instantly</div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- IMPACT PAGE - EXTENSIVELY EXPANDED -->
+    <section id="impact" class="page">
+        <div class="container" style="padding: 3rem 0;">
+            <h2 style="font-size: 2.2rem;">Community & Environmental Impact</h2>
+            <p style="margin-bottom: 2rem;">Real change. Real numbers. Real accountability.</p>
+            
+            <div class="stat-grid" id="counterSection">
+                <div class="stat-item"><div class="stat-number" id="treesCount">0</div><p>Million+ trees saved annually</p><small>from paper card reduction</small></div>
+                <div class="stat-item"><div class="stat-number" id="co2Count">0</div><p>kg CO₂ saved per professional</p><small>over card lifespan</small></div>
+                <div class="stat-item"><div class="stat-number" id="wasteCount">0</div><p>% reduction in card waste</p><small>vs. traditional paper</small></div>
+            </div>
+
+            <div class="impact-grid">
+                <div class="card"><i class="fas fa-trash-alt" style="font-size: 2rem; color:#0F5C3F;"></i> <h3>Municipal Waste Mitigation</h3><p>Each EcoTap card replaces an average of 1,000 paper cards over its lifetime. With 20,000 cards deployed in our pilot, we've diverted over 2.5 tons of paper waste from landfills in Kigali alone.</p><strong>Projected by 2027:</strong> 50 tons of waste diverted.</div>
+                <div class="card"><i class="fas fa-chalkboard-teacher" style="font-size: 2rem; color:#0F5C3F;"></i> <h3>Green Tech Jobs</h3><p>Localized assembly, printing, and software roles for Rwandan youth. Our facility employs 15 full-time technicians and engineers, with plans to scale to 50+ jobs by Phase 2. 60% of hires are young women from technical training programs.</p></div>
+                <div class="card"><i class="fas fa-water" style="font-size: 2rem; color:#0F5C3F;"></i> <h3>Water Conservation</h3><p>Paper manufacturing consumes 17,000 gallons of water per ton. By eliminating paper cards, EcoTap saves an estimated 850,000 gallons of water annually per 10,000 users — enough to supply 200 Rwandan households for a year.</p></div>
+                <div class="card"><i class="fas fa-tree" style="font-size: 2rem; color:#0F5C3F;"></i> <h3>Reforestation Commitment</h3><p>Through our partnership with Rwandan Forestry Authority, we plant one native tree for every card sold. To date: 5,000+ trees planted in Gishwati-Mukura National Park, restoring critical habitat for endangered primates.</p></div>
+            </div>
+
+            <div style="background: #EFF7EC; border-radius: 28px; padding: 2rem; margin: 2rem 0; text-align: center;">
+                <i class="fas fa-chart-simple" style="font-size: 2.5rem; color:#0F5C3F;"></i>
+                <h3 style="margin-top: 0.5rem;">Measurable ESG Impact for Corporate Clients</h3>
+                <p>Our Corporate SaaS includes an ESG reporting dashboard that automatically calculates your team's environmental savings. Use it for sustainability reports, investor communications, and B Corp certification documentation.</p>
+                <div class="grid-3" style="margin-top: 1.5rem;">
+                    <div><strong>🌲 Paper Saved</strong><br>1,000+ cards per employee</div>
+                    <div><strong>💧 Water Preserved</strong><br>85 gallons per employee</div>
+                    <div><strong>⬇️ CO₂ Avoided</strong><br>12 kg per employee/year</div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- PRICING PAGE - EXACTLY AS PROVIDED, UNEDITED -->
+    <section id="pricing" class="page">
+        <div class="container" style="padding: 3rem 0;">
+            <h2 style="text-align: center; font-size: 2.2rem;">Transparent, Sustainable Pricing for Everyone</h2>
+            <p style="text-align: center; margin-bottom: 2rem;">From free personal profiles to enterprise white-label solutions</p>
+            
+            <div class="pricing-grid">
+                <div class="pricing-card"><div class="badge-tier">🌱 START FREE</div><h3>Personal Tier</h3><div class="price">$0 <span style="font-size: 1rem;">USD</span></div><p style="color: #4A6741;">Free Forever — Independent professionals, freelancers, students</p><ul><li><i class="fas fa-check-circle"></i> Personal Executive Dashboard access</li><li><i class="fas fa-check-circle"></i> Dynamic live web profile (portfolio + social links)</li><li><i class="fas fa-check-circle"></i> Standard QR code for digital sharing</li><li><i class="fas fa-check-circle"></i> Basic lead generation & contact-capture forms</li></ul><div class="pricing-footer"><a class="btn btn-outline btn-sm" style="width: 100%; text-align: center;">Get Started Free</a></div></div>
+                <div class="pricing-card"><div class="badge-tier">✨ MOST POPULAR</div><h3>Premium Personal Hardware</h3><div class="price">$40 <span style="font-size: 1rem;">USD</span></div><p style="color: #4A6741;">One-off purchase (≈ 50,000 RWF) — Executives, consultants, entrepreneurs</p><ul><li><i class="fas fa-check-circle"></i> 1× Premium rPVC Smart Card</li><li><i class="fas fa-check-circle"></i> NTAG213 NFC chip (100,000+ taps)</li><li><i class="fas fa-check-circle"></i> Laser-engraved EcoTap professional branding</li><li><i class="fas fa-check-circle"></i> Full sync with free Personal Dashboard</li></ul><div class="pricing-footer"><a class="btn btn-primary btn-sm" style="width: 100%; text-align: center;">Order Your Card</a></div></div>
+                <div class="pricing-card"><div class="badge-tier">🏢 BULK SAVINGS</div><h3>Corporate Hardware Matrix</h3><div class="price">$28 <span style="font-size: 1rem;">USD / card</span></div><p style="color: #4A6741;">(≈ 35,000 RWF/card) — Teams, SMEs, enterprises</p><ul><li><i class="fas fa-check-circle"></i> Custom-branded rPVC cards (your logo & colors)</li><li><i class="fas fa-check-circle"></i> Bulk deployment codes for instant setup</li><li><i class="fas fa-check-circle"></i> Virgin-plastic-free manufacturing</li></ul><div class="bulk-incentive"><strong>📦 Volume Incentives:</strong><br>20–99 cards: $28.00/card<br>100–499 cards: $25.00/card + free color matching<br>500+ cards: $22.00/card + full edge-to-edge branding</div><div class="pricing-footer"><a class="btn btn-outline btn-sm" style="width: 100%; text-align: center;">Request Bulk Quote</a></div></div>
+                <div class="pricing-card"><div class="badge-tier">📊 ESG & ANALYTICS</div><h3>Corporate SaaS + HR Integration</h3><div class="price">$99 <span style="font-size: 1rem;">USD / year</span></div><p style="color: #4A6741;">Flat base rate — HR managers, operations leads</p><ul><li><i class="fas fa-check-circle"></i> Full Corporate/Enterprise Dashboard</li><li><i class="fas fa-check-circle"></i> Centralized brand control & HR sync</li><li><i class="fas fa-check-circle"></i> Advanced team analytics & event ROI tracking</li><li><i class="fas fa-check-circle"></i> <strong>ESG Carbon Reporting:</strong> Real-time paper waste eliminated & tree depletion prevented — ready for your sustainability report</li></ul><div class="pricing-footer"><a class="btn btn-outline btn-sm" style="width: 100%; text-align: center;">Contact Sales</a></div></div>
+                <div class="pricing-card"><div class="badge-tier">🏷️ FULL SOVEREIGNTY</div><h3>Premium White-Labeling</h3><div class="price">Custom Quote</div><p style="color: #4A6741;">Enterprises, conglomerates, multinationals</p><ul><li><i class="fas fa-check-circle"></i> Domain routing: <span style="font-family: monospace;">tap.yourcompany.rw</span></li><li><i class="fas fa-check-circle"></i> Custom API endpoints → Salesforce, HubSpot, etc.</li><li><i class="fas fa-check-circle"></i> Dedicated RDMC technical account manager</li></ul><div class="pricing-footer"><a class="btn btn-outline btn-sm" style="width: 100%; text-align: center;">Request Quote</a></div></div>
+                <div class="pricing-card"><div class="badge-tier">🌍 PARTNER PROGRAM</div><h3>Country Representative Framework</h3><div class="price">Custom Partner Quote</div><p style="color: #4A6741;">Regional eco-alliances, tech distributors, entrepreneurs</p><ul><li><i class="fas fa-check-circle"></i> Exclusive territorial distribution rights</li><li><i class="fas fa-check-circle"></i> Localized white-label sub-administration</li><li><i class="fas fa-check-circle"></i> Tiered wholesale margins on rPVC hardware</li><li><i class="fas fa-check-circle"></i> Zero-waste baselines certification</li></ul><div class="pricing-footer"><a class="btn btn-outline btn-sm" style="width: 100%; text-align: center;">Become a Representative</a></div></div>
+            </div>
+            <div style="background: #EFF7EC; border-radius: 28px; padding: 1.5rem; margin-top: 2rem; text-align: center;"><i class="fas fa-shield-alt" style="color: #0F5C3F; font-size: 1.8rem;"></i><p style="margin-top: 0.5rem;">All hardware comes with 30-day quality guarantee + 1-year warranty against manufacturing defects.<br> Bulk and enterprise clients receive dedicated onboarding support.</p></div>
+        </div>
+    </section>
+
+    <!-- ROADMAP PAGE - EXTENSIVELY EXPANDED -->
+    <section id="roadmap" class="page">
+        <div class="container" style="padding: 3rem 0;">
+            <h2 style="font-size: 2.2rem;">Strategic Scaling Roadmap</h2>
+            <p style="margin-bottom: 2rem;">Our journey to a paperless Africa — phase by phase.</p>
+            
+            <div class="roadmap-timeline">
+                <div class="card"><div class="card-badge" style="background: #0F5C3F; color: white;">PHASE 1 — ACTIVE</div><i class="fas fa-map-marker-alt" style="font-size: 2rem; color:#0F5C3F;"></i><h3>Rwanda Saturation</h3><p><strong>Months 1-12 (Current)</strong></p><p>Kigali as proof-of-concept capital for paperless networking. Target: 25,000 cards deployed across government ministries, banking headquarters, INGOs, and national trade summits. Software optimization and local supply chains fully operational.</p><ul><li><i class="fas fa-check-circle"></i> 5,000+ cards deployed to date</li><li><i class="fas fa-check-circle"></i> 30+ enterprise clients onboarded</li><li><i class="fas fa-check-circle"></i> Production capacity: 2,000 cards/month</li></ul></div>
+                <div class="card"><div class="card-badge" style="background: #2C9B6E; color: white;">PHASE 2 — 2026-2027</div><i class="fas fa-globe-africa" style="font-size: 2rem; color:#0F5C3F;"></i><h3>Pan-African Expansion</h3><p><strong>Months 13-36</strong></p><p>Leveraging AfCFTA frameworks to deploy regional software clusters and distribution hubs in East African commercial centers: Nairobi, Kampala, Dar es Salaam, then Lagos, Accra, and Johannesburg.</p><ul><li><i class="fas fa-check-circle"></i> Localized manufacturing partnerships</li><li><i class="fas fa-check-circle"></i> Swahili/French dashboard localization</li><li><i class="fas fa-check-circle"></i> Target: 250,000 cards across 8 countries</li></ul></div>
+                <div class="card"><div class="card-badge" style="background: #1A5C3F; color: white;">PHASE 3 — 2028+</div><i class="fas fa-globe-americas" style="font-size: 2rem; color:#0F5C3F;"></i><h3>Global Closed-Loops</h3><p><strong>Months 37+</strong></p><p>Positioning EcoTap as a global exporter of green identity tech. Partnerships with marine and coastal cleaning programs to harvest ocean-bound plastics and recycle them directly into corporate identity hardware.</p><ul><li><i class="fas fa-check-circle"></i> Ocean plastic supply chain</li><li><i class="fas fa-check-circle"></i> Carbon-neutral certification</li><li><i class="fas fa-check-circle"></i> Target: 1M+ cards globally by 2030</li></ul></div>
+            </div>
+
+            <div style="background: white; border-radius: 28px; padding: 2rem; margin-top: 2rem; border: 1px solid #e0ecdf;">
+                <h3><i class="fas fa-chart-line"></i> Key Milestones Achieved</h3>
+                <div style="display: flex; flex-wrap: wrap; gap: 1rem; margin-top: 1rem;">
+                    <div style="flex: 1; background: #F0F7ED; border-radius: 20px; padding: 1rem;"><strong>✅ Q1 2025</strong><br>Pilot launch with 500 cards</div>
+                    <div style="flex: 1; background: #F0F7ED; border-radius: 20px; padding: 1rem;"><strong>✅ Q3 2025</strong><br>Enterprise dashboard v1.0 release</div>
+                    <div style="flex: 1; background: #F0F7ED; border-radius: 20px; padding: 1rem;"><strong>✅ Q1 2026</strong><br>5,000 cards deployed</div>
+                    <div style="flex: 1; background: #F0F7ED; border-radius: 20px; padding: 1rem;"><strong>🔜 Q4 2026</strong><br>Nairobi expansion launch</div>
+                </div>
+            </div>
+
+            <div style="background: linear-gradient(135deg, #0C2A1D, #1A5C3F); border-radius: 28px; padding: 2rem; margin-top: 2rem; color: white; text-align: center;">
+                <i class="fas fa-handshake" style="font-size: 2.5rem;"></i>
+                <h3 style="color: white; margin-top: 0.5rem;">Become a Strategic Partner</h3>
+                <p>We're actively seeking country representatives, technology partners, and impact investors to accelerate our mission. Join us in building Africa's first paperless networking ecosystem.</p>
+                <a class="btn btn-outline" style="background: white; color: #0F5C3F; margin-top: 1rem;">Partner With Us →</a>
+            </div>
+        </div>
+    </section>
+</main>
+
+<footer>
+    <div class="container">
+        <div class="logo" style="color:white;"><h2 style="color:white;">EcoTap</h2><span>Together for Green Technology</span></div>
+        <p style="margin: 1rem 0;">© 2026 Project EcoTap. All Rights Reserved. Joint Initiative by Team Environment Rwanda & RDMC Ltd.</p>
+        <div style="display: flex; gap: 2rem; flex-wrap: wrap;">
+            <a href="#" style="color:#C7E0C0;">Privacy Policy</a>
+            <a href="#" style="color:#C7E0C0;">Terms of Service</a>
+            <a href="#" style="color:#C7E0C0;">Enterprise Support</a>
+        </div>
+    </div>
+</footer>
+
+<script>
+    // PAGE TRANSITIONS LOGIC
+    const pages = document.querySelectorAll('.page');
+    const navLinksElem = document.querySelectorAll('.nav-link');
+
+    function activatePage(pageId) {
+        pages.forEach(page => {
+            page.classList.remove('active-page');
+            if (page.id === pageId) {
+                page.classList.add('active-page');
+            }
+        });
+        navLinksElem.forEach(link => {
+            link.classList.remove('active-nav');
+            if (link.getAttribute('data-page') === pageId) {
+                link.classList.add('active-nav');
+            }
+        });
+        window.history.pushState({ pageId }, '', `#${pageId}`);
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+
+    navLinksElem.forEach(link => {
+        link.addEventListener('click', (e) => {
+            e.preventDefault();
+            const pageId = link.getAttribute('data-page');
+            if (pageId) activatePage(pageId);
+        });
+    });
+
+    function handleHash() {
+        const hash = window.location.hash.substring(1);
+        if (hash && document.getElementById(hash)) {
+            activatePage(hash);
+        } else {
+            activatePage('home');
+        }
+    }
+    window.addEventListener('load', handleHash);
+    window.addEventListener('hashchange', handleHash);
+
+    // Mobile menu toggle
+    const mobileBtn = document.getElementById('mobileMenuBtn');
+    const navLinksContainer = document.getElementById('navLinks');
+    mobileBtn.addEventListener('click', () => {
+        navLinksContainer.classList.toggle('mobile-open');
+    });
+
+    // Animated counters for impact section
+    const impactSection = document.getElementById('impact');
+    let counted = false;
+    function startCounters() {
+        if (counted) return;
+        const treesSpan = document.getElementById('treesCount');
+        const co2Span = document.getElementById('co2Count');
+        const wasteSpan = document.getElementById('wasteCount');
+        if (!treesSpan) return;
+        const targetTrees = 5;
+        const targetCo2 = 1.2;
+        const targetWaste = 88;
+        let currentTrees = 0, currentCo2 = 0, currentWaste = 0;
+        const interval = setInterval(() => {
+            if (currentTrees < targetTrees) currentTrees += 0.2;
+            if (currentCo2 < targetCo2) currentCo2 += 0.05;
+            if (currentWaste < targetWaste) currentWaste += 4;
+            treesSpan.innerText = Math.floor(currentTrees) + '+';
+            co2Span.innerText = currentCo2.toFixed(1) + 'kg';
+            wasteSpan.innerText = Math.floor(Math.min(currentWaste, targetWaste)) + '%';
+            if (currentTrees >= targetTrees && currentCo2 >= targetCo2 && currentWaste >= targetWaste) clearInterval(interval);
+        }, 40);
+        counted = true;
+    }
+    const observer = new IntersectionObserver((entries) => {
+        entries.forEach(entry => {
+            if (entry.isIntersecting && entry.target.id === 'impact') {
+                startCounters();
+            }
+        });
+    }, { threshold: 0.5 });
+    if(impactSection) observer.observe(impactSection);
+    
+    document.querySelectorAll('.btn-primary, .btn-outline').forEach(btn => {
+        btn.addEventListener('click', (e) => {
+            if(btn.innerText.includes('Switch') || btn.innerText.includes('Get') || btn.innerText.includes('Explore') || btn.innerText.includes('Order') || btn.innerText.includes('Request') || btn.innerText.includes('Partner'))
+                alert('🚀 EcoTap: Thank you for your interest! Our enterprise sales team will contact you within 24 hours.');
+        });
+    });
+</script>
+</body>
+</html>

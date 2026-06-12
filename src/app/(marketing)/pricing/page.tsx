@@ -17,41 +17,59 @@ export default function PricingPage() {
           </p>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 max-w-5xl mx-auto">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 max-w-6xl mx-auto">
           {[
             {
               name: "Personal Tier",
               price: "Free",
-              desc: "Baseline personal dashboard, live profile links, contact-capture forms.",
-              features: ["Free digital profile", "QR code sharing", "Contact exchange form", "Basic analytics"],
+              desc: "Free Forever — Independent professionals, freelancers, students.",
+              features: ["Personal Executive Dashboard access", "Dynamic live web profile (portfolio + social links)", "Standard QR code for digital sharing", "Basic lead generation & contact-capture forms"],
               cta: "Get Started Free",
               href: "/register",
               highlight: false,
             },
             {
-              name: "Direct Hardware",
-              price: "Bulk",
-              desc: "Custom rPVC cards with your corporate design. One‑off purchase.",
-              features: ["Custom card design", "Bulk ordering", "NFC + QR enabled", "Premium rPVC material"],
-              cta: "Order Cards",
-              href: "/org/register",
-              highlight: false,
-            },
-            {
-              name: "Corporate SaaS",
-              price: "Annual",
-              desc: "Enterprise Dashboard, HR sync, onboarding, advanced analytics.",
-              features: ["Everything in Personal", "Team management", "HR system sync", "Advanced analytics", "Priority support"],
-              cta: "Go Corporate",
+              name: "Premium Personal Hardware",
+              price: "$40",
+              desc: "One-off purchase (≈ 50,000 RWF) — Executives, consultants, entrepreneurs.",
+              features: ["1× Premium rPVC Smart Card", "NTAG213 NFC chip (100,000+ taps)", "Laser-engraved EcoTap professional branding", "Full sync with free Personal Dashboard"],
+              cta: "Order Your Card",
               href: "/org/register",
               highlight: true,
             },
             {
+              name: "Corporate Hardware Matrix",
+              price: "$28/card",
+              desc: "(≈ 35,000 RWF/card) — Teams, SMEs, enterprises.",
+              features: ["Custom-branded rPVC cards (your logo & colors)", "Bulk deployment codes for instant setup", "Virgin-plastic-free manufacturing", "Volume: 20–99: $28 | 100–499: $25 | 500+: $22/card"],
+              cta: "Request Bulk Quote",
+              href: "/org/register",
+              highlight: false,
+            },
+            {
+              name: "Corporate SaaS + HR",
+              price: "$99/yr",
+              desc: "Flat base rate — HR managers, operations leads.",
+              features: ["Full Corporate/Enterprise Dashboard", "Centralized brand control & HR sync", "Advanced team analytics & event ROI tracking", "ESG Carbon Reporting engine"],
+              cta: "Contact Sales",
+              href: "/org/register",
+              highlight: false,
+            },
+            {
               name: "White‑Label",
               price: "Custom",
-              desc: "Full domain routing (ecotap.yourcompany.rw) & dedicated support.",
-              features: ["Everything in Corporate", "Custom domain", "White-label branding", "Dedicated account manager", "API access"],
-              cta: "Contact Sales",
+              desc: "Enterprises, conglomerates, multinationals.",
+              features: ["Domain routing: tap.yourcompany.rw", "Custom API endpoints → Salesforce, HubSpot", "Dedicated RDMC technical account manager", "Full white-label branding"],
+              cta: "Request Quote",
+              href: "/contact",
+              highlight: false,
+            },
+            {
+              name: "Country Representative",
+              price: "Custom",
+              desc: "Regional eco-alliances, tech distributors, entrepreneurs.",
+              features: ["Exclusive territorial distribution rights", "Localized white-label sub-administration", "Tiered wholesale margins on rPVC hardware", "Zero-waste baselines certification"],
+              cta: "Become a Representative",
               href: "/contact",
               highlight: false,
             },
@@ -101,7 +119,7 @@ export default function PricingPage() {
         </div>
 
         <p className="text-center text-sm text-ink-light mt-10">
-          * Baseline single profiles are free forever. Corporate subscriptions from $99/year.
+          * Baseline single profiles are free forever. Premium hardware from $40 (one-off). Corporate SaaS from $99/year. Bulk cards from $28/card.
         </p>
       </div>
     </section>
