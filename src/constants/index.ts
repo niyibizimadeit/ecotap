@@ -112,6 +112,13 @@ export const SOCIAL_LINKS = [
   { key: "website",   label: "Website",   placeholder: "https://yourwebsite.com"          },
 ] as const;
 
+/** Company-relevant social links shown in the Organization section */
+export const COMPANY_SOCIAL_LINKS = [
+  { key: "linkedin", label: "LinkedIn",  placeholder: "https://linkedin.com/company/..." },
+  { key: "twitter",  label: "Twitter/X", placeholder: "https://x.com/..."                },
+  { key: "website",  label: "Website",   placeholder: "https://..."                      },
+] as const;
+
 // ── Company size options ──────────────────────────────────────────────────────
 
 export const COMPANY_SIZES = [

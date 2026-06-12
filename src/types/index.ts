@@ -58,6 +58,8 @@ export interface Company {
   theme_locked:          boolean;
   /** Captured at registration — legal rep confirmation checkbox */
   legal_rep_confirmed:   boolean;
+  /** Optional company-level social links — shared across all employees */
+  social_links:          SocialLinks | null;
   created_at:            string;
   updated_at:            string;
 }
@@ -130,19 +132,20 @@ export interface SocialLinks {
  * If the user's primary company has theme_locked = true, theme_color cannot be edited.
  */
 export interface Card {
-  id:           string;
-  profile_id:   string;
-  slug:         string;
-  theme_color:  string;        // Digital card accent colour (#hex)
-  bio:          string | null;
-  job_title:    string | null; // Fallback if no primary company job_title set
-  phone:        string | null;
-  email_public: string | null; // Shown on card (may differ from auth email)
-  social_links: SocialLinks;
-  qr_url:       string | null;
-  is_public:    boolean;
-  created_at:   string;
-  updated_at:   string;
+  id:               string;
+  profile_id:       string;
+  slug:             string;
+  theme_color:      string;        // Digital card accent colour (#hex)
+  bio:              string | null;
+  job_title:        string | null; // Fallback if no primary company job_title set
+  phone:            string | null;
+  email_public:     string | null; // Shown on card (may differ from auth email)
+  social_links:     SocialLinks;
+  show_organization:boolean;       // Show company, department, job title, company socials on card
+  qr_url:           string | null;
+  is_public:        boolean;
+  created_at:       string;
+  updated_at:       string;
 }
 
 /** Physical NFC card designs — managed by Super Admin. Independent of theme_color. */
@@ -366,11 +369,12 @@ export interface EnvironmentalReport {
 /** Everything needed to render a public card page */
 export interface PublicCard extends Card {
   profile: Pick<Profile, "id" | "username" | "full_name" | "email" | "avatar_url" | "role">;
-  primary_company:   Pick<Company, "id" | "name" | "slug" | "logo_url" | "brand_color" | "theme_locked"> | null;
+  primary_company:   Pick<Company, "id" | "name" | "slug" | "logo_url" | "brand_color" | "theme_locked" | "social_links"> | null;
   primary_job_title: string | null;  // From profile_companies where is_primary = true
   all_companies:     Array<{
     company: Pick<Company, "id" | "name" | "slug">;
     job_title: string | null;
+    department: string | null;
     is_primary: boolean;
   }>;
 }
@@ -406,12 +410,13 @@ export interface IndividualRegisterForm {
 }
 
 export interface CardProfileForm {
-  job_title:    string;
-  phone:        string;
-  email_public: string;
-  bio:          string;
-  theme_color:  string;
-  social_links: SocialLinks;
+  job_title:         string;
+  phone:             string;
+  email_public:      string;
+  bio:               string;
+  theme_color:       string;
+  social_links:      SocialLinks;
+  show_organization: boolean;
 }
 
 export interface AddCompanyForm {

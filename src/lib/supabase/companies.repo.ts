@@ -3,7 +3,7 @@
 // ─────────────────────────────────────────────────────────────────────────────
 
 import { getSupabase, getServiceSupabase } from "@/lib/supabase/server";
-import type { Company, UserStatus } from "@/types";
+import type { Company, SocialLinks, UserStatus } from "@/types";
 
 // ── Reads ────────────────────────────────────────────────────────────────────
 
@@ -94,6 +94,20 @@ export async function updateCompanyStatus(
   const { data } = await supabase
     .from("companies")
     .update({ status })
+    .eq("id", id)
+    .select()
+    .single();
+  return data;
+}
+
+export async function updateCompanySocialLinks(
+  id: string,
+  socialLinks: SocialLinks
+): Promise<Company | null> {
+  const supabase = getServiceSupabase();
+  const { data } = await supabase
+    .from("companies")
+    .update({ social_links: socialLinks as unknown as Record<string, unknown> })
     .eq("id", id)
     .select()
     .single();

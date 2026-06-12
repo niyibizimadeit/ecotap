@@ -66,12 +66,13 @@ export async function updateCard(
   }
 
   const updated = await cardsRepo.updateCard(card.id, {
-    theme_color:  data.theme_color,
-    bio:          data.bio || null,
-    job_title:    data.job_title || null,
-    phone:        data.phone || null,
-    email_public: data.email_public || null,
-    social_links: data.social_links,
+    theme_color:      data.theme_color,
+    bio:              data.bio || null,
+    job_title:        data.job_title || null,
+    phone:            data.phone || null,
+    email_public:     data.email_public || null,
+    social_links:     data.social_links,
+    show_organization: data.show_organization,
   });
 
   if (!updated) return { success: false, error: "Failed to update card." };

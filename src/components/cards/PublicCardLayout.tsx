@@ -5,6 +5,7 @@ import { SaveContactButton }  from "./SaveContactButton";
 import { ContactExchangeForm } from "./ContactExchangeForm";
 import { getInitials }        from "@/lib/utils";
 import { BrandIcon } from "@/components/brand/BrandIcon";
+import { Building2 } from "lucide-react";
 
 interface PublicCardLayoutProps {
   card: PublicCard;
@@ -76,7 +77,19 @@ export function PublicCardLayout({ card }: PublicCardLayoutProps) {
           {job_title && (
             <p className="text-sm font-medium text-ink-mid">{job_title}</p>
           )}
-          {company && (
+          {company && card.show_organization && (
+            <div className="mt-1.5 space-y-1">
+              <div className="flex items-center gap-1.5">
+                <Building2 className="h-3.5 w-3.5 flex-shrink-0" style={{ color: accent }} />
+                <p className="text-sm font-medium" style={{ color: accent }}>{company.name}</p>
+                <span className="text-[10px] px-1.5 py-px rounded-full" style={{ backgroundColor: accent, color: "#FEFCE8" }}>org</span>
+              </div>
+              {card.primary_job_title && (
+                <p className="text-xs text-ink-light ml-5">{card.primary_job_title}</p>
+              )}
+            </div>
+          )}
+          {company && !card.show_organization && (
             <p className="text-sm text-ink-light">{company.name}</p>
           )}
         </div>
@@ -108,6 +121,16 @@ export function PublicCardLayout({ card }: PublicCardLayoutProps) {
           <div className="mb-5">
             <p className="text-xs font-mono tracking-widest text-ink-light uppercase mb-3">Connect</p>
             <SocialIconRow links={social_links} accentColor={accent} />
+          </div>
+        )}
+
+        {/* Company social links (when org display is on) */}
+        {card.show_organization && company?.social_links && Object.values(company.social_links).some(Boolean) && (
+          <div className="mb-5">
+            <p className="text-xs font-mono tracking-widest text-ink-light uppercase mb-3">
+              {company.name}
+            </p>
+            <SocialIconRow links={company.social_links} accentColor={accent} />
           </div>
         )}
 

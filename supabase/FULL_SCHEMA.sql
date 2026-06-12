@@ -173,6 +173,10 @@ comment on table  companies                  is 'One per registered company. slu
 comment on column companies.theme_locked     is 'If true, employees under this subscription cannot edit their card theme_color.';
 comment on column companies.legal_rep_confirmed is 'Confirmed at registration. Legal declaration that the registrant is authorised.';
 
+-- Migration 003b: Company social links
+alter table companies add column if not exists social_links jsonb default '{}';
+comment on column companies.social_links is 'Optional company-level social links (linkedin, twitter, website, etc.). Shared across all employees of this company.';
+
 -- ----------------------------------------------------------
 -- country_reps
 -- Links a profile (country_rep role) to a country.
@@ -311,6 +315,10 @@ comment on table  cards              is 'One digital card per profile. Slug = pu
 comment on column cards.theme_color  is 'Digital card accent colour. Editable unless primary company has theme_locked = true.';
 comment on column cards.social_links is 'JSONB: {linkedin, twitter, whatsapp, instagram, website}. Validated in application layer.';
 comment on column cards.email_public is 'The email shown on the public card page. May differ from auth email.';
+
+-- Migration 004c: Organization display toggle
+alter table cards add column if not exists show_organization boolean not null default false;
+comment on column cards.show_organization is 'If true, the card shows the employee''s company, department, job title, and company social links.';
 
 -- ----------------------------------------------------------
 -- card_orders

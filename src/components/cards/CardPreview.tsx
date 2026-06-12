@@ -1,6 +1,7 @@
 "use client";
 
 import { getInitials } from "@/lib/utils";
+import { Building2 } from "lucide-react";
 import type { SocialLinks } from "@/types";
 
 const SOCIAL_LABELS: Record<keyof SocialLinks, string> = {
@@ -12,19 +13,20 @@ const SOCIAL_LABELS: Record<keyof SocialLinks, string> = {
 };
 
 interface CardPreviewProps {
-  name:        string;
-  jobTitle:    string;
-  company:     string;
-  bio:         string;
-  phone:       string;
-  accentColor: string;
-  socialLinks: SocialLinks;
-  cardSlug?:   string;
-  avatarUrl?:  string | null;
+  name:             string;
+  jobTitle:         string;
+  company:          string;
+  bio:              string;
+  phone:            string;
+  accentColor:      string;
+  socialLinks:      SocialLinks;
+  cardSlug?:        string;
+  avatarUrl?:       string | null;
+  showOrganization?: boolean;
 }
 
 export function CardPreview({
-  name, jobTitle, company, bio, phone, accentColor, socialLinks, cardSlug, avatarUrl,
+  name, jobTitle, company, bio, phone, accentColor, socialLinks, cardSlug, avatarUrl, showOrganization,
 }: CardPreviewProps) {
   const initials    = getInitials(name || "?");
   const activeSocial = (Object.entries(socialLinks) as [keyof SocialLinks, string][])
@@ -78,7 +80,15 @@ export function CardPreview({
             {(jobTitle || company) && (
               <div className="mt-0.5 mb-3">
                 {jobTitle && <p className="text-xs font-medium text-ink-mid">{jobTitle}</p>}
-                {company  && <p className="text-xs text-ink-light">{company}</p>}
+                {company && showOrganization ? (
+                  <div className="flex items-center gap-1.5 mt-1">
+                    <Building2 className="h-3 w-3 flex-shrink-0" style={{ color: accentColor }} />
+                    <p className="text-xs font-medium" style={{ color: accentColor }}>{company}</p>
+                    <span className="text-[10px] px-1.5 py-px rounded-full" style={{ backgroundColor: accentColor, color: "#FEFCE8" }}>org</span>
+                  </div>
+                ) : company ? (
+                  <p className="text-xs text-ink-light">{company}</p>
+                ) : null}
               </div>
             )}
 

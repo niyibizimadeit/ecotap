@@ -67,7 +67,7 @@ export async function getPublicCard(
       .single(),
     supabase
       .from("profile_companies")
-      .select("is_primary, job_title, company_id")
+      .select("is_primary, job_title, company_id, department_id")
       .eq("profile_id", card.profile_id),
   ]);
 
@@ -83,19 +83,28 @@ export async function getPublicCard(
 
   if (profileCompanies && profileCompanies.length > 0) {
     const companyIds = [...new Set(profileCompanies.map((pc: Record<string, unknown>) => pc.company_id))];
-    const { data: companies } = await supabase
-      .from("companies")
-      .select("*")
-      .in("id", companyIds as string[]);
+    const deptIds = [...new Set(profileCompanies.map((pc: Record<string, unknown>) => pc.department_id).filter(Boolean))];
+
+    const [companiesResult, deptsResult] = await Promise.all([
+      supabase.from("companies").select("*").in("id", companyIds as string[]),
+      deptIds.length > 0
+        ? supabase.from("departments").select("id, name").in("id", deptIds as string[])
+        : Promise.resolve({ data: [] }),
+    ]);
+
+    const companies = companiesResult.data;
+    const departments = deptsResult.data;
 
     if (companies) {
       const companyMap = new Map(companies.map((c) => [c.id, c]));
+      const deptMap = new Map((departments ?? []).map((d) => [d.id, d.name]));
 
       allCompanies = (profileCompanies as unknown as Array<Record<string, unknown>>)
         .filter((pc) => companyMap.has(pc.company_id as string))
         .map((pc) => ({
           company:    companyMap.get(pc.company_id as string)!,
           job_title:  (pc.job_title as string) ?? null,
+          department: deptMap.get(pc.department_id as string) ?? null,
           is_primary: (pc.is_primary as boolean) ?? false,
         })) as unknown as PublicCard["all_companies"];
 
@@ -154,6 +163,7 @@ export async function updateCard(
       | "phone"
       | "email_public"
       | "social_links"
+      | "show_organization"
       | "is_public"
     >
   >
