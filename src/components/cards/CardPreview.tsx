@@ -13,20 +13,21 @@ const SOCIAL_LABELS: Record<keyof SocialLinks, string> = {
 };
 
 interface CardPreviewProps {
-  name:             string;
-  jobTitle:         string;
-  company:          string;
-  bio:              string;
-  phone:            string;
-  accentColor:      string;
-  socialLinks:      SocialLinks;
-  cardSlug?:        string;
-  avatarUrl?:       string | null;
-  showOrganization?: boolean;
+  name:                string;
+  jobTitle:            string;
+  company:             string;
+  bio:                 string;
+  phone:               string;
+  accentColor:         string;
+  socialLinks:         SocialLinks;
+  companySocialLinks?:  SocialLinks;
+  cardSlug?:            string;
+  avatarUrl?:           string | null;
+  showOrganization?:    boolean;
 }
 
 export function CardPreview({
-  name, jobTitle, company, bio, phone, accentColor, socialLinks, cardSlug, avatarUrl, showOrganization,
+  name, jobTitle, company, bio, phone, accentColor, socialLinks, companySocialLinks, cardSlug, avatarUrl, showOrganization,
 }: CardPreviewProps) {
   const initials    = getInitials(name || "?");
   const activeSocial = (Object.entries(socialLinks) as [keyof SocialLinks, string][])
@@ -107,9 +108,9 @@ export function CardPreview({
               </div>
             )}
 
-            {/* Social */}
+            {/* Personal social */}
             {activeSocial.length > 0 && (
-              <div className="flex flex-wrap gap-1.5 mb-4">
+              <div className="flex flex-wrap gap-1.5 mb-3">
                 {activeSocial.map(([key]) => (
                   <div
                     key={key}
@@ -119,6 +120,26 @@ export function CardPreview({
                     {SOCIAL_LABELS[key]}
                   </div>
                 ))}
+              </div>
+            )}
+
+            {/* Company social links (when org display is on) */}
+            {showOrganization && companySocialLinks && Object.values(companySocialLinks).some(v => v?.trim()) && (
+              <div className="mb-4">
+                <p className="text-[10px] font-mono tracking-widest text-ink-light uppercase mb-1.5">Company</p>
+                <div className="flex flex-wrap gap-1.5">
+                  {(Object.entries(companySocialLinks) as [keyof SocialLinks, string][])
+                    .filter(([, v]) => v?.trim())
+                    .map(([key]) => (
+                      <div
+                        key={`co-${key}`}
+                        className="w-7 h-7 rounded-lg flex items-center justify-center text-[10px] border"
+                        style={{ backgroundColor: accentColor, borderColor: "transparent", color: "#FEFCE8", opacity: 0.75 }}
+                      >
+                        {SOCIAL_LABELS[key]}
+                      </div>
+                    ))}
+                </div>
               </div>
             )}
 

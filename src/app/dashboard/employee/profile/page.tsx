@@ -285,6 +285,7 @@ export default function ProfilePage() {
               phone={form.phone}
               accentColor={form.theme_color}
               socialLinks={form.social_links}
+              companySocialLinks={form.company_social_links}
               cardSlug={form.card_slug}
               avatarUrl={form.avatar_url}
               showOrganization={form.show_organization}

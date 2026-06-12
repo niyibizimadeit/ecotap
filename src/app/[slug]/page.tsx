@@ -82,7 +82,7 @@ export default async function SlugPage({ params }: Props) {
   // Fetch primary company for the badge (optional)
   const { data: companyLink } = await service
     .from("profile_companies")
-    .select("job_title, company:companies(name, logo_url, brand_color, slug)")
+    .select("job_title, department_id, company:companies(name, logo_url, brand_color, slug, social_links)")
     .eq("profile_id", profile.id)
     .eq("is_primary", true)
     .maybeSingle();
@@ -90,11 +90,13 @@ export default async function SlugPage({ params }: Props) {
   const companyData = Array.isArray(companyLink?.company) ? companyLink!.company[0] : companyLink?.company;
   const primaryCompany = companyData
     ? {
-        name:        (companyData as Record<string, string>).name ?? "",
-        logo_url:    (companyData as Record<string, string | null>).logo_url ?? null,
-        brand_color: (companyData as Record<string, string>).brand_color ?? "#064E3B",
-        slug:        (companyData as Record<string, string>).slug ?? "",
-        job_title:   (companyLink!.job_title as string) ?? null,
+        name:         (companyData as Record<string, string>).name ?? "",
+        logo_url:     (companyData as Record<string, string | null>).logo_url ?? null,
+        brand_color:  (companyData as Record<string, string>).brand_color ?? "#064E3B",
+        slug:         (companyData as Record<string, string>).slug ?? "",
+        social_links: (companyData as Record<string, unknown>).social_links ?? null,
+        job_title:    (companyLink!.job_title as string) ?? null,
+        department:   (companyLink!.department_id as string) ?? null,
       }
     : null;
 
@@ -111,12 +113,13 @@ export default async function SlugPage({ params }: Props) {
     },
     primary_company: primaryCompany
       ? {
-          id:          "",
-          name:        primaryCompany.name,
-          slug:        primaryCompany.slug,
-          logo_url:    primaryCompany.logo_url ?? null,
-          brand_color: primaryCompany.brand_color ?? "#064E3B",
+          id:           "",
+          name:         primaryCompany.name,
+          slug:         primaryCompany.slug,
+          logo_url:     primaryCompany.logo_url ?? null,
+          brand_color:  primaryCompany.brand_color ?? "#064E3B",
           theme_locked: false,
+          social_links: primaryCompany.social_links as Record<string, string> | null,
         }
       : null,
     primary_job_title: primaryCompany?.job_title ?? card.job_title ?? null,
