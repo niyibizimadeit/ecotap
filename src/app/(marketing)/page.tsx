@@ -130,6 +130,7 @@ function LogoBar() {
     { name: "KMNC Africa", url: "https://kmnc.africa", logo: "/partners/kmnc.png" },
     { name: "Ubumuntu Health Labs", url: "https://ubumuntuhealthlabs.rw", logo: "/partners/ubumuntuhealthlabs.png" },
     { name: "ICBNA", url: "https://icbna.org", logo: "/partners/icbna.png" },
+    { name: "Breast Cancer Africa", url: "https://breastcancerafrica.org", logo: "/partners/breastcancerafrica.png" },
   ];
 
   return (
@@ -150,7 +151,7 @@ function LogoBar() {
               <img
                 src={logo}
                 alt={name}
-                className="h-10 md:h-12 w-auto object-contain"
+                className="h-20 md:h-24 w-auto object-contain"
               />
             </a>
           ))}

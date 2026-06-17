@@ -31,7 +31,7 @@ export default function PricingPage() {
             {
               name: "Premium Personal Hardware",
               price: "$40",
-              desc: "One-off purchase (≈ 50,000 RWF) — Executives, consultants, entrepreneurs.",
+              desc: "One-off purchase (≈ 60,000 RWF) — Executives, consultants, entrepreneurs.",
               features: ["1× Premium rPVC Smart Card", "NTAG213 NFC chip (100,000+ taps)", "Laser-engraved EcoTap professional branding", "Full sync with free Personal Dashboard"],
               cta: "Order Your Card",
               href: "/register",
@@ -40,7 +40,7 @@ export default function PricingPage() {
             {
               name: "Corporate Hardware Matrix",
               price: "$28/card",
-              desc: "(≈ 35,000 RWF/card) — Teams, SMEs, enterprises.",
+              desc: "(≈ 42,000 RWF/card) — Teams, SMEs, enterprises.",
               features: ["Custom-branded rPVC cards (your logo & colors)", "Bulk deployment codes for instant setup", "Virgin-plastic-free manufacturing", "Volume: 20–99: $28 | 100–499: $25 | 500+: $22/card"],
               cta: "Request Bulk Quote",
               href: "/org/register",
