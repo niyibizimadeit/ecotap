@@ -1,4 +1,4 @@
-# EcoTap 
+# EcoTap (production)
 
 **EcoTap** is a B2B SaaS platform that provides smart NFC + QR digital business cards for companies and individuals. Companies onboard their employees; individuals and freelancers can register independently. Every cardholder gets a unique public profile page and a physical NFC card fulfilled by EcoTap.
 
