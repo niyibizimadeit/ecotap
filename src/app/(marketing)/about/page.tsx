@@ -1,4 +1,4 @@
-import { Leaf, Trees, Zap, Cloud, Heart, BarChart3, Globe, Shield, Eye, Target } from "lucide-react";
+import { Leaf, Trees, Zap, Cloud, Heart, BarChart3, Globe, Eye, Target } from "lucide-react";
 
 export default function AboutPage() {
   return (
@@ -7,10 +7,7 @@ export default function AboutPage() {
       <section className="pt-28 pb-16">
         <div className="max-w-6xl mx-auto px-6">
           <div className="bg-emerald-deep rounded-[32px] p-10 text-ivory">
-            <span className="inline-block bg-ivory/20 text-ivory text-xs font-mono tracking-wide px-3 py-1 rounded-full mb-4">
-              ♻️ The Future of Networking
-            </span>
-            <h1 className="font-serif text-4xl font-semibold mb-4">EcoTap: Your Eco-Friendly Business Card</h1>
+<h1 className="font-serif text-4xl font-semibold mb-4">EcoTap: Your Eco-Friendly Business Card</h1>
             <p className="text-ivory/80 text-lg max-w-2xl leading-relaxed">
               A single, sustainable NFC card that replaces thousands of paper cards. Smart, circular, and built for the modern professional who cares about the planet.
             </p>
@@ -131,10 +128,9 @@ export default function AboutPage() {
         <div className="max-w-6xl mx-auto px-6">
           <div className="flex flex-wrap justify-center gap-8 bg-emerald-pale/30 rounded-3xl p-10 shadow-card">
             {[
-              { icon: <Shield className="h-8 w-8" />, title: "Certified B Corp", sub: "Pending" },
-              { icon: <Globe className="h-8 w-8" />, title: "Made in Rwanda", sub: "Local Assembly" },
-              { icon: <Leaf className="h-8 w-8" />, title: "100% Recyclable", sub: "End-of-life program" },
-              { icon: <Trees className="h-8 w-8" />, title: "1 Card = 1 Tree", sub: "Reforestation pledge" },
+{ icon: <img src="/madeinrwandalogo.png" alt="Made in Rwanda" className="h-16 w-16 object-contain" />, title: "Made in Rwanda", sub: "Local Assembly" },
+              { icon: <Leaf className="h-16 w-16" />, title: "100% Recyclable", sub: "End-of-life program" },
+              { icon: <Trees className="h-16 w-16" />, title: "1 Card = 1 Tree", sub: "Reforestation pledge" },
             ].map((b) => (
               <div key={b.title} className="text-center">
                 <div className="text-emerald-deep mb-2 flex justify-center">{b.icon}</div>
