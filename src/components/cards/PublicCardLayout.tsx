@@ -54,19 +54,6 @@ export function PublicCardLayout({ card }: PublicCardLayoutProps) {
             )}
           </div>
 
-          {/* Company logo or badge */}
-          {company && (
-            <div
-              className="mb-1 px-3 py-1.5 rounded-xl border text-xs font-mono tracking-wide"
-              style={{
-                backgroundColor: "#FEF9EF",
-                borderColor: "rgba(6,78,59,0.12)",
-                color: "#65A30D",
-              }}
-            >
-              {company.name}
-            </div>
-          )}
         </div>
 
         {/* Name & title */}
@@ -74,7 +61,7 @@ export function PublicCardLayout({ card }: PublicCardLayoutProps) {
           <h1 className="font-serif text-display-sm text-emerald-deep mb-1 leading-tight">
             {profile.full_name}
           </h1>
-          {job_title && (
+          {job_title && !(company && card.show_organization) && (
             <p className="text-sm font-medium text-ink-mid">{job_title}</p>
           )}
           {company && card.show_organization && (
