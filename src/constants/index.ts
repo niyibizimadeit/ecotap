@@ -119,6 +119,16 @@ export const COMPANY_SOCIAL_LINKS = [
   { key: "website",  label: "Website",   placeholder: "https://..."                      },
 ] as const;
 
+/** Social links available for card groups (same as company social links) */
+export const GROUP_SOCIAL_LINKS = [
+  { key: "linkedin", label: "LinkedIn",  placeholder: "https://linkedin.com/in/..." },
+  { key: "twitter",  label: "Twitter/X", placeholder: "https://x.com/..."           },
+  { key: "website",  label: "Website",   placeholder: "https://..."                 },
+] as const;
+
+/** Max number of affiliation groups a card can have */
+export const MAX_CARD_GROUPS = 3;
+
 // ── Company size options ──────────────────────────────────────────────────────
 
 export const COMPANY_SIZES = [

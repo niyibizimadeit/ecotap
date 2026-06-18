@@ -12,6 +12,14 @@ const SOCIAL_LABELS: Record<keyof SocialLinks, string> = {
   website:   "web",
 };
 
+interface GroupPreviewEntry {
+  id?: string;
+  organization_name: string;
+  job_title: string;
+  social_links: SocialLinks;
+  show_on_card: boolean;
+}
+
 interface CardPreviewProps {
   name:                string;
   jobTitle:            string;
@@ -24,14 +32,25 @@ interface CardPreviewProps {
   cardSlug?:            string;
   avatarUrl?:           string | null;
   showOrganization?:    boolean;
+  cardGroups?:          GroupPreviewEntry[];
 }
 
 export function CardPreview({
-  name, jobTitle, company, bio, phone, accentColor, socialLinks, companySocialLinks, cardSlug, avatarUrl, showOrganization,
+  name, jobTitle, company, bio, phone, accentColor, socialLinks, companySocialLinks, cardSlug, avatarUrl, showOrganization, cardGroups,
 }: CardPreviewProps) {
   const initials    = getInitials(name || "?");
   const activeSocial = (Object.entries(socialLinks) as [keyof SocialLinks, string][])
     .filter(([, v]) => v.trim());
+
+  /* ── Contrast helpers ── */
+  const getLuminance = (hex: string): number => {
+    const r = parseInt(hex.slice(1, 3), 16) / 255;
+    const g = parseInt(hex.slice(3, 5), 16) / 255;
+    const b = parseInt(hex.slice(5, 7), 16) / 255;
+    const toLinear = (c: number) => (c <= 0.03928 ? c / 12.92 : Math.pow((c + 0.055) / 1.055, 2.4));
+    return 0.2126 * toLinear(r) + 0.7152 * toLinear(g) + 0.0722 * toLinear(b);
+  };
+  const iconColor = getLuminance(accentColor) > 0.5 ? "#000000" : "#FFFFFF";
 
   return (
     <div className="w-full max-w-xs mx-auto">
@@ -110,12 +129,15 @@ export function CardPreview({
 
             {/* Personal social */}
             {activeSocial.length > 0 && (
-              <div className="flex flex-wrap gap-1.5 mb-3">
+              <div
+                className="flex flex-wrap items-center gap-1 rounded-2xl px-3 py-2 mb-3"
+                style={{ backgroundColor: accentColor }}
+              >
                 {activeSocial.map(([key]) => (
                   <div
                     key={key}
-                    className="w-7 h-7 rounded-lg flex items-center justify-center text-[10px] border"
-                    style={{ backgroundColor: "#ECFDF5", borderColor: "rgba(6,78,59,0.08)", color: "#065F46" }}
+                    className="w-7 h-7 rounded-lg flex items-center justify-center text-[10px]"
+                    style={{ color: iconColor }}
                   >
                     {SOCIAL_LABELS[key]}
                   </div>
@@ -127,14 +149,17 @@ export function CardPreview({
             {showOrganization && companySocialLinks && Object.values(companySocialLinks).some(v => v?.trim()) && (
               <div className="mb-4">
                 <p className="text-[10px] font-mono tracking-widest text-ink-light uppercase mb-1.5">Company</p>
-                <div className="flex flex-wrap gap-1.5">
+                <div
+                  className="flex flex-wrap items-center gap-1 rounded-2xl px-3 py-2"
+                  style={{ backgroundColor: accentColor }}
+                >
                   {(Object.entries(companySocialLinks) as [keyof SocialLinks, string][])
                     .filter(([, v]) => v?.trim())
                     .map(([key]) => (
                       <div
                         key={`co-${key}`}
-                        className="w-7 h-7 rounded-lg flex items-center justify-center text-[10px] border"
-                        style={{ backgroundColor: "#D1FAE5", borderColor: "rgba(6,78,59,0.12)", color: "#065F46" }}
+                        className="w-7 h-7 rounded-lg flex items-center justify-center text-[10px]"
+                        style={{ color: iconColor }}
                       >
                         {SOCIAL_LABELS[key]}
                       </div>
@@ -142,6 +167,35 @@ export function CardPreview({
                 </div>
               </div>
             )}
+
+            {/* Card groups (additional affiliations) */}
+            {cardGroups?.filter(g => g.show_on_card && g.organization_name.trim()).map((group, i) => (
+              <div key={group.id ?? i} className="mb-3">
+                <div className="flex items-center gap-1 mt-1">
+                  <Building2 className="h-3 w-3 flex-shrink-0" style={{ color: accentColor }} />
+                  <p className="text-xs font-medium" style={{ color: accentColor }}>{group.organization_name}</p>
+                  <span className="text-[10px] px-1.5 py-px rounded-full" style={{ backgroundColor: accentColor, color: "#FEFCE8" }}>org</span>
+                </div>
+                {group.job_title && (
+                  <p className="text-xs text-ink-light ml-4">{group.job_title}</p>
+                )}
+                {/* Group social links */}
+                {Object.values(group.social_links).some(v => v?.trim()) && (
+                  <div className="flex flex-wrap items-center gap-1 rounded-2xl px-3 py-2 mt-1 ml-4"
+                    style={{ backgroundColor: accentColor }}>
+                    {(Object.entries(group.social_links) as [keyof SocialLinks, string][])
+                      .filter(([, v]) => v?.trim())
+                      .map(([key]) => (
+                        <div key={key}
+                          className="w-7 h-7 rounded-lg flex items-center justify-center text-[10px]"
+                          style={{ color: iconColor }}>
+                          {SOCIAL_LABELS[key]}
+                        </div>
+                      ))}
+                  </div>
+                )}
+              </div>
+            ))}
 
             {/* Save contact CTA */}
             <div

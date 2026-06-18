@@ -121,6 +121,26 @@ export function PublicCardLayout({ card }: PublicCardLayoutProps) {
           </div>
         )}
 
+        {/* Card groups (additional affiliations) */}
+        {card.card_groups?.filter(g => g.show_on_card).map((group, i) => (
+          <div key={group.id ?? i} className="mb-4">
+            <div className="flex items-center gap-1.5 mb-1">
+              <Building2 className="h-3.5 w-3.5 flex-shrink-0" style={{ color: accent }} />
+              <p className="text-sm font-medium" style={{ color: accent }}>{group.organization_name}</p>
+              <span className="text-[10px] px-1.5 py-px rounded-full" style={{ backgroundColor: accent, color: "#FEFCE8" }}>org</span>
+            </div>
+            {group.job_title && (
+              <p className="text-xs text-ink-light ml-5">{group.job_title}</p>
+            )}
+            {/* Group social links */}
+            {Object.values(group.social_links).some(Boolean) && (
+              <div className="mt-2 ml-5">
+                <SocialIconRow links={group.social_links} accentColor={accent} />
+              </div>
+            )}
+          </div>
+        ))}
+
         {/* Divider */}
         <div className="h-px bg-cream-dark mb-5" />
 

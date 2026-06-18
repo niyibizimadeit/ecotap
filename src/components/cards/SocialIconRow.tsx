@@ -7,6 +7,20 @@ interface SocialIconsProps {
   accentColor: string;
 }
 
+/** Returns the relative luminance of a hex colour (0–1). */
+function getLuminance(hex: string): number {
+  const r = parseInt(hex.slice(1, 3), 16) / 255;
+  const g = parseInt(hex.slice(3, 5), 16) / 255;
+  const b = parseInt(hex.slice(5, 7), 16) / 255;
+  const toLinear = (c: number) => (c <= 0.03928 ? c / 12.92 : Math.pow((c + 0.055) / 1.055, 2.4));
+  return 0.2126 * toLinear(r) + 0.7152 * toLinear(g) + 0.0722 * toLinear(b);
+}
+
+/** Returns black or white based on the perceived brightness of `hex`. */
+function contrastColor(hex: string): string {
+  return getLuminance(hex) > 0.5 ? "#000000" : "#FFFFFF";
+}
+
 const SOCIAL_CONFIG = [
   {
     key: "linkedin" as keyof SocialLinks,
@@ -61,6 +75,8 @@ export function SocialIconRow({ links, accentColor }: SocialIconsProps) {
   const active = SOCIAL_CONFIG.filter((s) => links[s.key]);
   if (active.length === 0) return null;
 
+  const iconColor = contrastColor(accentColor);
+
   function getHref(key: keyof SocialLinks, value: string): string {
     if (key === "whatsapp") {
       const digits = value.replace(/\D/g, "");
@@ -70,7 +86,10 @@ export function SocialIconRow({ links, accentColor }: SocialIconsProps) {
   }
 
   return (
-    <div className="flex flex-wrap gap-2">
+    <div
+      className="flex flex-wrap items-center gap-1 rounded-2xl px-3 py-2"
+      style={{ backgroundColor: accentColor }}
+    >
       {active.map(({ key, label, icon }) => (
         <a
           key={key}
@@ -78,22 +97,8 @@ export function SocialIconRow({ links, accentColor }: SocialIconsProps) {
           target="_blank"
           rel="noopener noreferrer"
           aria-label={label}
-          className="group flex items-center gap-2 px-3 py-2 rounded-xl border transition-all duration-200 hover:-translate-y-0.5"
-          style={{
-            backgroundColor: "#ECFDF5",
-            borderColor: "rgba(6,78,59,0.08)",
-            color: "#065F46",
-          }}
-          onMouseEnter={(e) => {
-            (e.currentTarget as HTMLAnchorElement).style.backgroundColor = accentColor;
-            (e.currentTarget as HTMLAnchorElement).style.borderColor     = accentColor;
-            (e.currentTarget as HTMLAnchorElement).style.color           = "#FEFCE8";
-          }}
-          onMouseLeave={(e) => {
-            (e.currentTarget as HTMLAnchorElement).style.backgroundColor = "#ECFDF5";
-            (e.currentTarget as HTMLAnchorElement).style.borderColor     = "rgba(6,78,59,0.08)";
-            (e.currentTarget as HTMLAnchorElement).style.color           = "#065F46";
-          }}
+          className="group flex items-center gap-2 px-3 py-2 rounded-xl transition-all duration-200 hover:bg-white/10"
+          style={{ color: iconColor }}
         >
           {icon}
           <span className="text-xs font-medium hidden sm:block">{label}</span>

@@ -6,11 +6,20 @@ import { Input, Textarea } from "@/components/ui/Input";
 import { Button } from "@/components/ui/Button";
 import { ImageUpload } from "@/components/ui/ImageUpload";
 import { CardPreview } from "@/components/cards/CardPreview";
-import { SOCIAL_LINKS } from "@/constants";
-import { Save } from "lucide-react";
+import { SOCIAL_LINKS, GROUP_SOCIAL_LINKS, MAX_CARD_GROUPS } from "@/constants";
+import { Save, Plus, Trash2, Building2 } from "lucide-react";
 import { getMyCard, updateMyCard } from "@/app/actions/cards.actions";
 import { updateProfilePhoto } from "@/app/actions/uploads.actions";
 import type { SocialLinks, CardProfileForm } from "@/types";
+
+type GroupEntry = {
+  id?: string;
+  organization_name: string;
+  job_title: string;
+  social_links: SocialLinks;
+  show_on_card: boolean;
+  sort_order?: number;
+};
 
 type FormState = CardProfileForm & {
   full_name: string;
@@ -19,6 +28,14 @@ type FormState = CardProfileForm & {
   company_social_links: SocialLinks;
   avatar_url?: string | null;
   card_slug: string;
+  card_groups: GroupEntry[];
+};
+
+const EMPTY_GROUP: GroupEntry = {
+  organization_name: "",
+  job_title: "",
+  social_links: { linkedin: "", twitter: "", website: "" },
+  show_on_card: true,
 };
 
 const EMPTY_FORM: FormState = {
@@ -35,6 +52,7 @@ const EMPTY_FORM: FormState = {
   show_organization:    false,
   avatar_url:           null,
   card_slug:            "",
+  card_groups:          [],
 };
 
 export default function ProfilePage() {
@@ -73,6 +91,17 @@ export default function ProfilePage() {
           show_organization: card.show_organization ?? false,
           avatar_url:        card.profile.avatar_url,
           card_slug:         card.slug,
+          card_groups:       (card.card_groups ?? []).map((g) => ({
+            id: g.id,
+            organization_name: g.organization_name,
+            job_title: g.job_title ?? "",
+            social_links: {
+              linkedin: (g.social_links as Record<string, string>).linkedin ?? "",
+              twitter:  (g.social_links as Record<string, string>).twitter ?? "",
+              website:  (g.social_links as Record<string, string>).website ?? "",
+            },
+            show_on_card: g.show_on_card,
+          })),
         });
       }
       setLoading(false);
@@ -95,6 +124,46 @@ export default function ProfilePage() {
         company_social_links: { ...f.company_social_links, [key]: e.target.value },
       }));
 
+  /* ── Group helpers ── */
+  const setGroupField = (index: number, field: keyof GroupEntry) =>
+    (e: React.ChangeEvent<HTMLInputElement>) =>
+      setForm(f => ({
+        ...f,
+        card_groups: f.card_groups.map((g, i) =>
+          i === index ? { ...g, [field]: e.target.value } : g
+        ),
+      }));
+
+  const setGroupSocial = (index: number, key: string) =>
+    (e: React.ChangeEvent<HTMLInputElement>) =>
+      setForm(f => ({
+        ...f,
+        card_groups: f.card_groups.map((g, i) =>
+          i === index ? { ...g, social_links: { ...g.social_links, [key]: e.target.value } } : g
+        ),
+      }));
+
+  const toggleGroup = (index: number) =>
+    () =>
+      setForm(f => ({
+        ...f,
+        card_groups: f.card_groups.map((g, i) =>
+          i === index ? { ...g, show_on_card: !g.show_on_card } : g
+        ),
+      }));
+
+  const removeGroup = (index: number) =>
+    setForm(f => ({
+      ...f,
+      card_groups: f.card_groups.filter((_, i) => i !== index),
+    }));
+
+  const addGroup = () =>
+    setForm(f => {
+      if (f.card_groups.length >= MAX_CARD_GROUPS) return f;
+      return { ...f, card_groups: [...f.card_groups, { ...EMPTY_GROUP }] };
+    });
+
   async function save() {
     setSaving(true);
     const result = await updateMyCard({
@@ -109,6 +178,7 @@ export default function ProfilePage() {
       company:              form.company,
       department:           form.department,
       company_social_links: form.show_organization ? form.company_social_links : undefined,
+      card_groups:          form.card_groups,
     });
     setSaving(false);
     if (result.success) {
@@ -244,6 +314,102 @@ export default function ProfilePage() {
             </div>
           </SectionCard>
 
+          {/* Card Groups (additional affiliations) */}
+          <SectionCard
+            title="Groups & Affiliations"
+            subtitle={`Add up to ${MAX_CARD_GROUPS} additional organizations or affiliations to your card.`}
+          >
+            <div className="space-y-5">
+              {form.card_groups.map((group, i) => (
+                <div
+                  key={i}
+                  className="rounded-2xl p-4 space-y-3"
+                  style={{ backgroundColor: "#FEF9EF", border: "1px solid rgba(6,78,59,0.08)" }}
+                >
+                  {/* Header row */}
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <Building2 className="h-4 w-4 text-emerald-deep" />
+                      <span className="text-sm font-semibold text-emerald-deep">Group {i + 1}</span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      {/* Toggle */}
+                      <label className="relative inline-flex items-center cursor-pointer">
+                        <input
+                          type="checkbox"
+                          checked={group.show_on_card}
+                          onChange={toggleGroup(i)}
+                          className="sr-only peer"
+                        />
+                        <div
+                          className="w-8 h-4 rounded-full peer peer-checked:after:translate-x-full after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-white after:rounded-full after:h-3 after:w-3 after:transition-all"
+                          style={{ backgroundColor: group.show_on_card ? "#064E3B" : "#D1D5DB" }}
+                        />
+                      </label>
+                      <span className="text-xs text-ink-light">{group.show_on_card ? "Shown" : "Hidden"}</span>
+                      <button
+                        onClick={() => removeGroup(i)}
+                        className="ml-2 p-1 rounded-lg hover:bg-red-50 text-ink-light hover:text-red-500 transition-colors"
+                        title="Remove group"
+                      >
+                        <Trash2 className="h-3.5 w-3.5" />
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* Fields */}
+                  <Input
+                    label="Organization name"
+                    placeholder="e.g. Volunteer at NGO, Board Member"
+                    value={group.organization_name}
+                    onChange={setGroupField(i, "organization_name")}
+                  />
+                  <Input
+                    label="Job title"
+                    placeholder="e.g. Chairperson, Advisor"
+                    value={group.job_title}
+                    onChange={setGroupField(i, "job_title")}
+                  />
+
+                  {/* Group social links */}
+                  <div
+                    className="rounded-xl p-3 space-y-2"
+                    style={{ backgroundColor: "rgba(254,252,232,0.6)" }}
+                  >
+                    <p className="text-xs font-medium text-ink-light">Social links</p>
+                    {GROUP_SOCIAL_LINKS.map(({ key, label, placeholder }) => (
+                      <Input
+                        key={key}
+                        label={label}
+                        placeholder={placeholder}
+                        value={(group.social_links as Record<string, string>)[key] ?? ""}
+                        onChange={setGroupSocial(i, key)}
+                      />
+                    ))}
+                  </div>
+                </div>
+              ))}
+
+              {/* Add group button */}
+              {form.card_groups.length < MAX_CARD_GROUPS && (
+                <button
+                  onClick={addGroup}
+                  className="w-full flex items-center justify-center gap-2 py-3 rounded-2xl border-2 border-dashed transition-colors hover:bg-emerald-pale/20"
+                  style={{ borderColor: "rgba(6,78,59,0.15)", color: "#064E3B" }}
+                >
+                  <Plus className="h-4 w-4" />
+                  <span className="text-sm font-medium">Add group</span>
+                </button>
+              )}
+
+              {form.card_groups.length === 0 && (
+                <p className="text-center text-xs text-ink-light py-2">
+                  No groups yet. Click &ldquo;Add group&rdquo; to add an affiliation.
+                </p>
+              )}
+            </div>
+          </SectionCard>
+
           {/* Social links */}
           <SectionCard title="Social links" subtitle="Add any you want shown on your card.">
             <div className="space-y-3">
@@ -289,6 +455,7 @@ export default function ProfilePage() {
               cardSlug={form.card_slug}
               avatarUrl={form.avatar_url}
               showOrganization={form.show_organization}
+              cardGroups={form.card_groups}
             />
           </div>
         </div>

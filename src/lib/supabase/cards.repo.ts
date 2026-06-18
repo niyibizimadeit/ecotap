@@ -3,7 +3,7 @@
 // ─────────────────────────────────────────────────────────────────────────────
 
 import { getSupabase, getServiceSupabase } from "@/lib/supabase/server";
-import type { Card, SocialLinks, PublicCard } from "@/types";
+import type { Card, SocialLinks, PublicCard, CardGroup } from "@/types";
 
 // ── Reads ────────────────────────────────────────────────────────────────────
 
@@ -114,6 +114,13 @@ export async function getPublicCard(
     }
   }
 
+  // 4. Fetch card groups
+  const { data: cardGroups } = await supabase
+    .from("card_groups")
+    .select("*")
+    .eq("card_id", card.id)
+    .order("sort_order", { ascending: true });
+
   return {
     ...card,
     profile: {
@@ -127,6 +134,7 @@ export async function getPublicCard(
     primary_company:   primaryCompany,
     primary_job_title: primaryJobTitle,
     all_companies:     allCompanies,
+    card_groups:       (cardGroups as CardGroup[]) ?? [],
   } as PublicCard;
 }
 
@@ -200,4 +208,91 @@ export async function getCardByProfileIdService(profileId: string): Promise<Card
 export async function deleteCardService(id: string): Promise<void> {
   const supabase = getServiceSupabase();
   await supabase.from("cards").delete().eq("id", id);
+}
+
+// ── Card Groups ───────────────────────────────────────────────────
+
+export async function getCardGroups(cardId: string): Promise<CardGroup[]> {
+  const supabase = getServiceSupabase();
+  const { data } = await supabase
+    .from("card_groups")
+    .select("*")
+    .eq("card_id", cardId)
+    .order("sort_order", { ascending: true });
+  return (data as CardGroup[]) ?? [];
+}
+
+export async function upsertCardGroup(
+  cardId: string,
+  group: {
+    id?: string;
+    organization_name: string;
+    job_title?: string | null;
+    social_links: SocialLinks;
+    show_on_card: boolean;
+    sort_order: number;
+  }
+): Promise<CardGroup | null> {
+  const supabase = getServiceSupabase();
+  const payload = {
+    card_id: cardId,
+    organization_name: group.organization_name,
+    job_title: group.job_title ?? null,
+    social_links: group.social_links as unknown as Record<string, unknown>,
+    show_on_card: group.show_on_card,
+    sort_order: group.sort_order,
+  };
+
+  if (group.id) {
+    const { data } = await supabase
+      .from("card_groups")
+      .update(payload)
+      .eq("id", group.id)
+      .select()
+      .single();
+    return data as CardGroup | null;
+  } else {
+    const { data } = await supabase
+      .from("card_groups")
+      .insert(payload)
+      .select()
+      .single();
+    return data as CardGroup | null;
+  }
+}
+
+export async function deleteCardGroup(id: string): Promise<void> {
+  const supabase = getServiceSupabase();
+  await supabase.from("card_groups").delete().eq("id", id);
+}
+
+/** Replace all groups for a card atomically — deletes existing and inserts new ones. */
+export async function syncCardGroups(
+  cardId: string,
+  groups: Array<{
+    id?: string;
+    organization_name: string;
+    job_title?: string | null;
+    social_links: SocialLinks;
+    show_on_card: boolean;
+  }>
+): Promise<void> {
+  const supabase = getServiceSupabase();
+
+  // Delete all existing groups for this card
+  await supabase.from("card_groups").delete().eq("card_id", cardId);
+
+  // Insert the new set
+  if (groups.length > 0) {
+    const rows = groups.map((g, i) => ({
+      card_id: cardId,
+      organization_name: g.organization_name,
+      job_title: g.job_title ?? null,
+      social_links: g.social_links as unknown as Record<string, unknown>,
+      show_on_card: g.show_on_card,
+      sort_order: i,
+    }));
+
+    await supabase.from("card_groups").insert(rows);
+  }
 }

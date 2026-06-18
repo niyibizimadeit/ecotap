@@ -3,6 +3,8 @@
 import { getSupabase, getServiceSupabase } from "@/lib/supabase/server";
 import * as cardsService from "@/lib/services/cards.service";
 import { updateCompanySocialLinks } from "@/lib/supabase/companies.repo";
+import { syncCardGroups } from "@/lib/supabase/cards.repo";
+import { MAX_CARD_GROUPS } from "@/constants";
 import type { ActionResult, PublicCard, Card, CardProfileForm, SocialLinks } from "@/types";
 
 // ── Public card ──────────────────────────────────────────────────────────────
@@ -38,6 +40,13 @@ export async function updateMyCard(
     company?: string;
     department?: string;
     company_social_links?: SocialLinks;
+    card_groups?: Array<{
+      id?: string;
+      organization_name: string;
+      job_title?: string;
+      social_links: SocialLinks;
+      show_on_card: boolean;
+    }>;
   }
 ): Promise<ActionResult<Card>> {
   const supabase = await getSupabase();
@@ -136,6 +145,15 @@ export async function updateMyCard(
     if (data.company_social_links) {
       await updateCompanySocialLinks(companyId, data.company_social_links);
     }
+  }
+
+  // 5. Handle card groups (additional affiliations)
+  if (data.card_groups !== undefined) {
+    const groups = data.card_groups
+      .filter((g) => g.organization_name.trim())
+      .slice(0, MAX_CARD_GROUPS);
+
+    await syncCardGroups(cardResult.data!.id, groups);
   }
 
   return cardResult;

@@ -92,6 +92,19 @@ export interface ProfileCompany {
   created_at:    string;
 }
 
+/** An editable affiliation group on a digital card. Max 3 per card. */
+export interface CardGroup {
+  id:                string;
+  card_id:           string;
+  organization_name: string;
+  job_title:         string | null;
+  social_links:      SocialLinks;
+  show_on_card:      boolean;
+  sort_order:        number;
+  created_at:        string;
+  updated_at:        string;
+}
+
 export interface Department {
   id:         string;
   company_id: string;
@@ -378,6 +391,7 @@ export interface PublicCard extends Card {
     department: string | null;
     is_primary: boolean;
   }>;
+  card_groups: CardGroup[];  // Editable affiliation groups (max 3)
 }
 
 export interface CardOrderWithDesign extends CardOrder {
