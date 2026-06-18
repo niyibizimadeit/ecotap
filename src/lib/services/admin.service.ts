@@ -248,6 +248,67 @@ export async function toggleUserStatus(
   return { success: true, data: updated };
 }
 
+/**
+ * Shared helper: delete all data for a profile, including the auth user.
+ * Used by super-admin delete, self-delete, and company employee removal.
+ * Returns a list of error strings (empty = success).
+ */
+export async function deleteProfileCascade(profileId: string): Promise<string[]> {
+  const errors: string[] = [];
+
+  // 1. Delete card (if exists)
+  try {
+    const card = await cardsRepo.getCardByProfileIdService(profileId);
+    if (card) {
+      await cardsRepo.deleteCardService(card.id);
+    }
+  } catch (err) {
+    errors.push(`card: ${err instanceof Error ? err.message : String(err)}`);
+  }
+
+  // 2. Delete profile_companies links
+  try {
+    const supabase = (await import("@/lib/supabase/server")).getServiceSupabase();
+    await supabase.from("profile_companies").delete().eq("profile_id", profileId);
+  } catch (err) {
+    errors.push(`profile_companies: ${err instanceof Error ? err.message : String(err)}`);
+  }
+
+  // 3. Delete card orders
+  try {
+    const supabase = (await import("@/lib/supabase/server")).getServiceSupabase();
+    await supabase.from("card_orders").delete().eq("profile_id", profileId);
+  } catch (err) {
+    errors.push(`card_orders: ${err instanceof Error ? err.message : String(err)}`);
+  }
+
+  // 4. Delete profile activity
+  try {
+    const supabase = (await import("@/lib/supabase/server")).getServiceSupabase();
+    await supabase.from("profile_activity").delete().eq("profile_id", profileId);
+  } catch (err) {
+    errors.push(`profile_activity: ${err instanceof Error ? err.message : String(err)}`);
+  }
+
+  // 5. Delete the profile itself
+  try {
+    await profilesRepo.deleteProfileService(profileId);
+  } catch (err) {
+    errors.push(`profile: ${err instanceof Error ? err.message : String(err)}`);
+  }
+
+  // 6. Delete the auth user (email/password/login)
+  try {
+    const supabase = (await import("@/lib/supabase/server")).getServiceSupabase();
+    const { error: authError } = await supabase.auth.admin.deleteUser(profileId);
+    if (authError) throw authError;
+  } catch (err) {
+    errors.push(`auth_user: ${err instanceof Error ? err.message : String(err)}`);
+  }
+
+  return errors;
+}
+
 /** Delete a user and all associated data. Prevents self-delete and deleting the last super_admin. */
 export async function deleteUser(
   currentUserId: string,
@@ -269,48 +330,24 @@ export async function deleteUser(
     }
   }
 
-  const errors: string[] = [];
+  const errors = await deleteProfileCascade(targetProfileId);
 
-  // 1. Delete card (if exists)
-  try {
-    const card = await cardsRepo.getCardByProfileIdService(targetProfileId);
-    if (card) {
-      await cardsRepo.deleteCardService(card.id);
-    }
-  } catch (err) {
-    errors.push(`card: ${err instanceof Error ? err.message : String(err)}`);
+  if (errors.length > 0) {
+    return { success: false, error: `Partial deletion: ${errors.join("; ")}` };
   }
 
-  // 2. Delete profile_companies links
-  try {
-    const supabase = (await import("@/lib/supabase/server")).getServiceSupabase();
-    await supabase.from("profile_companies").delete().eq("profile_id", targetProfileId);
-  } catch (err) {
-    errors.push(`profile_companies: ${err instanceof Error ? err.message : String(err)}`);
-  }
+  return { success: true };
+}
 
-  // 3. Delete card orders
-  try {
-    const supabase = (await import("@/lib/supabase/server")).getServiceSupabase();
-    await supabase.from("card_orders").delete().eq("profile_id", targetProfileId);
-  } catch (err) {
-    errors.push(`card_orders: ${err instanceof Error ? err.message : String(err)}`);
-  }
+/**
+ * Delete the currently-authenticated user's own account.
+ * No self-delete guard — this is intentionally a self-delete.
+ */
+export async function deleteOwnAccount(profileId: string): Promise<ActionResult<void>> {
+  const profile = await profilesRepo.getProfileById(profileId);
+  if (!profile) return { success: false, error: "Profile not found." };
 
-  // 4. Delete profile activity
-  try {
-    const supabase = (await import("@/lib/supabase/server")).getServiceSupabase();
-    await supabase.from("profile_activity").delete().eq("profile_id", targetProfileId);
-  } catch (err) {
-    errors.push(`profile_activity: ${err instanceof Error ? err.message : String(err)}`);
-  }
-
-  // 5. Delete the profile itself
-  try {
-    await profilesRepo.deleteProfileService(targetProfileId);
-  } catch (err) {
-    errors.push(`profile: ${err instanceof Error ? err.message : String(err)}`);
-  }
+  const errors = await deleteProfileCascade(profileId);
 
   if (errors.length > 0) {
     return { success: false, error: `Partial deletion: ${errors.join("; ")}` };

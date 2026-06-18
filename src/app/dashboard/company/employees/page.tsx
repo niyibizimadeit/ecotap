@@ -10,8 +10,9 @@ import {
 } from "@/components/dashboard/DashboardShared";
 import { Badge } from "@/components/ui/Badge";
 import { Button } from "@/components/ui/Button";
-import { ExternalLink, UserPlus } from "lucide-react";
+import { ExternalLink, UserPlus, Trash2 } from "lucide-react";
 import { getCompanyDashboardData } from "@/app/actions/company.actions";
+import { DeleteEmployeeButton } from "./DeleteEmployeeButton";
 
 export default function EmployeesPage() {
   return (
@@ -81,6 +82,7 @@ async function EmployeesContent() {
                 { label: "Status", className: "px-4 py-3" },
                 { label: "Joined", className: "px-4 py-3 hidden md:table-cell" },
                 { label: "Card",   className: "px-4 py-3 text-right" },
+                { label: "",       className: "px-4 py-3 w-10" },
               ].map(({ label, className }) => (
                 <th
                   key={label}
@@ -145,6 +147,14 @@ async function EmployeesContent() {
                     <ExternalLink className="h-3 w-3" />
                     View
                   </a>
+                </td>
+
+                {/* Delete */}
+                <td className="px-2 py-3">
+                  <DeleteEmployeeButton
+                    employeeId={emp.id}
+                    employeeName={emp.name}
+                  />
                 </td>
               </tr>
             ))}

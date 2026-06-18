@@ -3,6 +3,7 @@
 import { cache } from "react";
 import { getSupabase, getServiceSupabase } from "@/lib/supabase/server";
 import { revalidatePath } from "next/cache";
+import type { ActionResult } from "@/types";
 
 // ─── Types ───────────────────────────────────────────────────────────────────
 
@@ -255,4 +256,49 @@ export async function updateMyCompany(
   } catch {
     return { success: false, error: "UNEXPECTED_ERROR" };
   }
+}
+
+// ── Employee management ────────────────────────────────────────────────────────
+
+/**
+ * Permanently delete an employee from the company and the platform.
+ * Only callable by a company admin / HR of the same company.
+ */
+export async function deleteEmployeeAction(
+  employeeProfileId: string
+): Promise<ActionResult<void>> {
+  const supabase = await getSupabase();
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return { success: false, error: "Not authenticated." };
+
+  // Ensure the caller is a company admin
+  const companyId = await resolveCompanyId();
+  if (!companyId) return { success: false, error: "No company linked to your account." };
+
+  // Verify the target employee belongs to the same company
+  const { data: employeeLink } = await (await import("@/lib/supabase/server")).getServiceSupabase()
+    .from("profile_companies")
+    .select("id")
+    .eq("profile_id", employeeProfileId)
+    .eq("company_id", companyId)
+    .single();
+
+  if (!employeeLink) {
+    return { success: false, error: "Employee not found in your company." };
+  }
+
+  // Prevent self-delete via this route
+  if (employeeProfileId === user.id) {
+    return { success: false, error: "Use account settings to delete your own account." };
+  }
+
+  const { deleteProfileCascade } = await import("@/lib/services/admin.service");
+  const errors = await deleteProfileCascade(employeeProfileId);
+
+  if (errors.length > 0) {
+    return { success: false, error: `Partial deletion: ${errors.join("; ")}` };
+  }
+
+  revalidatePath("/dashboard/company/employees");
+  return { success: true };
 }

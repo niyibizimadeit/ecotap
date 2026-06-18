@@ -158,3 +158,14 @@ export async function updateMyCard(
 
   return cardResult;
 }
+
+// ── Delete own account ────────────────────────────────────────────────────────
+
+export async function deleteMyAccount(): Promise<ActionResult<void>> {
+  const supabase = await getSupabase();
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return { success: false, error: "Not authenticated." };
+
+  const { deleteOwnAccount } = await import("@/lib/services/admin.service");
+  return deleteOwnAccount(user.id);
+}

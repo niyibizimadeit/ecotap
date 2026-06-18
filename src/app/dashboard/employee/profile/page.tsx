@@ -8,7 +8,7 @@ import { ImageUpload } from "@/components/ui/ImageUpload";
 import { CardPreview } from "@/components/cards/CardPreview";
 import { SOCIAL_LINKS, GROUP_SOCIAL_LINKS, MAX_CARD_GROUPS } from "@/constants";
 import { Save, Plus, Trash2, Building2 } from "lucide-react";
-import { getMyCard, updateMyCard } from "@/app/actions/cards.actions";
+import { getMyCard, updateMyCard, deleteMyAccount } from "@/app/actions/cards.actions";
 import { updateProfilePhoto } from "@/app/actions/uploads.actions";
 import type { SocialLinks, CardProfileForm } from "@/types";
 
@@ -60,6 +60,8 @@ export default function ProfilePage() {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
+  const [deleting, setDeleting] = useState(false);
+  const [confirmDelete, setConfirmDelete] = useState(false);
 
   // Load real data on mount
   useEffect(() => {
@@ -184,6 +186,17 @@ export default function ProfilePage() {
     if (result.success) {
       setSaved(true);
       setTimeout(() => setSaved(false), 3000);
+    }
+  }
+
+  async function handleDelete() {
+    setDeleting(true);
+    const result = await deleteMyAccount();
+    setDeleting(false);
+    if (result.success) {
+      window.location.href = "/";
+    } else {
+      alert(result.error ?? "Failed to delete account.");
     }
   }
 
@@ -437,6 +450,45 @@ export default function ProfilePage() {
             style={saved ? { backgroundColor: "#059669" } : {}}>
             {saved ? "Changes saved!" : "Save changes"}
           </Button>
+
+          {/* Danger Zone */}
+          <SectionCard title="Danger Zone">
+            <div className="space-y-3">
+              <p className="text-sm text-ink-light">
+                Permanently delete your account, card, and all associated data. This action cannot be undone.
+              </p>
+              {!confirmDelete ? (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setConfirmDelete(true)}
+                  style={{ borderColor: "#DC2626", color: "#DC2626" }}
+                >
+                  Delete my account
+                </Button>
+              ) : (
+                <div className="flex items-center gap-3">
+                  <Button
+                    variant="primary"
+                    size="sm"
+                    loading={deleting}
+                    onClick={handleDelete}
+                    style={{ backgroundColor: "#DC2626" }}
+                  >
+                    {deleting ? "Deleting…" : "Confirm delete"}
+                  </Button>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setConfirmDelete(false)}
+                    disabled={deleting}
+                  >
+                    Cancel
+                  </Button>
+                </div>
+              )}
+            </div>
+          </SectionCard>
         </div>
 
         {/* Live preview */}
