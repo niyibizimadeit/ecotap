@@ -23,7 +23,7 @@ export default function AboutPage() {
           </h2>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {[
-              { icon: <Leaf className="h-6 w-6" />, title: "100% Recycled Materials", desc: "Our cards are manufactured from post-consumer recycled PVC (rPVC), diverting plastic waste from landfills and eliminating virgin plastic production entirely." },
+              { icon: <Leaf className="h-6 w-6" />, title: "100% Recycled Materials", desc: "Our cards are manufactured from post-consumer recycled PVC, diverting plastic waste from landfills and eliminating virgin plastic production entirely." },
               { icon: <Trees className="h-6 w-6" />, title: "Carbon Negative Production", desc: "Every EcoTap card is produced using renewable energy sources. For every card sold, we plant one tree through our partnership with reforestation projects in Rwanda's Gishwati Forest." },
               { icon: <Zap className="h-6 w-6" />, title: "Battery-Free Technology", desc: "The NTAG213 NFC chip is passive — it draws no power and requires no charging. One card lasts a lifetime of networking without any electronic waste." },
               { icon: <Cloud className="h-6 w-6" />, title: "Zero Re-Printing Waste", desc: "Change jobs, titles, or phone numbers? Update your digital profile instantly — no need to discard and reprint physical cards ever again." },
@@ -104,7 +104,7 @@ export default function AboutPage() {
               </thead>
               <tbody>
                 {[
-                  ["Material Source", "Virgin wood pulp (trees)", "100% Recycled PVC (rPVC)"],
+                  ["Material Source", "Virgin wood pulp (trees)", "100% Recycled PVC"],
                   ["Lifespan", "Days to weeks", "10+ years / 100,000+ uses"],
                   ["Updateable Info", "❌ No (reprint needed)", "✅ Real-time digital updates"],
                   ["Waste Generated", "88% discarded within 1 week", "Zero waste — one card forever"],
