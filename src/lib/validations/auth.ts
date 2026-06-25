@@ -25,6 +25,12 @@ const phone = z
     { message: "Enter a valid phone number (e.g., +250788123456)" }
   );
 
+const age = z
+  .number({ message: "Age is required" })
+  .int("Age must be a whole number")
+  .min(13, "You must be at least 13 years old")
+  .max(120, "Please enter a valid age");
+
 // ── Organisation registration (3 steps) ─────────────────────────────────────────
 
 export const orgRegisterStep1Schema = z.object({
@@ -49,6 +55,7 @@ export const orgRegisterStep2Schema = z.object({
   password,
   confirm_password: password,
   phone,
+  age,
   terms_accepted: z.literal(true, {
     message: "You must accept the Terms and Conditions and Privacy Policy to continue.",
   }),
@@ -79,6 +86,7 @@ export const individualRegisterSchema = z.object({
   password,
   confirm_password: password,
   phone,
+  age,
   company_name: z.string().optional(),
   terms_accepted: z.literal(true, {
     message: "You must accept the Terms and Conditions and Privacy Policy to continue.",

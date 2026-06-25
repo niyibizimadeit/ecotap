@@ -95,6 +95,15 @@ export default function OrgLoginPage() {
             {...register("password")}
           />
 
+          <p className="text-right">
+            <Link
+              href="/forgot-password"
+              className="text-xs text-ink-light hover:text-emerald-bright underline underline-offset-4 transition-colors"
+            >
+              Forgot password?
+            </Link>
+          </p>
+
           <Button
             type="submit"
             variant="primary"

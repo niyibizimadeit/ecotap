@@ -33,7 +33,8 @@ export default function IndividualRegisterPage() {
     formData.append("full_name", data.full_name);
     formData.append("username", data.username);
     formData.append("role", "individual");
-    if (data.phone) formData.append("phone", data.phone);
+    formData.append("phone", data.phone);
+    formData.append("age", String(data.age));
     if (data.company_name) {
       formData.append("company_name", data.company_name);
     }
@@ -99,10 +100,21 @@ export default function IndividualRegisterPage() {
 
           <Input
             label="Phone number"
+            required
             placeholder="+250788123456"
-            hint="Optional — your WhatsApp or mobile number"
+            hint="Your WhatsApp or mobile number"
             error={errors.phone?.message}
             {...register("phone")}
+          />
+
+          <Input
+            label="Age"
+            required
+            type="number"
+            placeholder="e.g., 28"
+            hint="You must be at least 13 years old"
+            error={errors.age?.message}
+            {...register("age", { valueAsNumber: true })}
           />
 
           <PasswordInput

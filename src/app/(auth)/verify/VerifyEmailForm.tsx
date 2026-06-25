@@ -3,7 +3,7 @@
 import { useState, useRef, useEffect, useCallback } from "react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
-import { ArrowRight, Mail, AlertCircle, ArrowLeft } from "lucide-react";
+import { ArrowRight, AlertCircle, ArrowLeft } from "lucide-react";
 
 import { AuthLayout } from "@/components/auth/AuthLayout";
 import { Button } from "@/components/ui/Button";
@@ -106,15 +106,14 @@ export default function VerifyEmailForm() {
     >
       <div className="w-full max-w-md mx-auto">
         <div className="mb-8">
-          <div className="inline-flex items-center gap-2 bg-emerald-pale border border-emerald-light rounded-full px-3 py-1 mb-4">
-            <Mail className="h-3 w-3 text-emerald-bright" />
-            <span className="text-xs font-mono tracking-widest text-emerald-mid uppercase">Check your inbox</span>
-          </div>
           <h1 className="font-serif text-display-sm text-emerald-deep mb-1">Verify your email</h1>
           <p className="text-sm text-ink-light">
             We sent a <strong>6-digit code</strong> to{" "}
             <span className="text-ink font-medium">{email}</span>.
             Enter it below to confirm your email address.
+          </p>
+          <p className="text-xs text-ink-light mt-2">
+            The code expires in <strong className="text-ink">10 minutes</strong>.
           </p>
         </div>
 

@@ -266,6 +266,14 @@ export interface ContactExchange {
   device_type:          DeviceType;
   referrer:             string | null;
   country:              string | null;
+  /** Card owner marked this contact as a favorite */
+  is_favorite?:         boolean;
+  /** Lead qualification: hot, warm, cold, or normal */
+  lead_level?:          'hot' | 'warm' | 'cold' | 'normal';
+  /** Card owner's private notes on this contact */
+  owner_notes?:         string | null;
+  /** User-defined group/category label */
+  lead_group?:          string | null;
   created_at:           string;
 }
 

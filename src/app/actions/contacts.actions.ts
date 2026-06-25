@@ -36,3 +36,19 @@ export async function getMyInbox(): Promise<ActionResult<ContactExchange[]>> {
   if (!profileId) return { success: false, error: "Not authenticated." };
   return contactsService.getInbox(profileId);
 }
+
+// ── Update contact metadata ───────────────────────────────────────────────────
+
+export async function updateContactExchange(
+  id: string,
+  updates: {
+    is_favorite?: boolean;
+    lead_level?: string;
+    owner_notes?: string | null;
+    lead_group?: string | null;
+  }
+): Promise<ActionResult<ContactExchange>> {
+  const profileId = await getCurrentProfileId();
+  if (!profileId) return { success: false, error: "Not authenticated." };
+  return contactsService.updateExchange(id, profileId, updates);
+}

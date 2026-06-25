@@ -1,13 +1,14 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import Link from "next/link";
 import { PageHeader, SectionCard } from "@/components/dashboard/DashboardShared";
 import { Input, Textarea } from "@/components/ui/Input";
 import { Button } from "@/components/ui/Button";
 import { ImageUpload } from "@/components/ui/ImageUpload";
 import { CardPreview } from "@/components/cards/CardPreview";
 import { SOCIAL_LINKS, GROUP_SOCIAL_LINKS, MAX_CARD_GROUPS } from "@/constants";
-import { Save, Plus, Trash2, Building2, AlertCircle } from "lucide-react";
+import { Save, Plus, Trash2, Building2, AlertCircle, Package } from "lucide-react";
 import { getMyCard, updateMyCard, deleteMyAccount } from "@/app/actions/cards.actions";
 import { updateProfilePhoto } from "@/app/actions/uploads.actions";
 import type { SocialLinks, CardProfileForm } from "@/types";
@@ -462,6 +463,18 @@ export default function ProfilePage() {
             style={saved ? { backgroundColor: "#059669" } : {}}>
             {saved ? "Changes saved!" : "Save changes"}
           </Button>
+
+          {/* Order another card */}
+          <div className="rounded-2xl border p-5 text-center" style={{ borderColor: "rgba(6,78,59,0.1)", backgroundColor: "#FEF9EF" }}>
+            <p className="text-sm font-medium text-emerald-deep mb-2">Need another physical card?</p>
+            <p className="text-xs text-ink-light mb-4">
+              Order a new EcoTap NFC card with your current design and branding. Your digital profile stays exactly as it is.
+            </p>
+            <Link href="/dashboard/employee/orders/new" className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-medium transition-colors hover:opacity-90" style={{ backgroundColor: "#064E3B", color: "#FEFCE8" }}>
+              <Package className="h-4 w-4" />
+              Order another card
+            </Link>
+          </div>
 
           {/* Danger Zone */}
           <SectionCard title="Danger Zone">

@@ -111,7 +111,8 @@ export default function OrgRegisterPage() {
               formData.append("admin_name", step2Data.admin_name);
               formData.append("email", step2Data.email);
               formData.append("password", step2Data.password);
-              if (step2Data.phone) formData.append("phone", step2Data.phone);
+              formData.append("phone", step2Data.phone);
+              formData.append("age", String(step2Data.age));
               formData.append("legal_rep_confirmed", legalConfirmed ? "on" : "off");
               formData.append("terms_accepted", termsAccepted ? "true" : "false");
 
@@ -250,10 +251,21 @@ function Step2AdminAccount({
 
       <Input
         label="Phone number"
+        required
         placeholder="+250788123456"
-        hint="Optional — your contact number"
+        hint="Your contact number"
         error={errors.phone?.message}
         {...register("phone")}
+      />
+
+      <Input
+        label="Age"
+        required
+        type="number"
+        placeholder="e.g., 35"
+        hint="You must be at least 13 years old"
+        error={errors.age?.message}
+        {...register("age", { valueAsNumber: true })}
       />
 
       <PasswordInput

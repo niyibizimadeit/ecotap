@@ -5,6 +5,7 @@
 
 import * as exchangesRepo from "@/lib/supabase/contact_exchanges.repo";
 import * as analyticsRepo from "@/lib/supabase/analytics.repo";
+import * as cardsRepo from "@/lib/supabase/cards.repo";
 import type { ActionResult, ContactExchange, DeviceType } from "@/types";
 
 // ── Exchange recording ───────────────────────────────────────────────────────
@@ -89,4 +90,34 @@ export async function deleteExchange(
 ): Promise<ActionResult<void>> {
   await exchangesRepo.deleteExchange(id);
   return { success: true };
+}
+
+/**
+ * Update contact exchange metadata (favorite, lead level, notes, group).
+ * Validates that the exchange belongs to a card owned by the given profile.
+ */
+export async function updateExchange(
+  id: string,
+  profileId: string,
+  updates: {
+    is_favorite?: boolean;
+    lead_level?: string;
+    owner_notes?: string | null;
+    lead_group?: string | null;
+  }
+): Promise<ActionResult<ContactExchange>> {
+  // Verify ownership: get the exchange, then check its card belongs to this profile
+  const exchange = await exchangesRepo.getExchangeById(id);
+  if (!exchange) return { success: false, error: "Contact not found." };
+
+  // Get the card to verify ownership
+  const card = await cardsRepo.getCardById(exchange.card_id);
+  if (!card || card.profile_id !== profileId) {
+    return { success: false, error: "You do not own this contact." };
+  }
+
+  const updated = await exchangesRepo.updateExchange(id, updates);
+  if (!updated) return { success: false, error: "Failed to update contact." };
+
+  return { success: true, data: updated };
 }

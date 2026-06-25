@@ -55,8 +55,8 @@ export default function PricingPage() {
             {
               name: "Corporate Account",
               originalPrice: `$${CARD_ORIGINAL_PRICES.corporate} USD`,
-              price: "$25 USD",
-              priceNote: "per card · ≈ 37,500 RWF",
+              price: "$20 – $25 USD",
+              priceNote: "per card · ≈ 30,000 – 37,500 RWF",
               desc: "Custom-branded cards for teams, SMEs, and enterprises — with bulk savings.",
               features: [
                 "Custom-branded Recycled PVC cards (your logo & colors)",

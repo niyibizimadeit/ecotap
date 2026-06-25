@@ -10,11 +10,11 @@ export default function ContactPage() {
           <div className="text-center max-w-2xl mx-auto mb-16">
             <p className="text-xs font-mono tracking-widest uppercase mb-4 text-emerald-bright">Contact Us</p>
             <h1 className="font-serif text-display-md leading-tight mb-4 text-emerald-deep">
-              Let's{" "}
+              Let&apos;s{" "}
               <em className="text-gold">connect</em>
             </h1>
             <p className="text-base leading-relaxed text-ink-light">
-              Ready to go green? Have questions about EcoTap for your team? We're here to help.
+              Ready to go green? Have questions about EcoTap for your team? We&apos;re here to help.
             </p>
           </div>
 
@@ -40,7 +40,7 @@ export default function ContactPage() {
                 <h2 className="font-serif text-xl font-semibold text-emerald-deep mb-6">Get in touch</h2>
                 <div className="space-y-5">
                   {[
-                    { icon: <Mail className="h-5 w-5" />, label: "Email", value: "hello@ecotap.rw", href: "mailto:hello@ecotap.rw" },
+                    { icon: <Mail className="h-5 w-5" />, label: "Email", value: "ecotap@rdmc.rw", href: "mailto:ecotap@rdmc.rw" },
                     { icon: <Phone className="h-5 w-5" />, label: "Phone", value: "+250 783 757 699", href: "tel:+250783757699" },
                     { icon: <MapPin className="h-5 w-5" />, label: "Location", value: "Kigali, Rwanda", href: null },
                     { icon: <MessageCircle className="h-5 w-5" />, label: "WhatsApp", value: "+250 783 757 699", href: "https://wa.me/250783757699" },
@@ -70,8 +70,8 @@ export default function ContactPage() {
                 <p className="text-ivory/70 text-sm leading-relaxed mb-4">
                   Need custom branding, bulk orders, or a dedicated account manager? Our enterprise team will build a tailored package for your organisation.
                 </p>
-                <a href="mailto:enterprise@ecotap.rw" className="text-sm font-semibold text-emerald-light hover:text-ivory transition-colors flex items-center gap-1">
-                  enterprise@ecotap.rw <ArrowRight className="h-3.5 w-3.5" />
+                <a href="mailto:ecotap@rdmc.rw" className="text-sm font-semibold text-emerald-light hover:text-ivory transition-colors flex items-center gap-1">
+                  ecotap@rdmc.rw <ArrowRight className="h-3.5 w-3.5" />
                 </a>
               </div>
             </div>

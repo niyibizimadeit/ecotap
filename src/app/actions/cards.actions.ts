@@ -76,7 +76,17 @@ export async function updateMyCard(
 
   if (!cardResult.success) return cardResult;
 
-  // 3. Handle company association if provided
+  // 3. Update existing profile_companies job_title for ALL linked companies
+  //    This ensures job title changes reflect on the public card even when
+  //    the user only edits their job title without touching the company field.
+  if (data.job_title !== undefined) {
+    await serviceClient
+      .from("profile_companies")
+      .update({ job_title: data.job_title || null })
+      .eq("profile_id", user.id);
+  }
+
+  // 4. Handle company association if provided
   if (data.company?.trim()) {
     const companyName = data.company.trim();
 
@@ -141,13 +151,13 @@ export async function updateMyCard(
         });
     }
 
-    // 4. Update company social links if provided
+    // 5. Update company social links if provided
     if (data.company_social_links) {
       await updateCompanySocialLinks(companyId, data.company_social_links);
     }
   }
 
-  // 5. Handle card groups (additional affiliations)
+  // 6. Handle card groups (additional affiliations)
   if (data.card_groups !== undefined) {
     const groups = data.card_groups
       .filter((g) => g.organization_name.trim())

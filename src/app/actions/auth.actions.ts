@@ -41,14 +41,21 @@ export async function signUp(formData: FormData): Promise<ActionResult> {
   const fullName = formData.get("full_name") as string;
   const username = formData.get("username") as string;
   const phone    = formData.get("phone") as string;
+  const ageStr   = formData.get("age") as string;
+  const age      = parseInt(ageStr, 10);
   const termsAccepted = formData.get("terms_accepted") === "true";
 
-  if (!email || !password || !fullName || !username || !phone) {
+  if (!email || !password || !fullName || !username || !phone || !ageStr) {
     return { success: false, error: "All fields are required." };
   }
 
   if (!termsAccepted) {
     return { success: false, error: "You must accept the Terms and Conditions and Privacy Policy." };
+  }
+
+  // Validate age server-side
+  if (isNaN(age) || age < 13 || age > 120) {
+    return { success: false, error: "Please enter a valid age (13–120)." };
   }
 
   // Validate phone format server-side
@@ -73,6 +80,7 @@ export async function signUp(formData: FormData): Promise<ActionResult> {
         full_name: fullName,
         username:  username,
         phone,
+        age,
         role:      "individual",  // SERVER-HARDCODED to prevent privilege escalation
         terms_accepted: true,
       },
@@ -102,11 +110,18 @@ export async function signUpOrg(formData: FormData): Promise<ActionResult> {
   const email         = formData.get("email") as string;
   const password      = formData.get("password") as string;
   const phone         = formData.get("phone") as string;
+  const ageStr        = formData.get("age") as string;
+  const age           = parseInt(ageStr, 10);
   const legalConfirmed = formData.get("legal_rep_confirmed") === "on";
   const termsAccepted = formData.get("terms_accepted") === "true";
 
-  if (!companyName || !adminName || !email || !password || !phone) {
+  if (!companyName || !adminName || !email || !password || !phone || !ageStr) {
     return { success: false, error: "All required fields must be filled." };
+  }
+
+  // Validate age server-side
+  if (isNaN(age) || age < 13 || age > 120) {
+    return { success: false, error: "Please enter a valid age (13–120)." };
   }
 
   // Validate phone format server-side
@@ -145,6 +160,7 @@ export async function signUpOrg(formData: FormData): Promise<ActionResult> {
         website,
         legal_rep_confirmed: true,
         terms_accepted: true,
+        age,
         phone,
       },
     },
@@ -283,6 +299,44 @@ export async function resendOtp(
   const { error } = await supabase.auth.resend({
     type,
     email,
+  });
+
+  if (error) {
+    return { success: false, error: error.message };
+  }
+
+  return { success: true };
+}
+
+// ── Password reset (forgot password) ──────────────────────────────────────────
+
+export async function requestPasswordReset(email: string): Promise<ActionResult> {
+  if (!email) {
+    return { success: false, error: "Email is required." };
+  }
+
+  const supabase = await getSupabaseServerAction();
+
+  const { error } = await supabase.auth.resetPasswordForEmail(email, {
+    redirectTo: `${process.env.NEXT_PUBLIC_SITE_URL}/reset-password`,
+  });
+
+  if (error) {
+    return { success: false, error: error.message };
+  }
+
+  return { success: true };
+}
+
+export async function resetPassword(newPassword: string): Promise<ActionResult> {
+  if (!newPassword || newPassword.length < 8) {
+    return { success: false, error: "Password must be at least 8 characters." };
+  }
+
+  const supabase = await getSupabaseServerAction();
+
+  const { error } = await supabase.auth.updateUser({
+    password: newPassword,
   });
 
   if (error) {

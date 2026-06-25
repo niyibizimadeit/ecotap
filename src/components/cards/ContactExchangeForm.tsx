@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import Link from "next/link";
 import { Input, Textarea } from "@/components/ui/Input";
 import { Button } from "@/components/ui/Button";
 import { CheckCircle2, ArrowRight } from "lucide-react";
@@ -14,6 +15,7 @@ interface ContactExchangeFormProps {
 
 export function ContactExchangeForm({ cardId, accentColor, ownerName }: ContactExchangeFormProps) {
   const [form, setForm]       = useState({ name: "", email: "", phone: "", organization: "", notes: "" });
+  const [termsAccepted, setTermsAccepted] = useState(false);
   const [submitted, setSubmitted] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError]     = useState<string | null>(null);
@@ -26,6 +28,10 @@ export function ContactExchangeForm({ cardId, accentColor, ownerName }: ContactE
   async function submit(e: React.FormEvent) {
     e.preventDefault();
     if (!form.name.trim() || !form.phone.trim()) return;
+    if (!termsAccepted) {
+      setError("You must accept the Terms and Conditions and Privacy Policy.");
+      return;
+    }
     setLoading(true);
     setError(null);
     const result = await submitContactExchange({
@@ -132,6 +138,26 @@ export function ContactExchangeForm({ cardId, accentColor, ownerName }: ContactE
             hint="Optional — add a short note"
             className="min-h-[60px]"
           />
+          {/* Terms & Privacy checkbox */}
+          <label className="flex items-start gap-2.5 cursor-pointer">
+            <input
+              type="checkbox"
+              checked={termsAccepted}
+              onChange={(e) => setTermsAccepted(e.target.checked)}
+              className="mt-0.5 h-4 w-4 rounded border-cream-dark text-emerald-bright focus:ring-emerald-mid cursor-pointer"
+            />
+            <span className="text-xs text-ink-light leading-relaxed">
+              I agree to the{" "}
+              <Link href="/terms" target="_blank" className="text-emerald-bright underline hover:text-emerald-mid">
+                Terms &amp; Conditions
+              </Link>{" "}
+              and{" "}
+              <Link href="/privacy" target="_blank" className="text-emerald-bright underline hover:text-emerald-mid">
+                Privacy Policy
+              </Link>
+            </span>
+          </label>
+
           {error && (
             <p className="text-sm text-red-600 bg-red-50 rounded-lg px-3 py-2" role="alert">
               {error}

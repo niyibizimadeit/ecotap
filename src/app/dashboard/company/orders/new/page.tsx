@@ -171,7 +171,7 @@ export default function CompanyNewOrderPage() {
       <PageHeader
         eyebrow="Order Cards"
         title="Order company NFC cards"
-        subtitle="Bulk corporate pricing from $25/card. Physical cards shipped to your office."
+        subtitle="Bulk corporate pricing from $20–$25/card. Physical cards shipped to your office."
         action={
           <Button variant="ghost" size="sm" leftIcon={<ArrowLeft className="h-3.5 w-3.5" />} onClick={() => router.push("/dashboard/company/orders")}>
             Back to orders

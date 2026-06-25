@@ -86,7 +86,7 @@ export const CARD_PRICES = {
 /** Original prices before Team Environment Rwanda sponsorship (for display) */
 export const CARD_ORIGINAL_PRICES = {
   individual: 40,
-  corporate:  40,
+  corporate:  35,
 } as const;
 
 /** Compute the RWF equivalent of a USD price */

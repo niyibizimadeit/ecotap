@@ -97,6 +97,25 @@ export async function deleteExchange(id: string): Promise<void> {
   await supabase.from("contact_exchanges").delete().eq("id", id);
 }
 
+export async function updateExchange(
+  id: string,
+  updates: {
+    is_favorite?: boolean;
+    lead_level?: string;
+    owner_notes?: string | null;
+    lead_group?: string | null;
+  }
+): Promise<ContactExchange | null> {
+  const supabase = await getSupabase();
+  const { data } = await supabase
+    .from("contact_exchanges")
+    .update(updates)
+    .eq("id", id)
+    .select()
+    .single();
+  return data;
+}
+
 // ── Admin queries (service role — platform-wide, no auth filter) ───────────────
 
 export interface AdminExchangeOptions {
