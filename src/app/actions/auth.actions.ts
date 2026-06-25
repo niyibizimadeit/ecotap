@@ -9,6 +9,7 @@
 import { createServerClient } from "@supabase/ssr";
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
+import { getServiceSupabase } from "@/lib/supabase/server";
 import type { ActionResult } from "@/types";
 
 // ── Helpers ──────────────────────────────────────────────────────────────────
@@ -310,15 +311,98 @@ export async function resendOtp(
 
 // ── Password reset (forgot password) ──────────────────────────────────────────
 
+/**
+ * Step 1: Request a password reset OTP.
+ * Checks that the email belongs to an existing account before sending.
+ */
 export async function requestPasswordReset(email: string): Promise<ActionResult> {
   if (!email) {
     return { success: false, error: "Email is required." };
   }
 
+  // Use service role for the lookup — the user is not signed in, so RLS
+  // would block a regular client from reading the profiles table.
+  const serviceClient = getServiceSupabase();
+
+  const { data: profile } = await serviceClient
+    .from("profiles")
+    .select("id")
+    .eq("email", email)
+    .maybeSingle();
+
+  if (!profile) {
+    return { success: false, error: "NO_ACCOUNT" };
+  }
+
+  const supabase = await getSupabaseServerAction();
+  const { error } = await supabase.auth.resetPasswordForEmail(email);
+
+  if (error) {
+    return { success: false, error: error.message };
+  }
+
+  return { success: true };
+}
+
+/**
+ * Step 2: Verify the OTP and set a new password.
+ * Combines OTP verification (type: "recovery") + password update in one action.
+ */
+export async function resetPasswordWithOtp(
+  email: string,
+  token: string,
+  newPassword: string
+): Promise<ActionResult> {
+  if (!email || !token || token.length !== 6) {
+    return { success: false, error: "Email and a 6-digit code are required." };
+  }
+  if (!newPassword || newPassword.length < 8) {
+    return { success: false, error: "Password must be at least 8 characters." };
+  }
+
   const supabase = await getSupabaseServerAction();
 
-  const { error } = await supabase.auth.resetPasswordForEmail(email, {
-    redirectTo: `${process.env.NEXT_PUBLIC_SITE_URL}/reset-password`,
+  // Verify the recovery OTP — this signs the user in
+  const { error: verifyError } = await supabase.auth.verifyOtp({
+    email,
+    token,
+    type: "recovery",
+  });
+
+  if (verifyError) {
+    return { success: false, error: verifyError.message };
+  }
+
+  // User is now signed in — set the new password
+  const { error: updateError } = await supabase.auth.updateUser({
+    password: newPassword,
+  });
+
+  if (updateError) {
+    return { success: false, error: updateError.message };
+  }
+
+  return { success: true };
+}
+
+/**
+ * Verify the recovery OTP — signs the user in, then they proceed to set a new password.
+ * Used by /verify-reset page.
+ */
+export async function verifyRecoveryOtp(
+  email: string,
+  token: string
+): Promise<ActionResult> {
+  if (!email || !token || token.length !== 6) {
+    return { success: false, error: "Email and a 6-digit code are required." };
+  }
+
+  const supabase = await getSupabaseServerAction();
+
+  const { error } = await supabase.auth.verifyOtp({
+    email,
+    token,
+    type: "recovery",
   });
 
   if (error) {
@@ -328,6 +412,31 @@ export async function requestPasswordReset(email: string): Promise<ActionResult>
   return { success: true };
 }
 
+/**
+ * Set a new password for the currently signed-in user.
+ * Used by /new-password page (after OTP verification signs them in).
+ */
+export async function setNewPassword(newPassword: string): Promise<ActionResult> {
+  if (!newPassword || newPassword.length < 8) {
+    return { success: false, error: "Password must be at least 8 characters." };
+  }
+
+  const supabase = await getSupabaseServerAction();
+
+  const { error } = await supabase.auth.updateUser({
+    password: newPassword,
+  });
+
+  if (error) {
+    return { success: false, error: error.message };
+  }
+
+  return { success: true };
+}
+
+/**
+ * Reset password for a signed-in user (used by the /reset-password link-based flow).
+ */
 export async function resetPassword(newPassword: string): Promise<ActionResult> {
   if (!newPassword || newPassword.length < 8) {
     return { success: false, error: "Password must be at least 8 characters." };
