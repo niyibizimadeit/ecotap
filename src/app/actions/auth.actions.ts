@@ -176,6 +176,14 @@ export async function signIn(formData: FormData): Promise<ActionResult> {
   });
 
   if (error) {
+    // "Invalid login credentials" means either wrong password or no account —
+    // make it clear the user may need to sign up instead.
+    if (error.message === "Invalid login credentials") {
+      return {
+        success: false,
+        error: "Invalid email or password. Don't have an account yet?",
+      };
+    }
     return { success: false, error: error.message };
   }
 

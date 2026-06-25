@@ -4,7 +4,7 @@ import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import Link from "next/link";
-import { ArrowRight, Building2, AlertCircle } from "lucide-react";
+import { ArrowRight, Building2, AlertCircle, UserPlus } from "lucide-react";
 
 import { AuthLayout } from "@/components/auth/AuthLayout";
 import { Button } from "@/components/ui/Button";
@@ -54,10 +54,28 @@ export default function OrgLoginPage() {
 
         <form onSubmit={handleSubmit(onSubmit)} className="space-y-5">
           {serverError && (
-            <div className="flex items-start gap-2.5 bg-red-50 border border-red-200 rounded-xl p-3">
-              <AlertCircle className="h-4 w-4 text-red-500 flex-shrink-0 mt-0.5" />
-              <p className="text-sm text-red-700">{serverError}</p>
-            </div>
+            <>
+              <div className="flex items-start gap-2.5 bg-red-50 border border-red-200 rounded-xl p-3">
+                <AlertCircle className="h-4 w-4 text-red-500 flex-shrink-0 mt-0.5" />
+                <p className="text-sm text-red-700">{serverError}</p>
+              </div>
+              {serverError.includes("Don't have an account") && (
+                <div className="flex items-center justify-between gap-3 bg-amber-50 border border-amber-300 rounded-xl p-4">
+                  <div className="flex items-center gap-2.5">
+                    <UserPlus className="h-5 w-5 text-amber-600 flex-shrink-0" />
+                    <p className="text-sm font-medium text-amber-800">
+                      Don&apos;t have an organisation account yet?
+                    </p>
+                  </div>
+                  <Link
+                    href="/org/register"
+                    className="inline-flex items-center gap-1.5 text-sm font-semibold text-emerald-bright hover:text-emerald-mid transition-colors whitespace-nowrap"
+                  >
+                    Register here <ArrowRight className="h-4 w-4" />
+                  </Link>
+                </div>
+              )}
+            </>
           )}
 
           <Input
