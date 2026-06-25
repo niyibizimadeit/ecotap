@@ -11,15 +11,21 @@ export default function PrivacyPage() {
 
           <div className="bg-emerald-pale/30 border border-emerald-light/50 rounded-3xl p-8 md:p-10 shadow-card space-y-8 text-ink-mid leading-relaxed">
             <p>
-              At EcoTap (&quot;we,&quot; &quot;our,&quot; or &quot;us&quot;), we are committed to protecting your privacy while delivering innovative, sustainable and eco-friendly networking solutions. This Privacy Policy outlines how we collect, use, disclose, and safeguard your information when you use our website (ecotap.rw), access our digital platform, and purchase our smart business cards.
+              At EcoTap (&quot;we,&quot; &quot;our,&quot; or &quot;us&quot;), we are committed to protecting your privacy while delivering innovative, sustainable, and eco-friendly networking solutions. This Privacy Policy outlines how we collect, use, disclose, and safeguard your information when you use our website (ecotap.rw), access our digital platform, and purchase our smart business cards.
             </p>
 
             <Section title="1.1 Information We Collect">
-              <p>We collect information that you voluntarily provide to us when you create an account, design your live digital profile, or place an order for an EcoTap Smart Card:</p>
+              <p>We collect information that you voluntarily provide to us when you create an account, design your live digital profile, or place an order for an EcoTap Smart Card.</p>
+              <p>Additionally, we collect information from third parties who interact with an EcoTap user and voluntarily choose to share their own contact details during that interaction. By accessing this platform, all interacting parties acknowledge and agree to the following terms regarding peer-to-peer data transmission:</p>
               <ul className="list-disc pl-5 space-y-1 mt-2">
-                <li><strong>Contact & Account Data:</strong> Full name, email address, phone number, job title, company name, and social media or professional links you choose to add to your profile.</li>
+                <li><strong>Voluntary Peer-to-Peer Transfer:</strong> In the event of an interaction between an EcoTap cardholder and an external party (the &quot;successor&quot;), any data or contact details exchanged are transferred directly to the successor by mutual agreement of those individuals.</li>
+                <li><strong>Indemnification of Platform:</strong> Because EcoTap cannot determine or monitor the intent, context, or reason for any physical or digital exchange, EcoTap is entirely absolved of liability in any subsequent legal disputes or data misuse cases. All parties acknowledge they are fully aware of this operational boundary upon reading this paragraph.</li>
+              </ul>
+              <p className="mt-3 font-semibold">Data Categories Covered:</p>
+              <ul className="list-disc pl-5 space-y-1 mt-2">
+                <li><strong>Contact & Account Data:</strong> Full name, email address, phone number, job title, company name, and social media or professional links you choose to add to your profile or share during an interaction.</li>
                 <li><strong>Shipping & Billing Information:</strong> Mailing and delivery addresses required to ship physical items, and financial data required to process transaction fees and product purchases.</li>
-                <li><strong>Usage Data:</strong> Information regarding how you interact with our website and how others interact with your live digital profile (e.g., number of taps, general traffic analytics).</li>
+                <li><strong>Usage & System Analytics Data:</strong> Information regarding how you interact with our website, how others interact with your live digital profile (e.g., number of taps, general traffic analytics), and technical diagnostic data. This data is collected to better improve our systems, optimize platform performance, and refine user experience.</li>
               </ul>
             </Section>
 
@@ -36,6 +42,7 @@ export default function PrivacyPage() {
               <ul className="list-disc pl-5 space-y-1 mt-2">
                 <li>Fulfill, process, and ship your EcoTap Smart Card orders.</li>
                 <li>Host, secure, and maintain your live digital profile link.</li>
+                <li>Analyze platform diagnostics and aggregate user trends to continually update and improve our backend systems and software infrastructure.</li>
                 <li>Generate aggregated, anonymous environmental impact metrics for our Corporate ESG Dashboard (e.g., tracking total trees planted and CO₂ saved).</li>
                 <li>Communicate with you regarding order updates, customer support inquiries, and platform enhancements.</li>
               </ul>

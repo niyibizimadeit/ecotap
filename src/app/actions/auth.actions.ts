@@ -41,9 +41,14 @@ export async function signUp(formData: FormData): Promise<ActionResult> {
   const fullName = formData.get("full_name") as string;
   const username = formData.get("username") as string;
   const phone    = formData.get("phone") as string;
+  const termsAccepted = formData.get("terms_accepted") === "true";
 
   if (!email || !password || !fullName || !username || !phone) {
     return { success: false, error: "All fields are required." };
+  }
+
+  if (!termsAccepted) {
+    return { success: false, error: "You must accept the Terms and Conditions and Privacy Policy." };
   }
 
   // Validate phone format server-side
@@ -69,6 +74,7 @@ export async function signUp(formData: FormData): Promise<ActionResult> {
         username:  username,
         phone,
         role:      "individual",  // SERVER-HARDCODED to prevent privilege escalation
+        terms_accepted: true,
       },
     },
   });
@@ -97,6 +103,7 @@ export async function signUpOrg(formData: FormData): Promise<ActionResult> {
   const password      = formData.get("password") as string;
   const phone         = formData.get("phone") as string;
   const legalConfirmed = formData.get("legal_rep_confirmed") === "on";
+  const termsAccepted = formData.get("terms_accepted") === "true";
 
   if (!companyName || !adminName || !email || !password || !phone) {
     return { success: false, error: "All required fields must be filled." };
@@ -109,6 +116,10 @@ export async function signUpOrg(formData: FormData): Promise<ActionResult> {
 
   if (!legalConfirmed) {
     return { success: false, error: "You must confirm you are the legal representative." };
+  }
+
+  if (!termsAccepted) {
+    return { success: false, error: "You must accept the Terms and Conditions and Privacy Policy." };
   }
 
   // Validate password strength server-side
@@ -133,6 +144,7 @@ export async function signUpOrg(formData: FormData): Promise<ActionResult> {
         size,
         website,
         legal_rep_confirmed: true,
+        terms_accepted: true,
         phone,
       },
     },

@@ -99,7 +99,7 @@ export default function OrgRegisterPage() {
             onBack={() => { setStep(2); setServerError(null); }}
             isSubmitting={isSubmitting}
             serverError={serverError}
-            onSubmit={async (legalConfirmed: boolean) => {
+            onSubmit={async (legalConfirmed: boolean, termsAccepted: boolean) => {
               setIsSubmitting(true);
               setServerError(null);
 
@@ -113,6 +113,7 @@ export default function OrgRegisterPage() {
               formData.append("password", step2Data.password);
               if (step2Data.phone) formData.append("phone", step2Data.phone);
               formData.append("legal_rep_confirmed", legalConfirmed ? "on" : "off");
+              formData.append("terms_accepted", termsAccepted ? "true" : "false");
 
               const result = await signUpOrg(formData);
               if (!result.success) {
@@ -296,9 +297,10 @@ function Step3Review({
   onBack: () => void;
   isSubmitting: boolean;
   serverError: string | null;
-  onSubmit: (legalConfirmed: boolean) => void;
+  onSubmit: (legalConfirmed: boolean, termsAccepted: boolean) => void;
 }) {
   const [legalConfirmed, setLegalConfirmed] = useState(false);
+  const [termsAccepted, setTermsAccepted] = useState(false);
 
   return (
     <div className="space-y-5">
@@ -347,6 +349,28 @@ function Step3Review({
         </label>
       </div>
 
+      {/* Terms & Privacy acceptance */}
+      <div className="bg-cream border border-cream-dark rounded-2xl p-4">
+        <label className="flex items-start gap-3 cursor-pointer">
+          <input
+            type="checkbox"
+            checked={termsAccepted}
+            onChange={(e) => setTermsAccepted(e.target.checked)}
+            className="mt-0.5 h-4 w-4 rounded border-cream-dark text-emerald-bright focus:ring-emerald-mid cursor-pointer"
+          />
+          <span className="text-sm text-ink-light leading-relaxed">
+            I agree to all{" "}
+            <Link href="/terms" className="text-emerald-bright underline hover:text-emerald-mid" target="_blank">
+              Terms and Conditions
+            </Link>{" "}
+            and{" "}
+            <Link href="/privacy" className="text-emerald-bright underline hover:text-emerald-mid" target="_blank">
+              Privacy Policy
+            </Link>
+          </span>
+        </label>
+      </div>
+
       <div className="bg-gold-pale border border-gold/20 rounded-2xl p-4">
         <p className="text-xs text-gold leading-relaxed">
           Your account will be reviewed within 24 hours. Once approved, you can access the company dashboard, add employees, and order cards.
@@ -370,8 +394,8 @@ function Step3Review({
           size="lg"
           className="flex-1"
           loading={isSubmitting}
-          disabled={!legalConfirmed}
-          onClick={() => onSubmit(legalConfirmed)}
+          disabled={!legalConfirmed || !termsAccepted}
+          onClick={() => onSubmit(legalConfirmed, termsAccepted)}
           rightIcon={<CheckCircle className="h-4 w-4" />}
         >
           Submit registration

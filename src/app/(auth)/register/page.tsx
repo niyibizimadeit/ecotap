@@ -37,6 +37,7 @@ export default function IndividualRegisterPage() {
     if (data.company_name) {
       formData.append("company_name", data.company_name);
     }
+    formData.append("terms_accepted", String(data.terms_accepted));
 
     const result = await signUp(formData);
     if (!result.success) {
@@ -127,6 +128,30 @@ export default function IndividualRegisterPage() {
             error={errors.company_name?.message}
             {...register("company_name")}
           />
+
+          {/* Terms & Privacy acceptance */}
+          <div className="bg-cream border border-cream-dark rounded-2xl p-4">
+            <label className="flex items-start gap-3 cursor-pointer">
+              <input
+                type="checkbox"
+                className="mt-0.5 h-4 w-4 rounded border-cream-dark text-emerald-bright focus:ring-emerald-mid cursor-pointer"
+                {...register("terms_accepted")}
+              />
+              <span className="text-sm text-ink-light leading-relaxed">
+                I agree to all{" "}
+                <Link href="/terms" className="text-emerald-bright underline hover:text-emerald-mid" target="_blank">
+                  Terms and Conditions
+                </Link>{" "}
+                and{" "}
+                <Link href="/privacy" className="text-emerald-bright underline hover:text-emerald-mid" target="_blank">
+                  Privacy Policy
+                </Link>
+              </span>
+            </label>
+            {errors.terms_accepted && (
+              <p className="text-red-500 text-sm mt-2">{errors.terms_accepted.message}</p>
+            )}
+          </div>
 
           <Button
             type="submit"

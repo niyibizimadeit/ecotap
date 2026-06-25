@@ -6,7 +6,7 @@ export default function TermsPage() {
           <div className="text-center mb-12">
             <p className="text-xs font-mono tracking-widest uppercase mb-4 text-emerald-bright">Legal</p>
             <h1 className="font-serif text-display-md text-emerald-deep">Terms and Conditions</h1>
-            <p className="text-sm text-ink-light mt-3">Last Updated: June 10, 2026</p>
+            <p className="text-sm text-ink-light mt-3">Last Updated: June 25, 2026</p>
           </div>
 
           <div className="bg-emerald-pale/30 border border-emerald-light/50 rounded-3xl p-8 md:p-10 shadow-card space-y-8 text-ink-mid leading-relaxed">
@@ -30,43 +30,61 @@ export default function TermsPage() {
               <p>Every single transaction executed on the platform is <strong>subject to applicable local taxes,</strong> which will be structurally calculated and automatically applied at checkout based on your statutory local jurisdiction.</p>
             </Section>
 
-            <Section title="2.2 Shipping, Delivery, and Risk of Loss">
-              <p><strong>Courier Services & Transfer of Risk:</strong> Physical card fulfillment is handled by third-party logistics and courier companies. Risk of loss and title for all physical products purchased pass to you, the buyer, the moment we hand over the package to the shipping carrier. EcoTap is not responsible for postal delays, transit damage, or packages stolen post-delivery.</p>
+            <Section title="2.2 Voluntary Contact Sharing & Recipient Liability Waiver">
+              <ul className="list-disc pl-5 space-y-2">
+                <li><strong>Willing and Voluntary Disclosure:</strong> When you utilize an EcoTap physical card or digital link to share your networking profile with an external individual, device, or recipient, you explicitly acknowledge that your contact information is being shared entirely willingly and at your own discretion.</li>
+                <li><strong>No Control Over Third-Party Use:</strong> Once your information is transmitted via a digital tap, scan, or link share, the recipient may store, distribute, or use that shared data in any manner they choose.</li>
+                <li><strong>Total Indemnification:</strong> EcoTap holds absolutely no liability, legal responsibility, or oversight regarding how a recipient chooses to use, manipulate, or expose the data you have willingly shared with them. You assume full responsibility for the connections you initiate.</li>
+              </ul>
             </Section>
 
-            <Section title='2.3 The "1 Card = 1 Tree" Campaign Rules'>
+            <Section title="2.3 Shipping, Delivery, and Defective Hardware Policy">
+              <p><strong>Courier Services & Transfer of Risk:</strong> Physical card fulfillment is handled by third-party logistics and courier companies. Risk of loss and title for all physical products purchased pass to you, the buyer, the moment we hand over the package to the shipping carrier. EcoTap is not responsible for postal delays, transit damage, or packages stolen post-delivery.</p>
+              <p className="mt-3"><strong>Defective Hardware Coverage:</strong> Notwithstanding the &quot;all sales are final&quot; clause, if a physical card contains an inherent manufacturer defect or an unreadable NFC chip prior to field deployment, the buyer must report the issue to <a href="mailto:support@ecotap.rw" className="text-emerald-bright hover:text-emerald-mid underline">support@ecotap.rw</a> within seven (7) days of delivery for a technical evaluation and replacement eligibility.</p>
+            </Section>
+
+            <Section title='2.4 The "1 Card = 1 Tree" Campaign Rules'>
               <p>For every physical EcoTap Smart Card purchased and successfully activated, EcoTap pledges to plant one (1) tree through our joint initiatives with Team Environment Rwanda and the RDMC.</p>
               <ul className="list-disc pl-5 space-y-1 mt-2">
                 <li><strong>Campaign Validity:</strong> This environmental initiative runs strictly within specific, designated time periods. Only physical cards purchased during an active, officially announced campaign period will be considered.</li>
-                <li><strong>Fulfillment Schedule:</strong> Tree planting occurs in scheduled seasonal batches rather than immediately upon transaction.</li>
+                <li><strong>Fulfillment Schedule:</strong> Tree planting occurs in scheduled seasonal batches aligned with local national planting seasons (typically bi-annually) rather than immediately upon transaction.</li>
                 <li><strong>Verification:</strong> The planting pledge is bound exclusively to verified, completed card purchases and successful digital activation. Canceled orders, returned items, or unactivated cards do not qualify for the tree-planting program.</li>
               </ul>
             </Section>
 
-            <Section title="2.4 User Conduct & Content">
+            <Section title="2.5 User Conduct & Content">
               <p>You are entirely responsible for the content you choose to display on your active digital profile link. You agree not to post, upload, or share any material that is illegal, defamatory, fraudulent, or infringing on intellectual property. EcoTap reserves the right to suspend or terminate any digital profile link that violates these standards or misrepresents corporate credentials.</p>
             </Section>
 
-            <Section title="2.5 Intellectual Property">
+            <Section title="2.6 Intellectual Property">
               <p>All intellectual property rights related to EcoTap technology, card designs, website interface, trademarks, and branding materials belong solely to EcoTap. We grant you a limited, non-exclusive license to use our platform and tap technology for professional networking purposes.</p>
             </Section>
 
-            <Section title="2.6 Limitation of Liability">
+            <Section title="2.7 Limitation of Liability">
               <p>EcoTap cards use advanced NFC and digital profile technology designed to withstand standard commercial wear and tear (up to 100k+ taps). However, EcoTap is provided &quot;as is&quot; without warranties of any kind. Beyond our strict policy against liability for speculative purchases, we are not liable for network outages, unreadable chips on incompatible legacy hardware, or any loss of business opportunities resulting from platform downtime.</p>
             </Section>
 
-            <Section title="2.7 Governing Law">
+            <Section title="2.8 Governing Law">
               <p>These Terms and any disputes arising out of your transactions with EcoTap shall be governed by, and construed in accordance with, the laws of the Republic of Rwanda. Any legal actions must be brought before the competent courts of Kigali, Rwanda.</p>
             </Section>
 
-            <Section title="2.8 Changes to Terms">
+            <Section title="2.9 Changes to Terms">
               <p>We may modify these Terms at any time to reflect platform upgrades, tax adjustments, or legal requirements. Continued use of the platform after updates constitutes acceptance of the new Terms.</p>
             </Section>
 
-            <Section title="3. Contact Information">
+            <Section title="3. Acknowledgement and Binding Consent">
+              <p>By clicking on the <strong>&quot;I agree to all terms and conditions and privacy policy&quot;</strong> button, checkbox, or alternative digital assent mechanism upon account creation or during checkout, you explicitly acknowledge and represent that:</p>
+              <ol className="list-decimal pl-5 space-y-2 mt-2">
+                <li>You have fully read, explicitly understood, and unconditionally accepted all the above stated Terms and Conditions and the Privacy Policy.</li>
+                <li>Your electronic signature or digital acknowledgement carries the full legal weight of a handwritten signature under the applicable laws of the Republic of Rwanda.</li>
+                <li>If you do not accept or understand these agreements in their entirety, you must immediately cease all interactions with the platform and refrain from completing any transactions or account setup.</li>
+              </ol>
+            </Section>
+
+            <Section title="4. Contact Information">
               <p>If you have any questions regarding our pricing, what a package entails, or these legal documents, please contact us explicitly before making a final purchase:</p>
               <ul className="list-disc pl-5 space-y-1 mt-2">
-                <li><strong>Email Contact:</strong> <a href="mailto:info@ecotap.rw" className="text-emerald-bright hover:text-emerald-mid underline">info@ecotap.rw</a> / <a href="mailto:support@ecotap.rw" className="text-emerald-bright hover:text-emerald-mid underline">support@ecotap.rw</a></li>
+                <li><strong>Email Contact:</strong> <a href="mailto:ecotap@rdmc.rw" className="text-emerald-bright hover:text-emerald-mid underline">ecotap@rdmc.rw</a></li>
                 <li><strong>Website Contact:</strong> ecotap.rw</li>
               </ul>
             </Section>
