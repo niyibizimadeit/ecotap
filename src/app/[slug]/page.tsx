@@ -11,13 +11,9 @@
 import { notFound } from "next/navigation";
 import type { Metadata } from "next";
 import { resolveSlug } from "@/app/actions/public.actions";
+import { getPublicCard } from "@/app/actions/cards.actions";
 import CompanyPublicPage from "@/app/dashboard/company/_components/CompanyPublicPage";
-
-// ── Individual card imports (your existing component) ─────────────────────────
-// Keep whatever you already import for the individual card render.
-// Adjust this import path to match your actual file location.
 import { PublicCardLayout } from "@/components/cards/PublicCardLayout";
-import { getServiceSupabase } from "@/lib/supabase/server";
 
 // ─── Page ─────────────────────────────────────────────────────────────────────
 
@@ -37,10 +33,29 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
     };
   }
 
-  // Individual card metadata is handled downstream; return a safe default here
-  return {
-    title: "EcoTap",
-  };
+  // For individual cards, fetch full card data for richer metadata
+  if (result.type === "profile") {
+    const cardResult = await getPublicCard(slug);
+    if (cardResult.success && cardResult.data) {
+      const card = cardResult.data;
+      const name = card.profile.full_name;
+      const titleStr = card.primary_job_title
+        ? `${name} — ${card.primary_job_title}${card.primary_company ? ` at ${card.primary_company.name}` : ""}`
+        : name;
+      return {
+        title: `${titleStr} | EcoTap`,
+        description: card.bio ?? `View ${name}'s digital business card on EcoTap.`,
+        openGraph: {
+          title: titleStr,
+          description: card.bio ?? `View ${name}'s digital business card on EcoTap.`,
+          url: `https://ecotap.rw/${slug}`,
+          type: "profile",
+        },
+      };
+    }
+  }
+
+  return { title: "EcoTap" };
 }
 
 export default async function SlugPage({ params }: Props) {
@@ -56,75 +71,11 @@ export default async function SlugPage({ params }: Props) {
   }
 
   // ── Individual profile card ────────────────────────────────────────────────
-  // Fetch the full card data for the individual profile and render your
-  // existing PublicCardLayout. Adjust this block to match however your
-  // current individual card page fetches its data.
-  const service = getServiceSupabase();
+  // Use the shared getPublicCard which fetches card + profile + company +
+  // card_groups in one place, keeping the data layer consistent.
+  const cardResult = await getPublicCard(slug);
 
-  const { data: profile } = await service
-    .from("profiles")
-    .select("id, full_name, avatar_url, username")
-    .eq("username", slug)
-    .eq("status", "active")
-    .single();
+  if (!cardResult.success || !cardResult.data) notFound();
 
-  if (!profile) notFound();
-
-  const { data: card } = await service
-    .from("cards")
-    .select("*")
-    .eq("profile_id", profile.id)
-    .eq("is_public", true)
-    .single();
-
-  if (!card) notFound();
-
-  // Fetch primary company for the badge (optional)
-  const { data: companyLink } = await service
-    .from("profile_companies")
-    .select("job_title, department_id, company:companies(name, logo_url, brand_color, slug, social_links)")
-    .eq("profile_id", profile.id)
-    .eq("is_primary", true)
-    .maybeSingle();
-
-  const companyData = Array.isArray(companyLink?.company) ? companyLink!.company[0] : companyLink?.company;
-  const primaryCompany = companyData
-    ? {
-        name:         (companyData as Record<string, string>).name ?? "",
-        logo_url:     (companyData as Record<string, string | null>).logo_url ?? null,
-        brand_color:  (companyData as Record<string, string>).brand_color ?? "#064E3B",
-        slug:         (companyData as Record<string, string>).slug ?? "",
-        social_links: (companyData as Record<string, unknown>).social_links ?? null,
-        job_title:    (companyLink!.job_title as string) ?? null,
-        department:   (companyLink!.department_id as string) ?? null,
-      }
-    : null;
-
-  // Build a PublicCard object for the existing layout
-  const publicCard = {
-    ...card,
-    profile: {
-      id:         profile.id,
-      username:   profile.username,
-      full_name:  profile.full_name,
-      email:      card.email_public ?? "",
-      avatar_url: profile.avatar_url,
-      role:       "individual" as const,
-    },
-    primary_company: primaryCompany
-      ? {
-          id:           "",
-          name:         primaryCompany.name,
-          slug:         primaryCompany.slug,
-          logo_url:     primaryCompany.logo_url ?? null,
-          brand_color:  primaryCompany.brand_color ?? "#064E3B",
-          theme_locked: false,
-          social_links: primaryCompany.social_links as Record<string, string> | null,
-        }
-      : null,
-    primary_job_title: primaryCompany?.job_title ?? card.job_title ?? null,
-    all_companies:     [],
-  };
-
-  return <PublicCardLayout card={publicCard} />;
+  return <PublicCardLayout card={cardResult.data} />;
 }

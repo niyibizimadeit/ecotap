@@ -105,3 +105,17 @@ export async function getPublicCard(
 
   return { success: true, data: card };
 }
+
+/**
+ * Get the authenticated user's own card data for editing.
+ * Unlike getPublicCard, this works even when the card is not public.
+ */
+export async function getOwnCard(
+  slug: string
+): Promise<ActionResult<PublicCard>> {
+  const card = await cardsRepo.getPublicCard(slug, { includePrivate: true });
+
+  if (!card) return { success: false, error: "Card not found." };
+
+  return { success: true, data: card };
+}

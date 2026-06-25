@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/Button";
 import { ImageUpload } from "@/components/ui/ImageUpload";
 import { CardPreview } from "@/components/cards/CardPreview";
 import { SOCIAL_LINKS, GROUP_SOCIAL_LINKS, MAX_CARD_GROUPS } from "@/constants";
-import { Save, Plus, Trash2, Building2 } from "lucide-react";
+import { Save, Plus, Trash2, Building2, AlertCircle } from "lucide-react";
 import { getMyCard, updateMyCard, deleteMyAccount } from "@/app/actions/cards.actions";
 import { updateProfilePhoto } from "@/app/actions/uploads.actions";
 import type { SocialLinks, CardProfileForm } from "@/types";
@@ -60,6 +60,7 @@ export default function ProfilePage() {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
+  const [saveError, setSaveError] = useState<string | null>(null);
   const [deleting, setDeleting] = useState(false);
   const [confirmDelete, setConfirmDelete] = useState(false);
 
@@ -168,6 +169,8 @@ export default function ProfilePage() {
 
   async function save() {
     setSaving(true);
+    setSaveError(null);
+    setSaved(false);
     const result = await updateMyCard({
       full_name:            form.full_name,
       job_title:            form.job_title,
@@ -186,6 +189,8 @@ export default function ProfilePage() {
     if (result.success) {
       setSaved(true);
       setTimeout(() => setSaved(false), 3000);
+    } else {
+      setSaveError(result.error ?? "Save failed. Please try again.");
     }
   }
 
@@ -232,6 +237,13 @@ export default function ProfilePage() {
           </Button>
         }
       />
+
+      {saveError && (
+        <div className="flex items-start gap-2.5 bg-red-50 border border-red-200 rounded-xl p-3 mb-5 max-w-2xl">
+          <AlertCircle className="h-4 w-4 text-red-500 flex-shrink-0 mt-0.5" />
+          <p className="text-sm text-red-700">{saveError}</p>
+        </div>
+      )}
 
       <div className="grid grid-cols-1 xl:grid-cols-5 gap-6">
         <div className="xl:col-span-3 space-y-5">

@@ -41,20 +41,27 @@ export async function getCardByProfileId(
 
 /**
  * Full public card page data — card + profile + primary company + all companies.
- * Uses simple queries to avoid FK-join naming issues.
+ * Set includePrivate to true when loading the authenticated user's own card
+ * for editing (skips the is_public filter).
  */
 export async function getPublicCard(
-  slug: string
+  slug: string,
+  options?: { includePrivate?: boolean }
 ): Promise<PublicCard | null> {
   const supabase = getServiceSupabase();
+  const includePrivate = options?.includePrivate ?? false;
 
   // 1. Fetch card
-  const { data: card } = await supabase
+  let cardQuery = supabase
     .from("cards")
     .select("*")
-    .eq("slug", slug)
-    .eq("is_public", true)
-    .single();
+    .eq("slug", slug);
+
+  if (!includePrivate) {
+    cardQuery = cardQuery.eq("is_public", true);
+  }
+
+  const { data: card } = await cardQuery.single();
 
   if (!card) return null;
 
@@ -115,11 +122,15 @@ export async function getPublicCard(
   }
 
   // 4. Fetch card groups
-  const { data: cardGroups } = await supabase
+  const { data: cardGroups, error: groupsError } = await supabase
     .from("card_groups")
     .select("*")
     .eq("card_id", card.id)
     .order("sort_order", { ascending: true });
+
+  if (groupsError) {
+    console.error("getPublicCard: failed to fetch card_groups:", groupsError);
+  }
 
   return {
     ...card,
@@ -275,12 +286,28 @@ export async function syncCardGroups(
     job_title?: string | null;
     social_links: SocialLinks;
     show_on_card: boolean;
-  }>
-): Promise<void> {
-  const supabase = getServiceSupabase();
+  }>,
+  supabaseClient?: Awaited<ReturnType<typeof getSupabase>>
+): Promise<{ success: boolean; error?: string }> {
+  const supabase = supabaseClient ?? await getSupabase();
+
+  // CRITICAL: With @supabase/ssr skipAutoInitialize, we must explicitly load
+  // the session before making DB requests. Without this, the client acts as
+  // anonymous and RLS policies that check auth.uid() will fail silently.
+  if (!supabaseClient) {
+    await supabase.auth.getSession();
+  }
 
   // Delete all existing groups for this card
-  await supabase.from("card_groups").delete().eq("card_id", cardId);
+  const { error: deleteError } = await supabase
+    .from("card_groups")
+    .delete()
+    .eq("card_id", cardId);
+
+  if (deleteError) {
+    console.error("syncCardGroups delete error:", deleteError);
+    return { success: false, error: deleteError.message };
+  }
 
   // Insert the new set
   if (groups.length > 0) {
@@ -293,6 +320,15 @@ export async function syncCardGroups(
       sort_order: i,
     }));
 
-    await supabase.from("card_groups").insert(rows);
+    const { error: insertError } = await supabase
+      .from("card_groups")
+      .insert(rows);
+
+    if (insertError) {
+      console.error("syncCardGroups insert error:", insertError);
+      return { success: false, error: insertError.message };
+    }
   }
+
+  return { success: true };
 }

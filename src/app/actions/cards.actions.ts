@@ -29,7 +29,7 @@ export async function getMyCard(): Promise<ActionResult<PublicCard>> {
     .single();
 
   if (!profile?.username) return { success: false, error: "Profile not found." };
-  return cardsService.getPublicCard(profile.username);
+  return cardsService.getOwnCard(profile.username);
 }
 
 // ── Update card ─────────────────────────────────────────────────────────────
@@ -153,7 +153,13 @@ export async function updateMyCard(
       .filter((g) => g.organization_name.trim())
       .slice(0, MAX_CARD_GROUPS);
 
-    await syncCardGroups(cardResult.data!.id, groups);
+    const syncResult = await syncCardGroups(cardResult.data!.id, groups, supabase);
+    if (!syncResult.success) {
+      if (groups.length > 0) {
+        return { success: false, error: `Groups not saved: ${syncResult.error}` };
+      }
+      console.error("updateMyCard: card_groups sync failed (empty groups):", syncResult.error);
+    }
   }
 
   return cardResult;
