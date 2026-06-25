@@ -50,7 +50,7 @@ export default async function CompanyOrdersPage() {
         <div className="flex-1">
           <p className="text-sm font-semibold text-emerald-deep">Bulk orders for your team</p>
           <p className="text-xs text-ink-light mt-0.5">
-            Corporate pricing at $28/card (≈ 42,000 RWF). Volume discounts available for 100+ cards.
+            Corporate pricing from $25/card (≈ 37,500 RWF). Volume discounts available for 100+ cards.
           </p>
         </div>
         <Link href="/dashboard/company/orders/new">

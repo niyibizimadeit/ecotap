@@ -74,10 +74,19 @@ export const INVITATION_EXPIRY_DAYS = 7;
 /** 1 USD = 1,500 RWF */
 export const USD_TO_RWF_RATE = 1500;
 
-/** Base card prices in USD per card */
+/**
+ * Base card prices in USD per card.
+ * Sponsored rates thanks to Team Environment Rwanda partnership.
+ */
 export const CARD_PRICES = {
-  individual: 40,   // Personal hardware
-  corporate:  28,   // Corporate bulk hardware
+  individual: 30,   // Personal hardware (was $40, 25% sponsored)
+  corporate:  25,   // Corporate bulk hardware (was $28, up to 50% sponsored)
+} as const;
+
+/** Original prices before Team Environment Rwanda sponsorship (for display) */
+export const CARD_ORIGINAL_PRICES = {
+  individual: 40,
+  corporate:  40,
 } as const;
 
 /** Compute the RWF equivalent of a USD price */
