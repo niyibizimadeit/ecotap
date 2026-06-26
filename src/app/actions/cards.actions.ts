@@ -166,12 +166,14 @@ export async function updateMyCard(
       .maybeSingle();
 
     if (existingLink) {
-      // Update existing link with latest job_title and department
+      // Update existing link — ensure it's marked primary so the form
+      // shows this company on next load. The trigger clears any old primary.
       const { error: updateLinkErr } = await serviceClient
         .from("profile_companies")
         .update({
           job_title: data.job_title || null,
           department_id: departmentId,
+          is_primary: true,
         })
         .eq("id", existingLink.id);
 
@@ -179,14 +181,9 @@ export async function updateMyCard(
         console.error("updateMyCard: profile_companies update error:", updateLinkErr);
       }
     } else {
-      // Create new link
-      const { data: allLinks } = await serviceClient
-        .from("profile_companies")
-        .select("id")
-        .eq("profile_id", user.id);
-
-      const isPrimary = !allLinks || allLinks.length === 0;
-
+      // Create new link — always make it primary since the form only manages
+      // one primary company. The enforce_single_primary_company trigger
+      // clears is_primary on any previous primary for this profile.
       const { error: insertLinkErr } = await serviceClient
         .from("profile_companies")
         .insert({
@@ -194,7 +191,7 @@ export async function updateMyCard(
           company_id: companyId,
           job_title:  data.job_title || null,
           department_id: departmentId,
-          is_primary: isPrimary,
+          is_primary: true,
         });
 
       if (insertLinkErr) {

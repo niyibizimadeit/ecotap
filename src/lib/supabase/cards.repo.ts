@@ -9,6 +9,8 @@ import type { Card, SocialLinks, PublicCard, CardGroup } from "@/types";
 
 export async function getCardById(id: string): Promise<Card | null> {
   const supabase = await getSupabase();
+  // Explicitly load the session — @supabase/ssr does not auto-initialize auth context.
+  await supabase.auth.getSession();
   const { data } = await supabase
     .from("cards")
     .select("*")
@@ -19,6 +21,7 @@ export async function getCardById(id: string): Promise<Card | null> {
 
 export async function getCardBySlug(slug: string): Promise<Card | null> {
   const supabase = await getSupabase();
+  await supabase.auth.getSession();
   const { data } = await supabase
     .from("cards")
     .select("*")
@@ -31,6 +34,7 @@ export async function getCardByProfileId(
   profileId: string
 ): Promise<Card | null> {
   const supabase = await getSupabase();
+  await supabase.auth.getSession();
   const { data } = await supabase
     .from("cards")
     .select("*")
@@ -158,6 +162,7 @@ export async function createCard(card: {
   email_public?: string;
 }): Promise<Card | null> {
   const supabase = await getSupabase();
+  await supabase.auth.getSession();
   const { data } = await supabase
     .from("cards")
     .insert({
@@ -188,6 +193,7 @@ export async function updateCard(
   >
 ): Promise<Card | null> {
   const supabase = await getSupabase();
+  await supabase.auth.getSession();
   const { data } = await supabase
     .from("cards")
     .update(updates)
@@ -199,6 +205,7 @@ export async function updateCard(
 
 export async function deleteCard(id: string): Promise<void> {
   const supabase = await getSupabase();
+  await supabase.auth.getSession();
   await supabase.from("cards").delete().eq("id", id);
 }
 
