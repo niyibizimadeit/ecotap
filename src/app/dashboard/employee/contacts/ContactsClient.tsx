@@ -173,16 +173,14 @@ export function ContactsClient({ initialContacts }: Props) {
             return (
               <div key={c.id} className="rounded-xl border transition-all hover:shadow-card" style={{ backgroundColor: "#FEFCE8", borderColor: "rgba(6,78,59,0.06)" }}>
                 {/* Main row */}
-                <div className="grid grid-cols-12 gap-2 md:gap-3 px-3 md:px-4 py-3 items-center">
+                <div className="flex items-center gap-2 md:gap-3 px-3 md:px-4 py-3">
                   {/* Favorite star */}
-                  <div className="col-span-1 flex justify-center">
-                    <button onClick={() => toggleFavorite(c)} className="transition-colors hover:scale-110" title={c.is_favorite ? "Remove favorite" : "Add favorite"}>
-                      <Star className={`h-4 w-4 ${c.is_favorite ? "fill-gold text-gold" : "text-ink-light/30"}`} />
-                    </button>
-                  </div>
+                  <button onClick={() => toggleFavorite(c)} className="flex-shrink-0 transition-colors hover:scale-110" title={c.is_favorite ? "Remove favorite" : "Add favorite"}>
+                    <Star className={`h-4 w-4 ${c.is_favorite ? "fill-gold text-gold" : "text-ink-light/30"}`} />
+                  </button>
 
-                  {/* Name + org */}
-                  <div className="col-span-3 min-w-0">
+                  {/* Name + org — takes remaining space */}
+                  <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2 min-w-0">
                       <div className="w-7 h-7 rounded-lg flex items-center justify-center flex-shrink-0 font-medium text-xs" style={{ backgroundColor: "#ECFDF5", color: "#065F46" }}>
                         {c.visitor_name.split(" ").map((n) => n[0]).join("")}
@@ -194,8 +192,8 @@ export function ContactsClient({ initialContacts }: Props) {
                     </div>
                   </div>
 
-                  {/* Contact info */}
-                  <div className="col-span-3 space-y-0.5 min-w-0 hidden md:block">
+                  {/* Contact info — desktop only */}
+                  <div className="hidden md:flex md:flex-col md:gap-0.5 md:min-w-0 md:w-1/5 md:flex-shrink-0">
                     {c.visitor_email && (
                       <a href={`mailto:${c.visitor_email}`} className="flex items-center gap-1.5 text-xs text-ink-mid hover:text-emerald-bright transition-colors truncate">
                         <Mail className="h-3 w-3 flex-shrink-0" /><span className="truncate">{c.visitor_email}</span>
@@ -209,8 +207,8 @@ export function ContactsClient({ initialContacts }: Props) {
                     {c.message && <p className="text-xs text-ink-light/60 italic truncate">{c.message}</p>}
                   </div>
 
-                  {/* Lead level dropdown */}
-                  <div className="col-span-2 hidden md:block">
+                  {/* Lead level dropdown — desktop only */}
+                  <div className="hidden md:block md:flex-shrink-0" style={{ width: "110px" }}>
                     <div className="relative">
                       <select
                         value={c.lead_level || "normal"}
@@ -226,26 +224,24 @@ export function ContactsClient({ initialContacts }: Props) {
                     </div>
                   </div>
 
-                  {/* Date */}
-                  <div className="col-span-2 hidden md:flex items-center gap-1.5 text-xs text-ink-light">
-                    <Calendar className="h-3 w-3" />
-                    {new Date(c.created_at).toLocaleDateString()}
+                  {/* Date — desktop only */}
+                  <div className="hidden md:flex items-center gap-1.5 text-xs text-ink-light flex-shrink-0" style={{ width: "90px" }}>
+                    <Calendar className="h-3 w-3 flex-shrink-0" />
+                    <span className="whitespace-nowrap">{new Date(c.created_at).toLocaleDateString()}</span>
                   </div>
 
                   {/* Expand/actions */}
-                  <div className="col-span-1 flex justify-end gap-1">
-                    <button
-                      onClick={() => setExpandedNotes((s) => {
-                        const next = new Set(s);
-                        isExpanded ? next.delete(c.id) : next.add(c.id);
-                        return next;
-                      })}
-                      className={`p-1.5 rounded-lg transition-colors ${isExpanded ? "bg-emerald-pale text-emerald-deep" : "text-ink-light/40 hover:text-ink-mid"}`}
-                      title="Notes"
-                    >
-                      <MessageSquare className="h-4 w-4" />
-                    </button>
-                  </div>
+                  <button
+                    onClick={() => setExpandedNotes((s) => {
+                      const next = new Set(s);
+                      isExpanded ? next.delete(c.id) : next.add(c.id);
+                      return next;
+                    })}
+                    className={`flex-shrink-0 p-1.5 rounded-lg transition-colors ${isExpanded ? "bg-emerald-pale text-emerald-deep" : "text-ink-light/40 hover:text-ink-mid"}`}
+                    title="Notes"
+                  >
+                    <MessageSquare className="h-4 w-4" />
+                  </button>
                 </div>
 
                 {/* Mobile lead level + date */}

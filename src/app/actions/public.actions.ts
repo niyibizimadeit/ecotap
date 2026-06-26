@@ -1,5 +1,6 @@
 "use server";
 
+import { cache } from "react";
 import { getServiceSupabase } from "@/lib/supabase/server";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
@@ -30,14 +31,17 @@ export interface PublicCompanyData {
  * Used by app/[slug]/page.tsx to determine what to render.
  * Returns "profile" if the slug matches a profile username,
  * "company" if it matches a company slug, or "not_found".
+ *
+ * Wrapped in React cache() — deduplicates calls from generateMetadata()
+ * and the page component that happen in the same HTTP request.
  */
-export async function resolveSlug(
+export const resolveSlug = cache(async (
   slug: string
 ): Promise<
   | { type: "profile" }
   | { type: "company"; data: PublicCompanyData }
   | { type: "not_found" }
-> {
+> => {
   const service = getServiceSupabase();
 
   // Check profile first — the common case, and profiles have a unique username index
@@ -60,11 +64,14 @@ export async function resolveSlug(
 
   if (!company) return { type: "not_found" };
 
-  // Fetch all active employees for this company with their card data
+  // Fetch active employees for this company with their card data.
+  // Capped at 100 to keep the company public page fast — pagination can be added later.
+  const MAX_EMPLOYEES = 100;
   const { data: links } = await service
     .from("profile_companies")
     .select("profile_id, job_title")
-    .eq("company_id", company.id);
+    .eq("company_id", company.id)
+    .limit(MAX_EMPLOYEES);
 
   const profileIds = (links ?? []).map((l) => l.profile_id);
 
@@ -87,9 +94,13 @@ export async function resolveSlug(
     const profiles = profilesResult.data ?? [];
     const cards = cardsResult.data ?? [];
 
+    // Build lookup maps for O(1) access instead of O(n²) with .find()
+    const cardsByProfileId = new Map(cards.map((c) => [c.profile_id, c]));
+    const linksByProfileId = new Map((links ?? []).map((l) => [l.profile_id, l]));
+
     employees = profiles.map((p) => {
-      const card = cards.find((c) => c.profile_id === p.id);
-      const link = (links ?? []).find((l) => l.profile_id === p.id);
+      const card = cardsByProfileId.get(p.id);
+      const link = linksByProfileId.get(p.id);
       return {
         username: p.username,
         full_name: p.full_name,
@@ -115,4 +126,4 @@ export async function resolveSlug(
       employees,
     },
   };
-}
+});

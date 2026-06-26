@@ -1,5 +1,3 @@
-"use client";
-
 import type { SocialLinks } from "@/types";
 
 interface SocialIconsProps {

@@ -3,6 +3,9 @@ import { Button } from "@/components/ui/Button";
 import { ArrowRight, Check } from "lucide-react";
 import { CARD_ORIGINAL_PRICES } from "@/constants";
 
+// Pure static page — no data dependencies.
+export const dynamic = "force-static";
+
 export default function PricingPage() {
   return (
     <section className="pt-28 pb-20 bg-ivory">
@@ -148,6 +151,29 @@ export default function PricingPage() {
               </Link>
             </div>
           ))}
+        </div>
+
+        {/* ── Become a Strategic Partner ── */}
+        <div className="max-w-2xl mx-auto mt-12">
+          <div
+            className="relative rounded-3xl p-8 border text-center transition-all duration-200 hover:-translate-y-1 bg-white border-cream-dark/60 shadow-card hover:shadow-card-lg"
+          >
+            <h3 className="font-serif text-xl font-semibold text-emerald-deep mb-3">
+              Become a Strategic Partner
+            </h3>
+            <p className="text-sm text-ink-light leading-relaxed mb-6 max-w-lg mx-auto">
+              We&apos;re actively seeking country representatives, technology partners, and impact investors to accelerate our mission. Join us in building Africa&apos;s first paperless networking ecosystem.
+            </p>
+            <Link href="/contact">
+              <Button
+                variant="primary"
+                size="md"
+                rightIcon={<ArrowRight className="h-4 w-4" />}
+              >
+                Partner With Us
+              </Button>
+            </Link>
+          </div>
         </div>
 
         {/* ── Footer note ── */}

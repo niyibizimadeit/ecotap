@@ -1,5 +1,6 @@
 "use server";
 
+import { cache } from "react";
 import { getSupabase, getServiceSupabase } from "@/lib/supabase/server";
 import * as cardsService from "@/lib/services/cards.service";
 import { updateCompanySocialLinks } from "@/lib/supabase/companies.repo";
@@ -9,11 +10,16 @@ import type { ActionResult, PublicCard, Card, CardProfileForm, SocialLinks } fro
 
 // ── Public card ──────────────────────────────────────────────────────────────
 
-export async function getPublicCard(
+/**
+ * Fetches full public card data by slug.
+ * Wrapped in React cache() — deduplicates calls from generateMetadata()
+ * and the page component that happen in the same HTTP request.
+ */
+export const getPublicCard = cache(async (
   slug: string
-): Promise<ActionResult<PublicCard>> {
+): Promise<ActionResult<PublicCard>> => {
   return cardsService.getPublicCard(slug);
-}
+});
 
 // ── Own card ─────────────────────────────────────────────────────────────────
 
@@ -90,13 +96,18 @@ export async function updateMyCard(
   if (data.company?.trim()) {
     const companyName = data.company.trim();
 
-    // Find or create the company
+    // Find or create the company (use maybeSingle — zero rows is normal for new companies)
     let companyId: string;
-    const { data: existing } = await serviceClient
+    const { data: existing, error: findErr } = await serviceClient
       .from("companies")
       .select("id")
       .ilike("name", companyName)
-      .single();
+      .maybeSingle();
+
+    if (findErr) {
+      console.error("updateMyCard: company lookup error:", findErr);
+      return { success: false, error: "Failed to look up company." };
+    }
 
     if (existing) {
       companyId = existing.id;
@@ -106,32 +117,67 @@ export async function updateMyCard(
         .replace(/[^a-z0-9]+/g, "-")
         .replace(/(-+)/g, "-")
         .replace(/(^-|-$)/g, "");
-      const { data: created } = await serviceClient
+      const { data: created, error: createErr } = await serviceClient
         .from("companies")
         .insert({ name: companyName, slug, status: "pending" })
         .select("id")
         .single();
-      if (!created) return { success: false, error: "Failed to create company." };
+      if (createErr || !created) {
+        console.error("updateMyCard: company creation error:", createErr);
+        return { success: false, error: "Failed to create company." };
+      }
       companyId = created.id;
     }
 
-    // Check if already linked via profile_companies
+    // Resolve department: look up existing department by name, or create one
+    let departmentId: string | null = null;
+    if (data.department?.trim()) {
+      const deptName = data.department.trim();
+      const { data: existingDept } = await serviceClient
+        .from("departments")
+        .select("id")
+        .eq("company_id", companyId)
+        .eq("name", deptName)
+        .maybeSingle();
+
+      if (existingDept) {
+        departmentId = existingDept.id;
+      } else {
+        const { data: newDept, error: deptErr } = await serviceClient
+          .from("departments")
+          .insert({ company_id: companyId, name: deptName })
+          .select("id")
+          .single();
+        if (deptErr) {
+          console.error("updateMyCard: department creation error:", deptErr);
+          // Non-fatal — continue without department
+        } else if (newDept) {
+          departmentId = newDept.id;
+        }
+      }
+    }
+
+    // Check if already linked via profile_companies (use maybeSingle — zero rows is normal)
     const { data: existingLink } = await serviceClient
       .from("profile_companies")
       .select("id")
       .eq("profile_id", user.id)
       .eq("company_id", companyId)
-      .single();
+      .maybeSingle();
 
     if (existingLink) {
       // Update existing link with latest job_title and department
-      await serviceClient
+      const { error: updateLinkErr } = await serviceClient
         .from("profile_companies")
         .update({
           job_title: data.job_title || null,
-          department_id: data.department || null,
+          department_id: departmentId,
         })
         .eq("id", existingLink.id);
+
+      if (updateLinkErr) {
+        console.error("updateMyCard: profile_companies update error:", updateLinkErr);
+      }
     } else {
       // Create new link
       const { data: allLinks } = await serviceClient
@@ -141,14 +187,19 @@ export async function updateMyCard(
 
       const isPrimary = !allLinks || allLinks.length === 0;
 
-      await serviceClient
+      const { error: insertLinkErr } = await serviceClient
         .from("profile_companies")
         .insert({
           profile_id: user.id,
           company_id: companyId,
           job_title:  data.job_title || null,
+          department_id: departmentId,
           is_primary: isPrimary,
         });
+
+      if (insertLinkErr) {
+        console.error("updateMyCard: profile_companies insert error:", insertLinkErr);
+      }
     }
 
     // 5. Update company social links if provided
@@ -158,12 +209,14 @@ export async function updateMyCard(
   }
 
   // 6. Handle card groups (additional affiliations)
+  //    Use the service-role client to bypass RLS — card_groups are owned by the card,
+  //    and the caller already proved ownership via auth.
   if (data.card_groups !== undefined) {
     const groups = data.card_groups
       .filter((g) => g.organization_name.trim())
       .slice(0, MAX_CARD_GROUPS);
 
-    const syncResult = await syncCardGroups(cardResult.data!.id, groups, supabase);
+    const syncResult = await syncCardGroups(cardResult.data!.id, groups, serviceClient);
     if (!syncResult.success) {
       if (groups.length > 0) {
         return { success: false, error: `Groups not saved: ${syncResult.error}` };

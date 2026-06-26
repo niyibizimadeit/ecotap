@@ -4,6 +4,7 @@
 // Reads cookies via next/headers — works with the middleware client.
 // ─────────────────────────────────────────────────────────────────────────────
 
+import { cache } from "react";
 import { createServerClient } from "@supabase/ssr";
 import { cookies } from "next/headers";
 import type { Database } from "@/types/database";
@@ -63,8 +64,11 @@ export function getPublicSupabase() {
  * Service-role client for privileged server-side reads (e.g. public card pages).
  * Bypasses RLS — use only for read operations that need cross-table data.
  * Never expose this client to the browser.
+ *
+ * Wrapped in React cache() — every call within a single HTTP request returns
+ * the same client instance, avoiding unnecessary re-creation.
  */
-export function getServiceSupabase() {
+export const getServiceSupabase = cache(() => {
   return createServerClient<Database>(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
     process.env.SUPABASE_SERVICE_ROLE_KEY!,
@@ -79,4 +83,4 @@ export function getServiceSupabase() {
       },
     }
   );
-}
+});

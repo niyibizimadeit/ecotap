@@ -1,5 +1,8 @@
 import { Trees, Wind, Trash2, Droplets, GraduationCap, Leaf } from "lucide-react";
 
+// Pure static page — no data dependencies.
+export const dynamic = "force-static";
+
 export default function ImpactPage() {
   return (
     <div className="bg-ivory">

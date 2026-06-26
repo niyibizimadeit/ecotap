@@ -15,7 +15,7 @@ export default function CompanyPublicPage({ company }: Props) {
   const { name, slug, logo_url, brand_color, industry, website, description, employees } = company;
 
   return (
-    <div className="min-h-screen" style={{ backgroundColor: "#FEFCE8" }}>
+    <div className="grain-bg min-h-screen" style={{ backgroundColor: "#FEFCE8" }}>
 
       {/* ── Company header banner ── */}
       <div
@@ -36,6 +36,8 @@ export default function CompanyPublicPage({ company }: Props) {
               <img
                 src={logo_url}
                 alt={`${name} logo`}
+                width={112}
+                height={112}
                 className="object-cover w-full h-full"
               />
             ) : (
@@ -131,6 +133,9 @@ export default function CompanyPublicPage({ company }: Props) {
                       <img
                         src={emp.avatar_url}
                         alt={emp.full_name}
+                        width={48}
+                        height={48}
+                        loading="lazy"
                         className="object-cover w-full h-full"
                       />
                     ) : (

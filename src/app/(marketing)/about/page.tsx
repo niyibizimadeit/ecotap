@@ -1,6 +1,9 @@
 import Image from "next/image";
 import { Leaf, Trees, Zap, Cloud, Heart, BarChart3, Globe, Eye, Target } from "lucide-react";
 
+// Pure static page — no data dependencies.
+export const dynamic = "force-static";
+
 export default function AboutPage() {
   return (
     <div className="bg-ivory">
@@ -49,52 +52,42 @@ export default function AboutPage() {
           <h2 className="font-serif text-3xl text-emerald-deep font-semibold mb-10 text-center">The Power Behind EcoTap</h2>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             {/* Team Environment Rwanda */}
-            <div className="bg-white border border-emerald-light/30 rounded-3xl p-8 hover:shadow-card-lg transition-all duration-200">
+            <a href="https://teamenvironment.org/country/rwanda" target="_blank" rel="noopener noreferrer" className="bg-white border border-emerald-light/30 rounded-3xl p-8 hover:shadow-card-lg transition-all duration-200 block group">
               <div className="flex items-center gap-4 mb-5">
                 <div className="w-16 h-16 rounded-xl bg-emerald-pale flex items-center justify-center flex-shrink-0">
-                  <Image src="/partners/teamenvironment.png" alt="Team Environment Rwanda" width={48} height={48} className="object-contain" />
+                  <Image src="/partners/teamenvironment.png" alt="Team Environment Rwanda" width={48} height={48} className="object-contain group-hover:scale-105 transition-transform" />
                 </div>
                 <div>
-                  <h3 className="font-serif text-xl font-semibold text-emerald-deep">Team Environment Rwanda</h3>
+                  <h3 className="font-serif text-xl font-semibold text-emerald-deep group-hover:text-emerald-bright transition-colors">Team Environment Rwanda</h3>
                   <p className="text-xs text-ink-light mt-1">Environmental Conservation Partner</p>
                 </div>
               </div>
               <p className="text-sm text-ink-light leading-relaxed mb-4">
                 Team Environment Rwanda is a sister body endorsed by Team Environment Africa, a Socio-economic and Environmental Association with 7+ years&apos; experience. Our membership includes registered members, volunteers, and representatives from corporate organizations, social enterprises, youth and women groups, schools, institutions of higher learning, NGOs, CBOs, foundations, and community members — all focused on Environmental Conservation as a means to reversing the effects of global warming and climate change.
               </p>
-              <div className="flex items-center gap-4 text-sm">
-                <a href="https://teamenvironment.org/country/rwanda" target="_blank" rel="noopener noreferrer" className="text-emerald-bright hover:text-emerald-mid underline transition-colors">
-                  teamenvironment.org/rwanda
-                </a>
-                <a href="mailto:cyubahiro@teamenvironment.org" className="text-emerald-bright hover:text-emerald-mid underline transition-colors">
-                  cyubahiro@teamenvironment.org
-                </a>
-              </div>
-            </div>
+              <span className="text-sm text-emerald-bright group-hover:text-emerald-mid underline transition-colors">
+                teamenvironment.org/rwanda →
+              </span>
+            </a>
 
             {/* Rwanda Digital Marketing Co. (RDMC Ltd) */}
-            <div className="bg-white border border-emerald-light/30 rounded-3xl p-8 hover:shadow-card-lg transition-all duration-200">
+            <a href="https://rdmc.rw" target="_blank" rel="noopener noreferrer" className="bg-white border border-emerald-light/30 rounded-3xl p-8 hover:shadow-card-lg transition-all duration-200 block group">
               <div className="flex items-center gap-4 mb-5">
                 <div className="w-16 h-16 rounded-xl bg-emerald-pale flex items-center justify-center flex-shrink-0">
-                  <Image src="/partners/rdmc.png" alt="Rwanda Digital Marketing Co." width={48} height={48} className="object-contain" />
+                  <Image src="/partners/rdmc.png" alt="Rwanda Digital Marketing Co." width={48} height={48} className="object-contain group-hover:scale-105 transition-transform" />
                 </div>
                 <div>
-                  <h3 className="font-serif text-xl font-semibold text-emerald-deep">Rwanda Digital Marketing Co.</h3>
+                  <h3 className="font-serif text-xl font-semibold text-emerald-deep group-hover:text-emerald-bright transition-colors">Rwanda Digital Marketing Co.</h3>
                   <p className="text-xs text-ink-light mt-1">Technology &amp; Digital Strategy Partner</p>
                 </div>
               </div>
               <p className="text-sm text-ink-light leading-relaxed mb-4">
                 Founded in 2023, Rwanda Digital Marketing Company (RDMC Ltd) was established to bridge the gap between high-performance digital strategies and world-class physical corporate execution. Instead of forcing businesses to manage fragmented vendor accounts across social media, industrial 3D fabrication, and corporate summits, RDMC offers a unified, full-house ecosystem. Driven by our core promise, <strong>&quot;Your Growth, Our Mission,&quot;</strong> we engineer cohesive market presences where physical assets and digital retention seamlessly cross-sell. Today, backed by over 10 strategic partners, we manage end-to-end operational life cycles for startups, commercial brands, NGOs, and government summits across East Africa.
               </p>
-              <div className="flex items-center gap-4 text-sm">
-                <a href="https://rdmc.rw" target="_blank" rel="noopener noreferrer" className="text-emerald-bright hover:text-emerald-mid underline transition-colors">
-                  rdmc.rw
-                </a>
-                <a href="mailto:info@rdmc.rw" className="text-emerald-bright hover:text-emerald-mid underline transition-colors">
-                  info@rdmc.rw
-                </a>
-              </div>
-            </div>
+              <span className="text-sm text-emerald-bright group-hover:text-emerald-mid underline transition-colors">
+                rdmc.rw →
+              </span>
+            </a>
           </div>
         </div>
       </section>

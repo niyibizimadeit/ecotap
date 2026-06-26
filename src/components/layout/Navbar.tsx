@@ -1,8 +1,7 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import Link from "next/link";
-import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/Button";
 import { BrandLogo } from "@/components/brand/BrandLogo";
 import { Menu, X } from "lucide-react";
@@ -15,33 +14,13 @@ const NAV_LINKS = [
 ];
 
 export function Navbar() {
-  const [scrolled,    setScrolled]    = useState(false);
-  const [mobileOpen,  setMobileOpen]  = useState(false);
-
-  useEffect(() => {
-    let ticking = false;
-    const onScroll = () => {
-      if (!ticking) {
-        requestAnimationFrame(() => {
-          setScrolled(window.scrollY > 24);
-          ticking = false;
-        });
-        ticking = true;
-      }
-    };
-    window.addEventListener("scroll", onScroll, { passive: true });
-    return () => window.removeEventListener("scroll", onScroll);
-  }, []);
+  const [mobileOpen, setMobileOpen] = useState(false);
 
   return (
     <>
       <header
-        className={cn(
-          "fixed top-0 inset-x-0 z-50 transition-all duration-300",
-          scrolled
-            ? "bg-ivory/90 backdrop-blur-md border-b border-emerald-deep/8 shadow-card"
-            : "bg-transparent"
-        )}
+        className="fixed top-0 inset-x-0 z-50 transition-all duration-300
+                   bg-ivory/90 backdrop-blur-md border-b border-emerald-deep/8 shadow-card"
       >
         <div className="max-w-6xl mx-auto px-6 h-16 flex items-center justify-between">
 

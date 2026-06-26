@@ -2,6 +2,9 @@ import Link from "next/link";
 import { Button } from "@/components/ui/Button";
 import { ArrowRight, Users, Smartphone, Zap } from "lucide-react";
 
+// Home page is fully static — no data dependencies.
+export const dynamic = "force-static";
+
 export default function HomePage() {
   return (
     <div className="overflow-x-hidden">
@@ -152,6 +155,8 @@ function LogoBar() {
                 src={logo}
                 alt={name}
                 className="h-20 md:h-24 w-auto object-contain"
+                loading="lazy"
+                decoding="async"
               />
             </a>
           ))}
@@ -194,7 +199,7 @@ function HowItWorksSection() {
             Three steps to your<br /><em className="text-gold">Eco tap card</em>
           </h2>
           <p className="text-base leading-relaxed text-ink-light">
-            From registration to your first tap — it's simpler than you think.
+            From registration to your first tap — it&apos;s simpler than you think.
           </p>
         </div>
 

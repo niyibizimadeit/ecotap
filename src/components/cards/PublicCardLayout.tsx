@@ -17,7 +17,7 @@ export function PublicCardLayout({ card }: PublicCardLayoutProps) {
   const initials = getInitials(profile.full_name);
 
   return (
-    <div className="min-h-screen bg-ivory flex flex-col">
+    <div className="grain-bg min-h-screen bg-ivory flex flex-col">
 
       {/* ── Top colour band ── */}
       <div className="h-40 relative flex-shrink-0 overflow-hidden" style={{ backgroundColor: accent }}>
@@ -46,7 +46,13 @@ export function PublicCardLayout({ card }: PublicCardLayoutProps) {
             style={{ backgroundColor: profile.avatar_url ? "#FEFCE8" : accent, borderColor: "#FEFCE8" }}
           >
             {profile.avatar_url ? (
-              <img src={profile.avatar_url} alt={profile.full_name} className="w-full h-full object-cover" />
+              <img
+                src={profile.avatar_url}
+                alt={profile.full_name}
+                width={96}
+                height={96}
+                className="w-full h-full object-cover"
+              />
             ) : (
               <span className="font-serif text-3xl font-semibold" style={{ color: "#FEFCE8" }}>
                 {initials}

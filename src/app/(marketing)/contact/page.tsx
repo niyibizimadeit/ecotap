@@ -2,6 +2,9 @@ import { Mail, Phone, MapPin, MessageCircle, ArrowRight } from "lucide-react";
 import { Button } from "@/components/ui/Button";
 import { Input, Textarea } from "@/components/ui/Input";
 
+// Pure static page — no data dependencies.
+export const dynamic = "force-static";
+
 export default function ContactPage() {
   return (
     <div className="bg-ivory">
@@ -61,6 +64,27 @@ export default function ContactPage() {
                       </div>
                     </div>
                   ))}
+
+                  {/* Divider */}
+                  <div className="border-t border-emerald-light/40 pt-4 mt-1">
+                    <p className="text-xs font-mono tracking-wide text-ink-light uppercase mb-3">Partner Contacts</p>
+                    {[
+                      { label: "Team Environment Rwanda", value: "cyubahiro@teamenvironment.org", href: "mailto:cyubahiro@teamenvironment.org" },
+                      { label: "RDMC Ltd", value: "info@rdmc.rw", href: "mailto:info@rdmc.rw" },
+                    ].map((item) => (
+                      <div key={item.label} className="flex items-start gap-4 mb-3 last:mb-0">
+                        <div className="w-10 h-10 rounded-xl bg-emerald-pale flex items-center justify-center text-emerald-deep flex-shrink-0">
+                          <Mail className="h-5 w-5" />
+                        </div>
+                        <div>
+                          <p className="text-xs text-ink-light uppercase tracking-wide">{item.label}</p>
+                          <a href={item.href} className="text-sm font-medium text-emerald-deep hover:text-emerald-bright transition-colors">
+                            {item.value}
+                          </a>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
                 </div>
               </div>
 

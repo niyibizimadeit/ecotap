@@ -85,9 +85,9 @@
 *, *::before, *::after { box-sizing: border-box; }
 html { scroll-behavior: smooth; }
 
-/* ── Grain texture overlay ────────────────────────────────────────────────────── */
+/* ── Grain texture overlay (opt-in — apply .grain-bg to a parent element) ────── */
 
-body::before {
+.grain-bg::before {
   content: '';
   position: fixed;
   inset: 0;
