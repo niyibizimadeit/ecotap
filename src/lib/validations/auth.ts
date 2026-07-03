@@ -56,12 +56,6 @@ export const orgRegisterStep2Schema = z.object({
   confirm_password: password,
   phone,
   age,
-  terms_accepted: z.literal(true, {
-    message: "You must accept the Terms and Conditions and Privacy Policy to continue.",
-  }),
-  legal_rep_confirmed: z.literal(true, {
-    message: "You must confirm you are the legal representative.",
-  }),
 }).refine((data) => data.password === data.confirm_password, {
   message: "Passwords do not match",
   path: ["confirm_password"],
