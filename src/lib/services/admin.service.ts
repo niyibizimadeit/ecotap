@@ -49,9 +49,11 @@ export async function getPendingQueue(): Promise<ActionResult<PendingQueue>> {
     profilesRepo.getAllPending(),
   ]);
 
-  // Filter to only individual registrations (company admins go through company approval)
+  // Include company_admin profiles — they show in the Individuals tab.
+  // Approving a company_admin profile triggers the on_company_admin_activated
+  // DB trigger which auto-creates the company + subscription.
   const individualsOnly = individuals.filter(
-    (p) => p.role === "individual" || p.role === "employee"
+    (p) => p.role === "individual" || p.role === "employee" || p.role === "company_admin"
   );
 
   return { success: true, data: { companies, individuals: individualsOnly } };
@@ -165,10 +167,9 @@ export async function getAdminOverview(): Promise<ActionResult<AdminOverview>> {
       companiesRepo.getAllPendingCompanies(),
     ]);
 
-  // Match getPendingQueue filtering — only individual + employee registrations
-  // count as pending approvals. Company admins go through company approval.
+  // Include company_admin profiles in pending count (same as getPendingQueue)
   const pendingIndividuals = pendingUsers.filter(
-    (p) => p.role === "individual" || p.role === "employee"
+    (p) => p.role === "individual" || p.role === "employee" || p.role === "company_admin"
   );
 
   return {

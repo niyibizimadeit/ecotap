@@ -180,9 +180,54 @@ export async function signUpOrg(formData: FormData): Promise<ActionResult> {
     return { success: false, error: "An account with this email already exists. Please sign in instead." };
   }
 
-  // 2. The DB trigger creates the profiles row.
-  //    The company is created by an Edge Function or direct API call
-  //    after email confirmation. For now, store metadata on the user.
+  // 2. The DB trigger (on_auth_user_created) creates the profiles row.
+  //    We now also create the company + profile_companies link directly here
+  //    instead of relying on the on_company_admin_activated trigger, which
+  //    may not exist in all deployments.
+  const userId = authData.user.id;
+  const serviceClient = getServiceSupabase();
+
+  // Generate a URL-safe slug from the company name
+  const slug = companyName
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/(^-|-$)/g, "")
+    || `company-${userId.replace(/-/g, "").slice(0, 12)}`;
+
+  // Create the company (status: pending — needs admin approval)
+  const { data: company, error: companyError } = await serviceClient
+    .from("companies")
+    .insert({
+      name: companyName,
+      slug,
+      industry: industry || null,
+      size: size || null,
+      website: website || null,
+      status: "pending",
+      legal_rep_confirmed: legalConfirmed,
+    })
+    .select("id")
+    .single();
+
+  if (companyError) {
+    // Log but don't fail — the user can still be approved via the trigger fallback
+    console.error("Failed to create company during signUpOrg:", companyError.message);
+  }
+
+  if (company) {
+    // Link the admin to the company as primary
+    const { error: linkError } = await serviceClient
+      .from("profile_companies")
+      .insert({
+        profile_id: userId,
+        company_id: company.id,
+        is_primary: true,
+      });
+
+    if (linkError) {
+      console.error("Failed to link admin to company:", linkError.message);
+    }
+  }
 
   return { success: true };
 }

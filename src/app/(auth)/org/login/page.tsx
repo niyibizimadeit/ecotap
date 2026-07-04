@@ -4,7 +4,7 @@ import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import Link from "next/link";
-import { ArrowRight, Building2, AlertCircle, UserPlus } from "lucide-react";
+import { ArrowRight, AlertCircle, UserPlus } from "lucide-react";
 
 import { AuthLayout } from "@/components/auth/AuthLayout";
 import { Button } from "@/components/ui/Button";
@@ -44,10 +44,6 @@ export default function OrgLoginPage() {
     >
       <div className="w-full max-w-md mx-auto">
         <div className="mb-8">
-          <div className="inline-flex items-center gap-2 bg-emerald-pale border border-emerald-light rounded-full px-3 py-1 mb-4">
-            <Building2 className="h-3 w-3 text-emerald-bright" />
-            <span className="text-xs font-mono tracking-widest text-emerald-mid uppercase">For organisations</span>
-          </div>
           <h1 className="font-serif text-display-sm text-emerald-deep mb-1">Sign in to your organisation</h1>
           <p className="text-sm text-ink-light">Access your company dashboard, manage employees, and track orders.</p>
         </div>

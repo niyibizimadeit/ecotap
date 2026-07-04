@@ -8,6 +8,7 @@ import * as profilesRepo from "@/lib/supabase/profiles.repo";
 import * as companiesRepo from "@/lib/supabase/companies.repo";
 import * as billingRepo from "@/lib/supabase/billing.repo";
 import * as analyticsRepo from "@/lib/supabase/analytics.repo";
+import { getServiceSupabase } from "@/lib/supabase/server";
 import type { ActionResult, Profile, Company, UserStatus } from "@/types";
 
 // ── Guards ───────────────────────────────────────────────────────────────────
@@ -112,6 +113,24 @@ export async function approveCompany(
 
   const updated = await companiesRepo.updateCompanyStatus(companyId, "active");
   if (!updated) return { success: false, error: "Failed to approve company." };
+
+  // Also activate all company_admin profiles linked to this company.
+  // Otherwise the middleware (which checks profile.status) would still
+  // redirect these users to the "under review" /pending page.
+  const supabase = getServiceSupabase();
+  const { data: pcRows } = await supabase
+    .from("profile_companies")
+    .select("profile_id")
+    .eq("company_id", companyId);
+
+  if (pcRows) {
+    const profileIds = pcRows.map((r: { profile_id: string }) => r.profile_id);
+    await Promise.all(
+      profileIds.map((profileId: string) =>
+        profilesRepo.updateProfileStatus(profileId, "active")
+      )
+    );
+  }
 
   return { success: true, data: updated };
 }
