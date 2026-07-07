@@ -267,10 +267,42 @@ export async function deleteProfileCascade(profileId: string): Promise<string[]>
     errors.push(`card: ${err instanceof Error ? err.message : String(err)}`);
   }
 
-  // 2. Delete profile_companies links
+  // 2. Find companies that will be orphaned, then delete profile_companies links
   try {
     const supabase = (await import("@/lib/supabase/server")).getServiceSupabase();
+
+    // Find the company IDs this profile is linked to BEFORE deleting the links
+    const { data: links } = await supabase
+      .from("profile_companies")
+      .select("company_id")
+      .eq("profile_id", profileId);
+
+    const linkedCompanyIds = links?.map((l) => l.company_id) ?? [];
+
+    // Delete the links
     await supabase.from("profile_companies").delete().eq("profile_id", profileId);
+
+    // Clean up any companies that are now orphaned (no remaining profile_companies links)
+    if (linkedCompanyIds.length > 0) {
+      const { data: stillLinked } = await supabase
+        .from("profile_companies")
+        .select("company_id")
+        .in("company_id", linkedCompanyIds);
+
+      const stillLinkedIds = new Set(stillLinked?.map((l) => l.company_id) ?? []);
+      const orphanedIds = linkedCompanyIds.filter((id) => !stillLinkedIds.has(id));
+
+      if (orphanedIds.length > 0) {
+        const { deleteCompanyCascade } = await import("@/lib/supabase/companies.repo");
+        for (const companyId of orphanedIds) {
+          try {
+            await deleteCompanyCascade(companyId);
+          } catch (err) {
+            errors.push(`orphaned_company(${companyId}): ${err instanceof Error ? err.message : String(err)}`);
+          }
+        }
+      }
+    }
   } catch (err) {
     errors.push(`profile_companies: ${err instanceof Error ? err.message : String(err)}`);
   }

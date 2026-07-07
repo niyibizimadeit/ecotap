@@ -58,20 +58,25 @@ export interface CompanyDashboardData {
  * Returns null if the user has no primary company association.
  */
 async function resolveCompanyId(): Promise<string | null> {
-  const supabase = await getSupabase();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-  if (!user) return null;
+  try {
+    const supabase = await getSupabase();
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
+    if (!user) return null;
 
-  const { data: link } = await supabase
-    .from("profile_companies")
-    .select("company_id")
-    .eq("profile_id", user.id)
-    .eq("is_primary", true)
-    .single();
+    const { data: link } = await supabase
+      .from("profile_companies")
+      .select("company_id")
+      .eq("profile_id", user.id)
+      .eq("is_primary", true)
+      .single();
 
-  return link?.company_id ?? null;
+    return link?.company_id ?? null;
+  } catch (error) {
+    console.error("resolveCompanyId failed:", error);
+    return null;
+  }
 }
 
 // ─── Reads ────────────────────────────────────────────────────────────────────

@@ -48,7 +48,9 @@ function isAccessAllowed(pathname: string, role: UserRole): boolean {
     return role === "company_admin" || role === "super_admin";
   }
   if (pathname.startsWith("/dashboard/employee")) {
-    return role === "employee" || role === "individual";
+    // Also allow company_admin as a fallback — if they have no company linked
+    // the company layout shows an inline message instead of redirect-looping.
+    return role === "employee" || role === "individual" || role === "company_admin";
   }
   return true;
 }

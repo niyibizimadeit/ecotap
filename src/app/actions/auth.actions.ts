@@ -194,39 +194,110 @@ export async function signUpOrg(formData: FormData): Promise<ActionResult> {
     .replace(/(^-|-$)/g, "")
     || `company-${userId.replace(/-/g, "").slice(0, 12)}`;
 
-  // Create the company (status: pending — needs admin approval)
-  const { data: company, error: companyError } = await serviceClient
-    .from("companies")
-    .insert({
-      name: companyName,
-      slug,
-      industry: industry || null,
-      size: size || null,
-      website: website || null,
-      status: "pending",
-      legal_rep_confirmed: legalConfirmed,
-    })
-    .select("id")
-    .single();
+  // Check if a company with this slug already exists — this can happen when
+  // a previous registration created the company but the auth user was deleted
+  // before the profile_companies link was created (orphaned company).
+  let company: { id: string } | null = null;
 
-  if (companyError) {
-    // Log but don't fail — the user can still be approved via the trigger fallback
-    console.error("Failed to create company during signUpOrg:", companyError.message);
+  const { data: existingCompany } = await serviceClient
+    .from("companies")
+    .select("id, status")
+    .eq("slug", slug)
+    .maybeSingle();
+
+  if (existingCompany) {
+    // Only reuse if the company is still pending and has no existing admins
+    if (existingCompany.status !== "pending") {
+      return {
+        success: false,
+        error:
+          "A company with this name is already registered and active. Please use a different name or contact support.",
+      };
+    }
+
+    const { data: existingLinks } = await serviceClient
+      .from("profile_companies")
+      .select("id")
+      .eq("company_id", existingCompany.id);
+
+    if (existingLinks && existingLinks.length > 0) {
+      return {
+        success: false,
+        error:
+          "A company with this name is already registered. Please use a different name.",
+      };
+    }
+
+    // Orphaned pending company — update its details and reuse it
+    await serviceClient
+      .from("companies")
+      .update({
+        name: companyName,
+        industry: industry || null,
+        size: size || null,
+        website: website || null,
+        legal_rep_confirmed: legalConfirmed,
+      })
+      .eq("id", existingCompany.id);
+
+    company = existingCompany;
+  } else {
+    // No existing company — create one (status: pending — needs admin approval)
+    const { data: newCompany, error: companyError } = await serviceClient
+      .from("companies")
+      .insert({
+        name: companyName,
+        slug,
+        industry: industry || null,
+        size: size || null,
+        website: website || null,
+        status: "pending",
+        legal_rep_confirmed: legalConfirmed,
+      })
+      .select("id")
+      .single();
+
+    if (companyError) {
+      console.error(
+        "Failed to create company during signUpOrg:",
+        companyError.message,
+      );
+      return {
+        success: false,
+        error: "Failed to create company. Please try again.",
+      };
+    }
+
+    if (!newCompany) {
+      console.error("Company creation returned no data during signUpOrg");
+      return {
+        success: false,
+        error: "Failed to create company. Please try again.",
+      };
+    }
+
+    company = newCompany;
   }
 
-  if (company) {
-    // Link the admin to the company as primary
-    const { error: linkError } = await serviceClient
-      .from("profile_companies")
-      .insert({
-        profile_id: userId,
-        company_id: company.id,
-        is_primary: true,
-      });
+  // Link the admin to the company as primary
+  const { error: linkError } = await serviceClient
+    .from("profile_companies")
+    .insert({
+      profile_id: userId,
+      company_id: company.id,
+      is_primary: true,
+    });
 
-    if (linkError) {
-      console.error("Failed to link admin to company:", linkError.message);
+  if (linkError) {
+    console.error("Failed to link admin to company:", linkError.message);
+    // Clean up the company only if we just created it (not if we reused an existing one)
+    if (!existingCompany) {
+      await serviceClient.from("companies").delete().eq("id", company.id);
     }
+    return {
+      success: false,
+      error: "Failed to set up company. Please try again.",
+    };
   }
 
   return { success: true };
@@ -261,18 +332,23 @@ export async function signIn(formData: FormData): Promise<ActionResult> {
     return { success: false, error: error.message };
   }
 
-  // Look up role to redirect to the correct dashboard
+  // Look up role and status to redirect to the correct dashboard
   const userId = data.user?.id;
   let dashboard = "/dashboard/employee"; // fallback
 
   if (userId) {
     const { data: profile } = await supabase
       .from("profiles")
-      .select("role")
+      .select("role, status")
       .eq("id", userId)
       .single();
 
-    if (profile?.role) {
+    if (profile) {
+      // Pending users should see the "under review" page, not a dashboard
+      if (profile.status === "pending") {
+        redirect("/pending");
+      }
+
       const DASHBOARD_MAP: Record<string, string> = {
         super_admin:   "/dashboard/admin",
         country_rep:   "/dashboard/admin",
@@ -280,7 +356,7 @@ export async function signIn(formData: FormData): Promise<ActionResult> {
         employee:      "/dashboard/employee",
         individual:    "/dashboard/employee",
       };
-      dashboard = DASHBOARD_MAP[profile.role] ?? dashboard;
+      dashboard = DASHBOARD_MAP[profile.role as string] ?? dashboard;
     }
   }
 
