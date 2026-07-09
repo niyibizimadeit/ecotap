@@ -55,8 +55,8 @@ export async function signUp(formData: FormData): Promise<ActionResult> {
   }
 
   // Validate age server-side
-  if (isNaN(age) || age < 13 || age > 120) {
-    return { success: false, error: "Please enter a valid age (13–120)." };
+  if (isNaN(age) || age < 18 || age > 120) {
+    return { success: false, error: "You must be at least 18 years old to create an account." };
   }
 
   // Validate phone format server-side
@@ -70,6 +70,35 @@ export async function signUp(formData: FormData): Promise<ActionResult> {
   }
 
   const supabase = await getSupabaseServerAction();
+
+  // Check if username is already taken (before signUp to give a clear error)
+  const serviceClient = getServiceSupabase();
+  const { data: existingUsername } = await serviceClient
+    .from("profiles")
+    .select("id")
+    .eq("username", username)
+    .maybeSingle();
+
+  if (existingUsername) {
+    return {
+      success: false,
+      error: `The username "@${username}" is already taken. Please choose a different username.`,
+    };
+  }
+
+  // Check if email is already registered
+  const { data: existingEmail } = await serviceClient
+    .from("profiles")
+    .select("id")
+    .eq("email", email)
+    .maybeSingle();
+
+  if (existingEmail) {
+    return {
+      success: false,
+      error: "An account with this email already exists. Please sign in instead.",
+    };
+  }
 
   // Role is hardcoded server-side — never accept role from the client
   const { data, error } = await supabase.auth.signUp({
@@ -121,8 +150,8 @@ export async function signUpOrg(formData: FormData): Promise<ActionResult> {
   }
 
   // Validate age server-side
-  if (isNaN(age) || age < 13 || age > 120) {
-    return { success: false, error: "Please enter a valid age (13–120)." };
+  if (isNaN(age) || age < 18 || age > 120) {
+    return { success: false, error: "You must be at least 18 years old to create an account." };
   }
 
   // Validate phone format server-side

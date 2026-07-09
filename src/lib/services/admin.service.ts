@@ -10,7 +10,7 @@ import * as ordersRepo from "@/lib/supabase/card_orders.repo";
 import * as designsRepo from "@/lib/supabase/card_designs.repo";
 import * as billingRepo from "@/lib/supabase/billing.repo";
 import * as exchangesRepo from "@/lib/supabase/contact_exchanges.repo";
-import * as cardsRepo from "@/lib/supabase/cards.repo";
+
 import type {
   ActionResult,
   Profile,
@@ -252,38 +252,94 @@ export async function toggleUserStatus(
 /**
  * Shared helper: delete all data for a profile, including the auth user.
  * Used by super-admin delete, self-delete, and company employee removal.
+ *
+ * DELETION ORDER (critical for FK constraints):
+ *   1. card_orders          — ON DELETE RESTRICT on profiles (must go before profile/auth)
+ *   2. profile_companies    — track linked companies for orphan cleanup
+ *   3. profile_activity     — no restrictive FKs
+ *   4. contact_exchanges    — explicit cleanup (belt-and-suspenders on top of cascade)
+ *   5. auth user            — cascades to profiles → cards → card_events, daily_card_stats,
+ *                              card_scores, card_groups, ab_test_assignments
+ *   6. orphaned companies   — clean up companies with no remaining members
+ *
+ * Deleting the auth user FIRST (after removing restrict-FK data) is intentional:
+ * the cascade handles profiles, cards, and all card-related tables automatically.
+ * This ensures the Supabase Auth record is truly removed and the email can be reused.
+ *
  * Returns a list of error strings (empty = success).
  */
 export async function deleteProfileCascade(profileId: string): Promise<string[]> {
   const errors: string[] = [];
+  const supabase = (await import("@/lib/supabase/server")).getServiceSupabase();
+  let linkedCompanyIds: string[] = [];
 
-  // 1. Delete card (if exists)
+  // 1. Delete card orders — these have ON DELETE RESTRICT on profiles,
+  //    so they MUST be removed before we can delete the profile/auth user.
   try {
-    const card = await cardsRepo.getCardByProfileIdService(profileId);
-    if (card) {
-      await cardsRepo.deleteCardService(card.id);
-    }
+    await supabase.from("card_orders").delete().eq("profile_id", profileId);
   } catch (err) {
-    errors.push(`card: ${err instanceof Error ? err.message : String(err)}`);
+    errors.push(`card_orders: ${err instanceof Error ? err.message : String(err)}`);
   }
 
-  // 2. Find companies that will be orphaned, then delete profile_companies links
+  // 2. Find and delete profile_companies links (track linked companies for orphan cleanup).
   try {
-    const supabase = (await import("@/lib/supabase/server")).getServiceSupabase();
-
-    // Find the company IDs this profile is linked to BEFORE deleting the links
     const { data: links } = await supabase
       .from("profile_companies")
       .select("company_id")
       .eq("profile_id", profileId);
 
-    const linkedCompanyIds = links?.map((l) => l.company_id) ?? [];
+    linkedCompanyIds = links?.map((l) => l.company_id) ?? [];
 
-    // Delete the links
     await supabase.from("profile_companies").delete().eq("profile_id", profileId);
+  } catch (err) {
+    errors.push(`profile_companies: ${err instanceof Error ? err.message : String(err)}`);
+  }
 
-    // Clean up any companies that are now orphaned (no remaining profile_companies links)
-    if (linkedCompanyIds.length > 0) {
+  // 3. Delete profile activity.
+  try {
+    await supabase.from("profile_activity").delete().eq("profile_id", profileId);
+  } catch (err) {
+    errors.push(`profile_activity: ${err instanceof Error ? err.message : String(err)}`);
+  }
+
+  // 4. Delete contact_exchanges for this user's cards (belt-and-suspenders —
+  //    the cascade will also clean these, but explicit cleanup avoids edge cases).
+  try {
+    const { data: userCards } = await supabase
+      .from("cards")
+      .select("id")
+      .eq("profile_id", profileId);
+
+    if (userCards && userCards.length > 0) {
+      const cardIds = userCards.map((c: { id: string }) => c.id);
+      await supabase.from("contact_exchanges").delete().in("card_id", cardIds);
+    }
+  } catch (err) {
+    errors.push(`contact_exchanges: ${err instanceof Error ? err.message : String(err)}`);
+  }
+
+  // 5. Delete the auth user — this cascades to profiles (ON DELETE CASCADE),
+  //    which cascades to cards, which cascades to card_events, daily_card_stats,
+  //    card_scores, card_groups, ab_test_assignments.
+  //    This is the CRITICAL step for email reuse — the auth record MUST be fully purged.
+  try {
+    const { error: authError } = await supabase.auth.admin.deleteUser(profileId);
+    if (authError) throw authError;
+
+    // Verify the auth user is truly gone
+    const { data: verifyUser } = await supabase.auth.admin.getUserById(profileId);
+    if (verifyUser?.user) {
+      // User still exists — the SDK may have soft-deleted; retry
+      const { error: retryError } = await supabase.auth.admin.deleteUser(profileId);
+      if (retryError) throw retryError;
+    }
+  } catch (err) {
+    errors.push(`auth_user: ${err instanceof Error ? err.message : String(err)}`);
+  }
+
+  // 6. Clean up orphaned companies (no remaining profile_companies links).
+  if (linkedCompanyIds.length > 0) {
+    try {
       const { data: stillLinked } = await supabase
         .from("profile_companies")
         .select("company_id")
@@ -302,41 +358,9 @@ export async function deleteProfileCascade(profileId: string): Promise<string[]>
           }
         }
       }
+    } catch (err) {
+      errors.push(`orphan_cleanup: ${err instanceof Error ? err.message : String(err)}`);
     }
-  } catch (err) {
-    errors.push(`profile_companies: ${err instanceof Error ? err.message : String(err)}`);
-  }
-
-  // 3. Delete card orders
-  try {
-    const supabase = (await import("@/lib/supabase/server")).getServiceSupabase();
-    await supabase.from("card_orders").delete().eq("profile_id", profileId);
-  } catch (err) {
-    errors.push(`card_orders: ${err instanceof Error ? err.message : String(err)}`);
-  }
-
-  // 4. Delete profile activity
-  try {
-    const supabase = (await import("@/lib/supabase/server")).getServiceSupabase();
-    await supabase.from("profile_activity").delete().eq("profile_id", profileId);
-  } catch (err) {
-    errors.push(`profile_activity: ${err instanceof Error ? err.message : String(err)}`);
-  }
-
-  // 5. Delete the profile itself
-  try {
-    await profilesRepo.deleteProfileService(profileId);
-  } catch (err) {
-    errors.push(`profile: ${err instanceof Error ? err.message : String(err)}`);
-  }
-
-  // 6. Delete the auth user (email/password/login)
-  try {
-    const supabase = (await import("@/lib/supabase/server")).getServiceSupabase();
-    const { error: authError } = await supabase.auth.admin.deleteUser(profileId);
-    if (authError) throw authError;
-  } catch (err) {
-    errors.push(`auth_user: ${err instanceof Error ? err.message : String(err)}`);
   }
 
   return errors;

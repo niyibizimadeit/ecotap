@@ -54,35 +54,38 @@ export function Modal({ open, onClose, title, description, children, className, 
       <div
         className={cn(
           "relative w-full bg-cream rounded-3xl shadow-card-xl border border-cream-dark/60 animate-scale-in",
+          "max-h-[90dvh] flex flex-col",
           SIZE_CLASSES[size],
           className
         )}
       >
-        {/* Header */}
-        {(title || description) && (
-          <div className="px-6 pt-6 pb-4 border-b border-cream-dark/60">
-            {title && (
-              <h2 className="font-serif text-xl font-semibold text-emerald-deep">{title}</h2>
-            )}
-            {description && (
-              <p className="text-sm text-ink-light mt-1">{description}</p>
-            )}
-          </div>
-        )}
+        {/* Header + close button */}
+        <div className="flex-shrink-0">
+          {(title || description) && (
+            <div className="px-6 pt-6 pb-4 border-b border-cream-dark/60">
+              {title && (
+                <h2 className="font-serif text-xl font-semibold text-emerald-deep">{title}</h2>
+              )}
+              {description && (
+                <p className="text-sm text-ink-light mt-1">{description}</p>
+              )}
+            </div>
+          )}
 
-        {/* Close button */}
-        <Button
-          variant="ghost"
-          size="icon"
-          className="absolute top-4 right-4"
-          onClick={onClose}
-          aria-label="Close"
-        >
-          <X className="h-4 w-4" />
-        </Button>
+          {/* Close button */}
+          <Button
+            variant="ghost"
+            size="icon"
+            className="absolute top-4 right-4"
+            onClick={onClose}
+            aria-label="Close"
+          >
+            <X className="h-4 w-4" />
+          </Button>
+        </div>
 
-        {/* Content */}
-        <div className="p-6">{children}</div>
+        {/* Content — scrollable on mobile */}
+        <div className="p-6 overflow-y-auto flex-1 min-h-0 overscroll-contain">{children}</div>
       </div>
     </div>
   );

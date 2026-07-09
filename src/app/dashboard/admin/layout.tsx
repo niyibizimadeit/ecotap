@@ -5,7 +5,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { BrandLogo } from "@/components/brand/BrandLogo";
 import { signOut } from "@/app/actions/auth.actions";
-import { cn } from "@/lib/utils";
+
 import {
   LayoutDashboard, Clock, Package, Palette,
   Users, CreditCard, LogOut, Menu, X, ChevronRight, Shield,
@@ -129,7 +129,7 @@ export default function AdminDashboardLayout({ children }: { children: React.Rea
         <div className="lg:hidden fixed inset-0 z-30">
           <div className="absolute inset-0 bg-ink/20 backdrop-blur-sm" onClick={() => setMobileOpen(false)} />
           <div
-            className="absolute top-14 inset-x-0 border-b shadow-card-lg animate-fade-up"
+            className="absolute top-14 inset-x-0 border-b shadow-card-lg animate-fade-up max-h-[80vh] overflow-y-auto"
             style={{ backgroundColor: "#064E3B", borderColor: "rgba(255,255,255,0.08)" }}
           >
             <div className="px-4 py-3 space-y-0.5">
@@ -178,7 +178,7 @@ export default function AdminDashboardLayout({ children }: { children: React.Rea
 
       {/* ── Main content ── */}
       <div className="flex-1 lg:ml-64 flex flex-col min-h-screen">
-        <main className="flex-1 pt-14 lg:pt-0 px-5 lg:px-8 py-8 max-w-6xl w-full mx-auto">
+        <main className="flex-1 pt-14 lg:pt-0 px-5 lg:px-8 py-8 max-w-6xl w-full mx-auto overflow-y-auto">
           {children}
         </main>
       </div>

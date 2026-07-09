@@ -28,7 +28,7 @@ const phone = z
 const age = z
   .number({ message: "Age is required" })
   .int("Age must be a whole number")
-  .min(13, "You must be at least 13 years old")
+  .min(18, "You must be at least 18 years old")
   .max(120, "Please enter a valid age");
 
 // ── Organisation registration (3 steps) ─────────────────────────────────────────

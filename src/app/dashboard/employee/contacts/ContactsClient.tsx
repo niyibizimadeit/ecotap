@@ -138,32 +138,31 @@ export function ContactsClient({ initialContacts }: Props) {
         </div>
       </div>
 
-      {/* Group filter chips */}
+      {/* Group filter chips — scrollable on mobile */}
       {groups.length > 0 && (
-        <div className="flex flex-wrap gap-2 mb-4">
+        <div className="flex flex-nowrap gap-2 mb-4 overflow-x-auto pb-1 -mx-1 px-1">
           {groups.map((g) => (
             <button
               key={g}
               onClick={() => setSearch(g!)}
-              className="px-3 py-1 rounded-full text-xs font-medium border border-emerald-light/40 bg-emerald-pale/40 text-emerald-deep hover:bg-emerald-pale transition-colors"
+              className="px-4 py-2 rounded-full text-xs font-medium border border-emerald-light/40 bg-emerald-pale/40 text-emerald-deep hover:bg-emerald-pale transition-colors whitespace-nowrap flex-shrink-0 min-h-[36px]"
             >
               {g}
             </button>
           ))}
+          {search && groups.includes(search) && (
+            <button
+              onClick={() => setSearch("")}
+              className="px-4 py-2 rounded-full text-xs font-medium border border-cream-dark bg-white text-ink-light hover:bg-cream transition-colors whitespace-nowrap flex-shrink-0 min-h-[36px]"
+            >
+              ✕ Clear filter
+            </button>
+          )}
         </div>
       )}
 
       {/* Contacts list */}
       <SectionCard title="All contacts" subtitle={`${filtered.length} contact${filtered.length !== 1 ? "s" : ""}`}>
-        {/* Header */}
-        <div className="hidden md:grid grid-cols-12 gap-3 px-4 py-2 rounded-xl mb-2 text-xs font-mono tracking-wide text-ink-light uppercase" style={{ backgroundColor: "#F0E6D3" }}>
-          <div className="col-span-1"></div>
-          <div className="col-span-3">Name</div>
-          <div className="col-span-3">Contact</div>
-          <div className="col-span-2">Lead Level</div>
-          <div className="col-span-2">Date</div>
-          <div className="col-span-1"></div>
-        </div>
 
         <div className="space-y-1.5">
           {filtered.map((c) => {
@@ -172,17 +171,17 @@ export function ContactsClient({ initialContacts }: Props) {
 
             return (
               <div key={c.id} className="rounded-xl border transition-all hover:shadow-card" style={{ backgroundColor: "#FEFCE8", borderColor: "rgba(6,78,59,0.06)" }}>
-                {/* Main row */}
-                <div className="flex items-center gap-2 md:gap-3 px-3 md:px-4 py-3">
-                  {/* Favorite star */}
-                  <button onClick={() => toggleFavorite(c)} className="flex-shrink-0 transition-colors hover:scale-110" title={c.is_favorite ? "Remove favorite" : "Add favorite"}>
-                    <Star className={`h-4 w-4 ${c.is_favorite ? "fill-gold text-gold" : "text-ink-light/30"}`} />
+                {/* Main row — name + quick actions */}
+                <div className="flex items-center gap-2 px-3 py-3">
+                  {/* Favorite star — large touch target */}
+                  <button onClick={() => toggleFavorite(c)} className="flex-shrink-0 p-2 -m-1 transition-colors hover:scale-110 min-w-[44px] min-h-[44px] flex items-center justify-center" title={c.is_favorite ? "Remove favorite" : "Add favorite"}>
+                    <Star className={`h-5 w-5 ${c.is_favorite ? "fill-gold text-gold" : "text-ink-light/30"}`} />
                   </button>
 
-                  {/* Name + org — takes remaining space */}
+                  {/* Avatar + Name + org */}
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2 min-w-0">
-                      <div className="w-7 h-7 rounded-lg flex items-center justify-center flex-shrink-0 font-medium text-xs" style={{ backgroundColor: "#ECFDF5", color: "#065F46" }}>
+                      <div className="w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0 font-medium text-xs" style={{ backgroundColor: "#ECFDF5", color: "#065F46" }}>
                         {c.visitor_name.split(" ").map((n) => n[0]).join("")}
                       </div>
                       <div className="min-w-0">
@@ -190,78 +189,60 @@ export function ContactsClient({ initialContacts }: Props) {
                         {c.visitor_organization && <p className="text-xs text-ink-light truncate">{c.visitor_organization}</p>}
                       </div>
                     </div>
-                  </div>
 
-                  {/* Contact info — desktop only */}
-                  <div className="hidden md:flex md:flex-col md:gap-0.5 md:min-w-0 md:w-1/5 md:flex-shrink-0">
-                    {c.visitor_email && (
-                      <a href={`mailto:${c.visitor_email}`} className="flex items-center gap-1.5 text-xs text-ink-mid hover:text-emerald-bright transition-colors truncate">
-                        <Mail className="h-3 w-3 flex-shrink-0" /><span className="truncate">{c.visitor_email}</span>
-                      </a>
-                    )}
-                    {c.visitor_phone && (
-                      <a href={`tel:${c.visitor_phone}`} className="flex items-center gap-1.5 text-xs text-ink-light hover:text-emerald-bright transition-colors">
-                        <Phone className="h-3 w-3 flex-shrink-0" />{c.visitor_phone}
-                      </a>
-                    )}
-                    {c.message && <p className="text-xs text-ink-light/60 italic truncate">{c.message}</p>}
-                  </div>
+                    {/* Contact info — visible on ALL screen sizes */}
+                    <div className="flex flex-wrap items-center gap-x-3 gap-y-0.5 mt-1.5 ml-10">
+                      {c.visitor_email && (
+                        <a href={`mailto:${c.visitor_email}`} className="flex items-center gap-1 text-xs text-emerald-bright hover:text-emerald-mid transition-colors truncate max-w-[200px]">
+                          <Mail className="h-3 w-3 flex-shrink-0" /><span className="truncate">{c.visitor_email}</span>
+                        </a>
+                      )}
+                      {c.visitor_phone && (
+                        <a href={`tel:${c.visitor_phone}`} className="flex items-center gap-1 text-xs text-emerald-bright hover:text-emerald-mid transition-colors">
+                          <Phone className="h-3 w-3 flex-shrink-0" />{c.visitor_phone}
+                        </a>
+                      )}
+                      {c.message && <p className="text-xs text-ink-light/60 italic truncate max-w-[180px]">{c.message}</p>}
+                    </div>
 
-                  {/* Lead level dropdown — desktop only */}
-                  <div className="hidden md:block md:flex-shrink-0" style={{ width: "110px" }}>
-                    <div className="relative">
-                      <select
-                        value={c.lead_level || "normal"}
-                        onChange={(e) => setLeadLevel(c, e.target.value)}
-                        className="w-full px-2 py-1.5 rounded-lg text-xs font-medium border cursor-pointer appearance-none focus:outline-none focus:ring-2 focus:ring-emerald-mid/30"
-                        style={{ backgroundColor: leadCfg.bg, color: leadCfg.color, borderColor: leadCfg.color + "30" }}
-                      >
-                        {LEAD_LEVELS.map((l) => (
-                          <option key={l.value} value={l.value}>{l.label}</option>
-                        ))}
-                      </select>
-                      <ChevronDown className="absolute right-1.5 top-1/2 -translate-y-1/2 h-3 w-3 pointer-events-none" style={{ color: leadCfg.color }} />
+                    {/* Lead level + date — visible on ALL screen sizes */}
+                    <div className="flex items-center gap-3 mt-1.5 ml-10">
+                      <div className="relative">
+                        <select
+                          value={c.lead_level || "normal"}
+                          onChange={(e) => setLeadLevel(c, e.target.value)}
+                          className="px-2 py-1.5 rounded-lg text-xs font-medium border cursor-pointer appearance-none focus:outline-none focus:ring-2 focus:ring-emerald-mid/30 min-h-[32px]"
+                          style={{ backgroundColor: leadCfg.bg, color: leadCfg.color, borderColor: leadCfg.color + "30" }}
+                        >
+                          {LEAD_LEVELS.map((l) => (
+                            <option key={l.value} value={l.value}>{l.label}</option>
+                          ))}
+                        </select>
+                        <ChevronDown className="absolute right-1.5 top-1/2 -translate-y-1/2 h-3 w-3 pointer-events-none" style={{ color: leadCfg.color }} />
+                      </div>
+                      <span className="text-xs text-ink-light flex items-center gap-1">
+                        <Calendar className="h-3 w-3" />
+                        {new Date(c.created_at).toLocaleDateString()}
+                      </span>
                     </div>
                   </div>
 
-                  {/* Date — desktop only */}
-                  <div className="hidden md:flex items-center gap-1.5 text-xs text-ink-light flex-shrink-0" style={{ width: "90px" }}>
-                    <Calendar className="h-3 w-3 flex-shrink-0" />
-                    <span className="whitespace-nowrap">{new Date(c.created_at).toLocaleDateString()}</span>
-                  </div>
-
-                  {/* Expand/actions */}
+                  {/* Expand/notes button — large touch target */}
                   <button
                     onClick={() => setExpandedNotes((s) => {
                       const next = new Set(s);
-                      isExpanded ? next.delete(c.id) : next.add(c.id);
+                      if (isExpanded) {
+                        next.delete(c.id);
+                      } else {
+                        next.add(c.id);
+                      }
                       return next;
                     })}
-                    className={`flex-shrink-0 p-1.5 rounded-lg transition-colors ${isExpanded ? "bg-emerald-pale text-emerald-deep" : "text-ink-light/40 hover:text-ink-mid"}`}
+                    className={`flex-shrink-0 p-2 -m-1 rounded-lg transition-colors min-w-[44px] min-h-[44px] flex items-center justify-center ${isExpanded ? "bg-emerald-pale text-emerald-deep" : "text-ink-light/40 hover:text-ink-mid"}`}
                     title="Notes"
                   >
-                    <MessageSquare className="h-4 w-4" />
+                    <MessageSquare className="h-5 w-5" />
                   </button>
-                </div>
-
-                {/* Mobile lead level + date */}
-                <div className="md:hidden px-3 pb-2 flex items-center gap-3">
-                  <div className="relative">
-                    <select
-                      value={c.lead_level || "normal"}
-                      onChange={(e) => setLeadLevel(c, e.target.value)}
-                      className="px-2 py-1 rounded-lg text-xs font-medium border cursor-pointer appearance-none focus:outline-none"
-                      style={{ backgroundColor: leadCfg.bg, color: leadCfg.color, borderColor: leadCfg.color + "30" }}
-                    >
-                      {LEAD_LEVELS.map((l) => (
-                        <option key={l.value} value={l.value}>{l.label}</option>
-                      ))}
-                    </select>
-                  </div>
-                  <span className="text-xs text-ink-light flex items-center gap-1">
-                    <Calendar className="h-3 w-3" />
-                    {new Date(c.created_at).toLocaleDateString()}
-                  </span>
                 </div>
 
                 {/* Expanded section: notes + group */}

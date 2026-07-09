@@ -263,7 +263,7 @@ function Step2AdminAccount({
         required
         type="number"
         placeholder="e.g., 35"
-        hint="You must be at least 13 years old"
+        hint="You must be at least 18 years old"
         error={errors.age?.message}
         {...register("age", { valueAsNumber: true })}
       />

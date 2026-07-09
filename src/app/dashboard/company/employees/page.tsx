@@ -1,7 +1,6 @@
 // src/app/dashboard/company/employees/page.tsx
 
 import { Suspense } from "react";
-import Link from "next/link";
 import {
   PageHeader,
   SectionCard,
@@ -9,10 +8,10 @@ import {
   TableSkeleton,
 } from "@/components/dashboard/DashboardShared";
 import { Badge } from "@/components/ui/Badge";
-import { Button } from "@/components/ui/Button";
-import { ExternalLink, UserPlus, Trash2 } from "lucide-react";
+import { ExternalLink } from "lucide-react";
 import { getCompanyDashboardData } from "@/app/actions/company.actions";
 import { DeleteEmployeeButton } from "./DeleteEmployeeButton";
+import { InviteButton } from "./InviteButton";
 
 export default function EmployeesPage() {
   return (
@@ -21,16 +20,7 @@ export default function EmployeesPage() {
         eyebrow="Team"
         title="Employees"
         subtitle="Manage your team's cards and access."
-        action={
-          // TODO Phase 12: wire to invite flow (invitations.actions.ts)
-          <Button
-            variant="primary"
-            size="sm"
-            leftIcon={<UserPlus className="h-3.5 w-3.5" />}
-          >
-            Invite employee
-          </Button>
-        }
+        action={<InviteButton />}
       />
       <Suspense fallback={<TableSkeleton rows={5} />}>
         <EmployeesContent />
