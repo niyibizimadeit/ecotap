@@ -15,7 +15,7 @@ export type UserRole =
 export type UserStatus      = "pending" | "active" | "suspended";
 export type OrderStatus     = "pending" | "approved" | "shipped" | "delivered";
 export type BillingCycle    = "monthly" | "annual";
-export type SubscriptionStatus = "active" | "inactive" | "cancelled";
+export type SubscriptionStatus = "active" | "inactive" | "cancelled" | "pending_approval";
 export type InvitationStatus   = "pending" | "accepted" | "expired";
 
 export type DeviceType = "mobile" | "tablet" | "desktop" | "unknown";
@@ -333,15 +333,19 @@ export interface BillingPlan {
 }
 
 export interface CompanySubscription {
-  id:                string;
-  company_id:        string;
-  plan_id:           string;
-  status:            SubscriptionStatus;
-  started_at:        string;       // Tenure start — for churn prediction
-  employee_count:    number;
-  next_billing_date: string | null;
-  created_at:        string;
-  updated_at:        string;
+  id:                     string;
+  company_id:             string;
+  plan_id:                string;
+  status:                 SubscriptionStatus;
+  started_at:             string;       // Tenure start — for churn prediction
+  employee_count:         number;
+  next_billing_date:      string | null;
+  payment_status:         string;       // 'unpaid' | 'paid' | 'verified'
+  payment_screenshot_url: string | null;
+  payment_amount:         number | null;
+  payment_currency:       string;       // 'USD' | 'RWF'
+  created_at:             string;
+  updated_at:             string;
 }
 
 /** Notification log — tracks what was sent, to whom, and via which channel */

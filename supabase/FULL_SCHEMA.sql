@@ -73,7 +73,8 @@ create type billing_cycle as enum (
 create type subscription_status as enum (
   'active',
   'inactive',
-  'cancelled'
+  'cancelled',
+  'pending_approval'
 );
 
 -- Invite link lifecycle
@@ -591,17 +592,28 @@ comment on column billing_plans.price_per_employee is 'Price per employee per bi
 -- company_subscriptions
 -- Which plan a company is on and their current employee count.
 -- employee_count drives billing calculations.
+-- Subscriptions are created by company admins through the subscription flow
+-- (with payment proof upload) and must be approved by a super admin.
 -- ----------------------------------------------------------
 create table company_subscriptions (
-  id                uuid                not null primary key default uuid_generate_v4(),
-  company_id        uuid                not null unique references companies(id) on delete cascade,
-  plan_id           uuid                not null references billing_plans(id) on delete restrict,
-  status            subscription_status not null default 'active',
-  started_at        timestamptz         not null default now(),  -- Tenure start — critical for churn modeling
-  employee_count    int                 not null default 0 check (employee_count >= 0),
-  next_billing_date date,
-  created_at        timestamptz         not null default now(),
-  updated_at        timestamptz         not null default now()
+  id                     uuid                not null primary key default uuid_generate_v4(),
+  company_id             uuid                not null unique references companies(id) on delete cascade,
+  plan_id                uuid                not null references billing_plans(id) on delete restrict,
+  status                 subscription_status not null default 'pending_approval',
+  started_at             timestamptz         not null default now(),  -- Tenure start — critical for churn modeling
+  employee_count         int                 not null default 0 check (employee_count >= 0),
+  next_billing_date      date,
+
+  -- Payment tracking (mirrors card_orders payment flow)
+  payment_status         text                not null default 'unpaid',
+  payment_screenshot_url text,
+  payment_amount         integer,
+  payment_currency       text                not null default 'RWF',
+
+  created_at             timestamptz         not null default now(),
+  updated_at             timestamptz         not null default now(),
+
+  constraint chk_subscription_payment_status check (payment_status in ('unpaid', 'paid', 'verified'))
 );
 
 comment on table  company_subscriptions              is 'One subscription per company. employee_count drives billing.';
@@ -972,12 +984,10 @@ begin
       values (new.id, _company_id, true)
       on conflict (profile_id, company_id) do nothing;
 
-      -- Create default subscription (monthly standard plan)
-      insert into company_subscriptions (company_id, plan_id, status)
-      select _company_id, id, 'active'
-      from billing_plans
-      where name = 'Monthly Standard' and is_active = true
-      limit 1;
+      -- NOTE: Subscription is NO LONGER auto-created here.
+      -- The company admin must explicitly subscribe through the
+      -- subscription flow at /dashboard/company/subscription/new
+      -- with payment proof upload and admin verification.
     end if;
   end if;
   return new;

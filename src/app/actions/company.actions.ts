@@ -37,6 +37,10 @@ export interface CompanyDashboardData {
     employee_count: number;
     next_billing_date: string | null;
     started_at: string;
+    payment_status: string;
+    payment_screenshot_url: string | null;
+    payment_amount: number | null;
+    payment_currency: string;
     plan: {
       name: string;
       price_per_employee: number;
@@ -106,7 +110,7 @@ const _getCompanyDashboardData = cache(async (
         .from("company_subscriptions")
         .select("*, plan:billing_plans(*)")
         .eq("company_id", companyId)
-        .eq("status", "active")
+        .in("status", ["active", "pending_approval"])
         .maybeSingle(),
     ]);
 
@@ -164,6 +168,10 @@ const _getCompanyDashboardData = cache(async (
         employee_count: sub.employee_count ?? 0,
         next_billing_date: sub.next_billing_date ?? null,
         started_at: sub.started_at,
+        payment_status: (sub as Record<string, unknown>).payment_status as string ?? "unpaid",
+        payment_screenshot_url: (sub as Record<string, unknown>).payment_screenshot_url as string ?? null,
+        payment_amount: (sub as Record<string, unknown>).payment_amount as number ?? null,
+        payment_currency: (sub as Record<string, unknown>).payment_currency as string ?? "RWF",
         plan: plan
           ? {
               name: plan.name,

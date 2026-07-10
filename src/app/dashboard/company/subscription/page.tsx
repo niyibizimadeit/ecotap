@@ -1,9 +1,11 @@
 // src/app/dashboard/company/subscription/page.tsx
 
 import { Suspense } from "react";
+import Link from "next/link";
 import { PageHeader, SectionCard, EmptyState } from "@/components/dashboard/DashboardShared";
 import { Badge } from "@/components/ui/Badge";
-import { Users, Calendar, Mail } from "lucide-react";
+import { Button } from "@/components/ui/Button";
+import { Users, Calendar, Mail, CreditCard, ArrowRight, Clock, Image as ImageIcon } from "lucide-react";
 import { getCompanyDashboardData } from "@/app/actions/company.actions";
 
 export default function SubscriptionPage() {
@@ -13,6 +15,13 @@ export default function SubscriptionPage() {
         eyebrow="Billing"
         title="Subscription"
         subtitle="Your current plan and usage."
+        action={
+          <Link href="/dashboard/company/subscription/new">
+            <Button variant="primary" size="sm" leftIcon={<CreditCard className="h-3.5 w-3.5" />}>
+              Subscribe now
+            </Button>
+          </Link>
+        }
       />
       <Suspense
         fallback={
@@ -46,18 +55,42 @@ async function SubscriptionContent() {
 
   if (!subscription) {
     return (
-      <EmptyState
-        icon="💳"
-        title="No active subscription"
-        description="Contact EcoTap to set up a billing plan for your company."
-      />
+      <div className="max-w-2xl">
+        <EmptyState
+          icon="💳"
+          title="No active subscription"
+          description="Subscribe to a plan to unlock employee management, card ordering, and more."
+        />
+        <div className="flex justify-center mt-4">
+          <Link href="/dashboard/company/subscription/new">
+            <Button variant="primary" size="md" rightIcon={<ArrowRight className="h-4 w-4" />}>
+              Choose a plan
+            </Button>
+          </Link>
+        </div>
+      </div>
     );
   }
 
   const { plan } = subscription;
+  const isPending = subscription.status === "pending_approval";
+  const paymentStatus = (subscription as Record<string, unknown>).payment_status as string ?? "unpaid";
 
   return (
     <div className="space-y-6 max-w-2xl">
+      {/* Pending approval banner */}
+      {isPending && (
+        <div className="rounded-2xl border p-4 flex items-center gap-3" style={{ backgroundColor: "#FEF3C7", borderColor: "rgba(146,64,14,0.15)" }}>
+          <Clock className="h-5 w-5 flex-shrink-0" style={{ color: "#92400E" }} />
+          <div>
+            <p className="text-sm font-semibold" style={{ color: "#92400E" }}>Awaiting approval</p>
+            <p className="text-xs" style={{ color: "rgba(146,64,14,0.8)" }}>
+              Your payment screenshot is being reviewed. The EcoTap team will activate your subscription shortly.
+            </p>
+          </div>
+        </div>
+      )}
+
       <SectionCard>
         {/* Plan header */}
         <div className="flex items-center justify-between mb-4">
@@ -71,7 +104,9 @@ async function SubscriptionContent() {
                 : subscription.billing_cycle}
             </p>
           </div>
-          <Badge variant="active">{subscription.status}</Badge>
+          <Badge variant={isPending ? "pending" : "active"}>
+            {isPending ? "pending approval" : subscription.status}
+          </Badge>
         </div>
 
         {/* Stat grid */}
@@ -96,7 +131,7 @@ async function SubscriptionContent() {
                       "en-GB",
                       { day: "numeric", month: "short", year: "numeric" }
                     )
-                  : "—"}
+                  : isPending ? "Starts on approval" : "—"}
               </p>
             </div>
           </div>
@@ -134,19 +169,34 @@ async function SubscriptionContent() {
             </p>
           </div>
         )}
+
+        {/* Payment info */}
+        {subscription.payment_screenshot_url && (
+          <div className="mt-4 rounded-xl border p-3 flex items-center gap-3" style={{ borderColor: "rgba(6,78,59,0.08)" }}>
+            <ImageIcon className="h-4 w-4 text-ink-light flex-shrink-0" />
+            <div>
+              <p className="text-xs text-ink-light">Payment receipt uploaded</p>
+              <p className="text-xs font-medium capitalize" style={{ color: paymentStatus === "verified" ? "#065F46" : paymentStatus === "paid" ? "#1E3A8A" : "#92400E" }}>
+                {paymentStatus}
+              </p>
+            </div>
+          </div>
+        )}
       </SectionCard>
 
       {/* Billing footer note */}
-      <p className="text-xs text-ink-light text-center">
-        To change your plan or cancel, contact{" "}
-        <a
-          href="mailto:billing@ecotap.rw"
-          className="text-emerald-bright hover:underline"
-        >
-          billing@ecotap.rw
-        </a>
-        .
-      </p>
+      {!isPending && (
+        <p className="text-xs text-ink-light text-center">
+          To change your plan or cancel, contact{" "}
+          <a
+            href="mailto:billing@ecotap.rw"
+            className="text-emerald-bright hover:underline"
+          >
+            billing@ecotap.rw
+          </a>
+          .
+        </p>
+      )}
     </div>
   );
 }

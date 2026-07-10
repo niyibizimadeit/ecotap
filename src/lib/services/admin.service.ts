@@ -155,6 +155,7 @@ export interface AdminOverview {
   activeUsers: number;
   totalCompanies: number;
   pendingOrders: number;
+  pendingSubscriptions: number;
 }
 
 export async function getAdminOverview(): Promise<ActionResult<AdminOverview>> {
@@ -167,6 +168,10 @@ export async function getAdminOverview(): Promise<ActionResult<AdminOverview>> {
       companiesRepo.getAllPendingCompanies(),
     ]);
 
+  // Count pending subscriptions
+  const { getPendingSubscriptionsCount } = await import("@/lib/services/subscription.service");
+  const pendingSubscriptions = await getPendingSubscriptionsCount();
+
   // Include company_admin profiles in pending count (same as getPendingQueue)
   const pendingIndividuals = pendingUsers.filter(
     (p) => p.role === "individual" || p.role === "employee" || p.role === "company_admin"
@@ -175,10 +180,11 @@ export async function getAdminOverview(): Promise<ActionResult<AdminOverview>> {
   return {
     success: true,
     data: {
-      pendingApprovals: pendingIndividuals.length + pendingCompanies.length,
-      activeUsers:      activeUsers.length,
-      totalCompanies:   companies.length,
-      pendingOrders:    pendingOrders.length,
+      pendingApprovals:    pendingIndividuals.length + pendingCompanies.length,
+      activeUsers:         activeUsers.length,
+      totalCompanies:      companies.length,
+      pendingOrders:       pendingOrders.length,
+      pendingSubscriptions,
     },
   };
 }
