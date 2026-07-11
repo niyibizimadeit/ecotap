@@ -324,6 +324,24 @@ export async function deleteProfileCascade(profileId: string): Promise<string[]>
     errors.push(`contact_exchanges: ${err instanceof Error ? err.message : String(err)}`);
   }
 
+  // 4b. Delete invitations created by or accepted by this profile.
+  //     invitations.created_by and invitations.accepted_by reference
+  //     profiles(id) WITHOUT ON DELETE CASCADE, so they block the
+  //     auth user deletion if not cleaned up first.
+  try {
+    await supabase.from("invitations").delete().eq("created_by", profileId);
+    await supabase.from("invitations").delete().eq("accepted_by", profileId);
+  } catch (err) {
+    errors.push(`invitations: ${err instanceof Error ? err.message : String(err)}`);
+  }
+
+  // 4c. Clean up notifications sent to this profile.
+  try {
+    await supabase.from("notifications").delete().eq("profile_id", profileId);
+  } catch (err) {
+    errors.push(`notifications: ${err instanceof Error ? err.message : String(err)}`);
+  }
+
   // 5. Delete the auth user — this cascades to profiles (ON DELETE CASCADE),
   //    which cascades to cards, which cascades to card_events, daily_card_stats,
   //    card_scores, card_groups, ab_test_assignments.

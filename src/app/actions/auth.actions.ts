@@ -111,7 +111,7 @@ export async function signUp(formData: FormData): Promise<ActionResult> {
     email,
     password,
     options: {
-      emailRedirectTo: `${process.env.NEXT_PUBLIC_SITE_URL || "https://ecotap.rw"}/pending`,
+      emailRedirectTo: `${process.env.NEXT_PUBLIC_SITE_URL || "https://ecotap.rw"}${role === "employee" ? "/dashboard/employee" : "/pending"}`,
       data: {
         full_name: fullName,
         username:  username,
