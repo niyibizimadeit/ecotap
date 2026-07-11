@@ -77,11 +77,10 @@ export async function createInvite(
     return { success: false, error: "Failed to create invitation." };
   }
 
-  const siteUrl =
-    process.env.NEXT_PUBLIC_SITE_URL ??
-    (process.env.NEXT_PUBLIC_VERCEL_URL
-      ? `https://${process.env.NEXT_PUBLIC_VERCEL_URL}`
-      : "https://ecotap.rw");
+  // Always use the production site URL for invite links.
+  // Preview deployment URLs (NEXT_PUBLIC_VERCEL_URL) have Vercel Auth
+  // enabled and would redirect unauthenticated users to the Vercel login.
+  const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://ecotap.rw";
   const inviteUrl = `${siteUrl}/register?invite=${invitation.token}`;
 
   return {
