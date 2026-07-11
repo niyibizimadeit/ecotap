@@ -77,7 +77,12 @@ export async function createInvite(
     return { success: false, error: "Failed to create invitation." };
   }
 
-  const inviteUrl = `${process.env.NEXT_PUBLIC_SITE_URL}/register?invite=${invitation.token}`;
+  const siteUrl =
+    process.env.NEXT_PUBLIC_SITE_URL ??
+    (process.env.NEXT_PUBLIC_VERCEL_URL
+      ? `https://${process.env.NEXT_PUBLIC_VERCEL_URL}`
+      : "https://ecotap.rw");
+  const inviteUrl = `${siteUrl}/register?invite=${invitation.token}`;
 
   return {
     success: true,

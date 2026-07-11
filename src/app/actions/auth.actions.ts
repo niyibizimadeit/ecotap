@@ -105,7 +105,7 @@ export async function signUp(formData: FormData): Promise<ActionResult> {
     email,
     password,
     options: {
-      emailRedirectTo: `${process.env.NEXT_PUBLIC_SITE_URL}/pending`,
+      emailRedirectTo: `${process.env.NEXT_PUBLIC_SITE_URL ?? (process.env.NEXT_PUBLIC_VERCEL_URL ? `https://${process.env.NEXT_PUBLIC_VERCEL_URL}` : "https://ecotap.rw")}/pending`,
       data: {
         full_name: fullName,
         username:  username,
@@ -180,7 +180,7 @@ export async function signUpOrg(formData: FormData): Promise<ActionResult> {
     email,
     password,
     options: {
-      emailRedirectTo: `${process.env.NEXT_PUBLIC_SITE_URL}/pending`,
+      emailRedirectTo: `${process.env.NEXT_PUBLIC_SITE_URL ?? (process.env.NEXT_PUBLIC_VERCEL_URL ? `https://${process.env.NEXT_PUBLIC_VERCEL_URL}` : "https://ecotap.rw")}/pending`,
       data: {
         full_name:          adminName,
         role:               "company_admin",  // SERVER-HARDCODED to prevent privilege escalation

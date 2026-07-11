@@ -211,7 +211,7 @@ export function ContactsClient({ initialContacts }: Props) {
                         <select
                           value={c.lead_level || "normal"}
                           onChange={(e) => setLeadLevel(c, e.target.value)}
-                          className="px-2 py-1.5 rounded-lg text-xs font-medium border cursor-pointer appearance-none focus:outline-none focus:ring-2 focus:ring-emerald-mid/30 min-h-[32px]"
+                          className="pl-2 pr-6 py-1.5 rounded-lg text-xs font-medium border cursor-pointer appearance-none focus:outline-none focus:ring-2 focus:ring-emerald-mid/30 min-h-[32px]"
                           style={{ backgroundColor: leadCfg.bg, color: leadCfg.color, borderColor: leadCfg.color + "30" }}
                         >
                           {LEAD_LEVELS.map((l) => (
