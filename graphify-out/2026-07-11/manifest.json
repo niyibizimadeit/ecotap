@@ -75,9 +75,9 @@
     "semantic_hash": "de2b1243b061ef824ea195532cce1f0f"
   },
   "src/app/(auth)/register/page.tsx": {
-    "mtime": 1783594380.2690277,
-    "ast_hash": "dfeb31c82cd21c1544955085b587c991",
-    "semantic_hash": "dfeb31c82cd21c1544955085b587c991"
+    "mtime": 1783755073.0893173,
+    "ast_hash": "ecf9471e8c69b1dd94731faa208d6e3b",
+    "semantic_hash": ""
   },
   "src/app/(auth)/reset-password/page.tsx": {
     "mtime": 1782426874.4150236,
@@ -175,19 +175,19 @@
     "semantic_hash": "8e392837569dc9b08271b33d9fa17ab8"
   },
   "src/app/actions/auth.actions.ts": {
-    "mtime": 1783753812.7220793,
-    "ast_hash": "3795dc11eeadc5b45edee859f89104e0",
+    "mtime": 1783755058.9977703,
+    "ast_hash": "bfece8134a298f53ce4355cc9c186083",
     "semantic_hash": ""
   },
   "src/app/actions/cards.actions.ts": {
-    "mtime": 1782446768.2423675,
-    "ast_hash": "28592c03805d5593931904a3de4d05e9",
-    "semantic_hash": "28592c03805d5593931904a3de4d05e9"
+    "mtime": 1783755228.4026678,
+    "ast_hash": "af3e8824e99d92f558fa91ee08574605",
+    "semantic_hash": ""
   },
   "src/app/actions/company.actions.ts": {
-    "mtime": 1783645209.8380432,
-    "ast_hash": "b36c357404eb78d202332d00b2bd44e7",
-    "semantic_hash": "b36c357404eb78d202332d00b2bd44e7"
+    "mtime": 1783755178.4745755,
+    "ast_hash": "70a941e5339fa09fefe70dc1d00bff61",
+    "semantic_hash": ""
   },
   "src/app/actions/contacts.actions.ts": {
     "mtime": 1782426664.508647,
@@ -295,9 +295,9 @@
     "semantic_hash": "a5a9de6da0520f369d425f4891e902e7"
   },
   "src/app/dashboard/company/employees/page.tsx": {
-    "mtime": 1783594423.0263762,
-    "ast_hash": "776d2816cbc7f54d460d57553d76aab6",
-    "semantic_hash": "776d2816cbc7f54d460d57553d76aab6"
+    "mtime": 1783755211.648967,
+    "ast_hash": "fa68a082bf0b2e222291b053809d4a6f",
+    "semantic_hash": ""
   },
   "src/app/dashboard/company/layout.tsx": {
     "mtime": 1783406590.3618321,
@@ -380,9 +380,9 @@
     "semantic_hash": "6388abaae8e92b077413ae5c8b74d3bf"
   },
   "src/app/dashboard/employee/profile/page.tsx": {
-    "mtime": 1782426776.9726794,
-    "ast_hash": "b61b5b6a14c5655b8157e678f5765249",
-    "semantic_hash": "b61b5b6a14c5655b8157e678f5765249"
+    "mtime": 1783755161.149036,
+    "ast_hash": "ad1dd7cbc2458b5fbfd03492050dbb5b",
+    "semantic_hash": ""
   },
   "src/app/dashboard/employee/qr/page.tsx": {
     "mtime": 1781012155.987276,
@@ -400,9 +400,9 @@
     "semantic_hash": "63f6a9064099a0b0e51e9b4a22596059"
   },
   "src/app/layout.tsx": {
-    "mtime": 1780835395.3442943,
-    "ast_hash": "a9757852bcf98ab557a97686fd0165aa",
-    "semantic_hash": "a9757852bcf98ab557a97686fd0165aa"
+    "mtime": 1783754831.0099797,
+    "ast_hash": "aa1dfa4882eac8d86b6a83f8f2968310",
+    "semantic_hash": ""
   },
   "src/components/analytics/PageViewTracker.tsx": {
     "mtime": 1781022509.56524,
@@ -555,8 +555,8 @@
     "semantic_hash": "6dbb2313099fea77cd46ad6db99d7032"
   },
   "src/lib/services/invitations.service.ts": {
-    "mtime": 1783753808.6788843,
-    "ast_hash": "0f273f22d0f1af409aec1e564717d225",
+    "mtime": 1783755092.5304909,
+    "ast_hash": "0909a3bdcc9093c29996b00912bab1a5",
     "semantic_hash": ""
   },
   "src/lib/services/onboarding.service.ts": {
@@ -670,9 +670,9 @@
     "semantic_hash": "47269e8a96252d85bea8e3493edc6395"
   },
   "supabase/FULL_SCHEMA.sql": {
-    "mtime": 1783624438.7832184,
-    "ast_hash": "3f93fca2b3ec323efad460da1057e535",
-    "semantic_hash": "3f93fca2b3ec323efad460da1057e535"
+    "mtime": 1783755002.771059,
+    "ast_hash": "40dd9dd4355ab2dce27e9644718dcf27",
+    "semantic_hash": ""
   },
   "supabase/migrations/011_card_groups.sql": {
     "mtime": 1781765025.303036,
@@ -802,6 +802,16 @@
   "src/app/icon.svg": {
     "mtime": 1781009275.6931381,
     "ast_hash": "3d15b43203a895ce7d34c04876935c4c",
+    "semantic_hash": ""
+  },
+  "src/app/dashboard/company/employees/ToggleEmployeeStatusButton.tsx": {
+    "mtime": 1783755189.1769648,
+    "ast_hash": "b2d7b1915d69348d3796161c3614c34f",
+    "semantic_hash": ""
+  },
+  "supabase/migrations/018_invited_employee_activation.sql": {
+    "mtime": 1783754994.6928978,
+    "ast_hash": "d060c9be69acba123c1cf70281cd6f7f",
     "semantic_hash": ""
   }
 }

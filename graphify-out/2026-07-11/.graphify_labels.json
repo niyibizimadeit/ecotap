@@ -37,8 +37,10 @@
   "35": "companies.repo.ts",
   "36": "EcoTap — Architecture & Coding Conventions",
   "37": "server.ts",
+  "38": "Input.tsx",
   "39": "EcoTap — Fixes & Improvements Plan",
   "40": "seed-demo-users.ts",
+  "41": "page.tsx",
   "42": "layout.tsx",
   "43": "page.tsx",
   "44": "page.tsx",
@@ -52,8 +54,14 @@
   "52": "not-found.tsx",
   "53": "EcoTap — Project TODO",
   "54": "EcoTap (production)",
+  "55": "AuthLayout.tsx",
+  "56": "auth.actions.ts",
   "57": "departments.repo.ts",
   "58": "Demo Accounts",
+  "59": "page.tsx",
   "60": "CLAUDE.md",
-  "61": "fetchOrders"
+  "61": "fetchOrders",
+  "62": "card_orders.repo.ts",
+  "63": "deleteProfileCascade",
+  "64": "VerifyResetForm.tsx"
 }
