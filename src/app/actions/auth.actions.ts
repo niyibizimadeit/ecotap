@@ -45,6 +45,12 @@ export async function signUp(formData: FormData): Promise<ActionResult> {
   const ageStr   = formData.get("age") as string;
   const age      = parseInt(ageStr, 10);
   const termsAccepted = formData.get("terms_accepted") === "true";
+  const inviteToken  = (formData.get("invite_token") as string) || null;
+  // Server-validate role: only 'individual' and 'employee' allowed from this endpoint
+  const requestedRole = (formData.get("role") as string) || "individual";
+  const role = (requestedRole === "employee" || requestedRole === "individual")
+    ? requestedRole
+    : "individual";
 
   if (!email || !password || !fullName || !username || !phone || !ageStr) {
     return { success: false, error: "All fields are required." };
@@ -111,7 +117,8 @@ export async function signUp(formData: FormData): Promise<ActionResult> {
         username:  username,
         phone,
         age,
-        role:      "individual",  // SERVER-HARDCODED to prevent privilege escalation
+        role,       // Server-validated: 'individual' or 'employee' only
+        invite_token: inviteToken,
         terms_accepted: true,
       },
     },
@@ -124,6 +131,19 @@ export async function signUp(formData: FormData): Promise<ActionResult> {
   // Detect duplicate email — Supabase returns empty identities for existing users
   if (data.user?.identities?.length === 0) {
     return { success: false, error: "An account with this email already exists. Please sign in instead." };
+  }
+
+  // If registering via invite, accept the invitation server-side.
+  // This links the new profile to the company and marks the invite as accepted.
+  // Done atomically inside signUp to avoid session-cookie race conditions.
+  if (inviteToken && role === "employee" && data.user) {
+    const { acceptInvite } = await import("@/lib/services/invitations.service");
+    const acceptResult = await acceptInvite(inviteToken, data.user.id);
+    if (!acceptResult.success) {
+      console.error("Failed to accept invitation during signUp:", acceptResult.error);
+      // Non-fatal: registration succeeded, but company link failed.
+      // The profile is still active — admin can re-invite if needed.
+    }
   }
 
   return { success: true };

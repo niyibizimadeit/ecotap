@@ -14,7 +14,7 @@ import { PasswordInput } from "@/components/ui/PasswordInput";
 import { Spinner } from "@/components/ui/Spinner";
 import { individualRegisterSchema, type IndividualRegisterData } from "@/lib/validations/auth";
 import { signUp } from "@/app/actions/auth.actions";
-import { validateInviteTokenAction, acceptInvitationAction } from "@/app/actions/invitations.actions";
+import { validateInviteTokenAction } from "@/app/actions/invitations.actions";
 
 export default function IndividualRegisterPage() {
   return (
@@ -97,9 +97,12 @@ function RegisterForm() {
     formData.append("password", data.password);
     formData.append("full_name", data.full_name);
     formData.append("username", data.username);
-    formData.append("role", "individual");
+    formData.append("role", inviteToken ? "employee" : "individual");
     formData.append("phone", data.phone);
     formData.append("age", String(data.age));
+    if (inviteToken) {
+      formData.append("invite_token", inviteToken);
+    }
     if (data.company_name) {
       formData.append("company_name", data.company_name);
     }
@@ -109,10 +112,8 @@ function RegisterForm() {
     if (!result.success) {
       setServerError(result.error ?? "Registration failed. Please try again.");
     } else {
-      // If registering via invite, accept the invitation
-      if (inviteToken) {
-        await acceptInvitationAction(inviteToken);
-      }
+      // Invitation acceptance now happens server-side inside signUp().
+      // No need to call acceptInvitationAction separately — it's already done.
       router.push(`/verify?email=${encodeURIComponent(data.email)}`);
     }
   }

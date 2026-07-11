@@ -198,12 +198,18 @@ export async function acceptInvite(
       .insert({
         profile_id: profileId,
         company_id: invitation.company_id,
-        is_primary: false,
+        is_primary: true,  // Invited employee's primary (and only) company
       });
 
     if (linkError) {
       return { success: false, error: "Failed to link to company." };
     }
+  } else {
+    // Already linked — ensure it's marked as primary
+    await supabase
+      .from("profile_companies")
+      .update({ is_primary: true })
+      .eq("id", existingLink.id);
   }
 
   // Mark invitation as accepted

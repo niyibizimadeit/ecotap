@@ -64,6 +64,8 @@ export default function ProfilePage() {
   const [saveError, setSaveError] = useState<string | null>(null);
   const [deleting, setDeleting] = useState(false);
   const [confirmDelete, setConfirmDelete] = useState(false);
+  const [isThemeLocked, setIsThemeLocked] = useState(false);
+  const [isEmployee, setIsEmployee] = useState(false);
 
   // Load real data on mount
   useEffect(() => {
@@ -71,6 +73,8 @@ export default function ProfilePage() {
       const result = await getMyCard();
       if (result.success && result.data) {
         const card = result.data;
+        setIsThemeLocked(card.primary_company?.theme_locked ?? false);
+        setIsEmployee(card.profile?.role === "employee");
         setForm({
           full_name:    card.profile?.full_name ?? "",
           job_title:    card.job_title ?? card.primary_job_title ?? "",
@@ -307,7 +311,7 @@ export default function ProfilePage() {
                 <>
                   {/* Company & Job Title */}
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                    <Input label="Company" placeholder="Where you work" value={form.company} onChange={set("company")} hint="Type a company name" />
+                    <Input label="Company" placeholder="Where you work" value={form.company} onChange={set("company")} hint={isEmployee ? "Your company is managed by your admin." : "Type a company name"} disabled={isEmployee} />
                     <Input label="Job title" placeholder="e.g. Software Engineer" value={form.job_title} onChange={set("job_title")} hint="Your role at this company" />
                   </div>
                   <Input label="Department" placeholder="e.g. Engineering, Sales, Operations" value={form.department} onChange={set("department")} hint="Optional — your team or department" />
@@ -446,18 +450,30 @@ export default function ProfilePage() {
           </SectionCard>
 
           {/* Card accent color */}
-          <SectionCard title="Card colour" subtitle="Sets your card's accent colour.">
-            <div className="flex items-center gap-4 flex-wrap">
-              {["#064E3B", "#065F46", "#1e3a5f", "#7c2d12", "#1a1a2e", "#374151"].map(color => (
-                <button key={color} onClick={() => setForm(f => ({ ...f, theme_color: color }))} className="w-10 h-10 rounded-xl border-2 transition-all hover:scale-110"
-                  style={{ backgroundColor: color, borderColor: form.theme_color === color ? "#059669" : "transparent", boxShadow: form.theme_color === color ? "0 0 0 3px rgba(5,150,105,0.25)" : "none" }} />
-              ))}
-              <div className="flex items-center gap-2 ml-1">
-                <input type="color" value={form.theme_color} onChange={e => setForm(f => ({ ...f, theme_color: e.target.value }))} className="w-10 h-10 rounded-xl border border-cream-dark cursor-pointer p-0.5" title="Custom colour" />
-                <span className="text-xs font-mono text-ink-light">{form.theme_color}</span>
+          {isThemeLocked && isEmployee ? (
+            <SectionCard title="Card colour" subtitle="Your company has locked the card colour.">
+              <div className="rounded-xl border p-4 text-center" style={{ borderColor: "rgba(6,78,59,0.15)", backgroundColor: "#FEF9EF" }}>
+                <p className="text-sm text-ink-light">
+                  Your company administrator has locked the card colour to{" "}
+                  <span className="font-mono font-medium text-ink">{form.theme_color}</span>.
+                  Contact your admin to change it.
+                </p>
               </div>
-            </div>
-          </SectionCard>
+            </SectionCard>
+          ) : (
+            <SectionCard title="Card colour" subtitle="Sets your card's accent colour.">
+              <div className="flex items-center gap-4 flex-wrap">
+                {["#064E3B", "#065F46", "#1e3a5f", "#7c2d12", "#1a1a2e", "#374151"].map(color => (
+                  <button key={color} onClick={() => setForm(f => ({ ...f, theme_color: color }))} className="w-10 h-10 rounded-xl border-2 transition-all hover:scale-110"
+                    style={{ backgroundColor: color, borderColor: form.theme_color === color ? "#059669" : "transparent", boxShadow: form.theme_color === color ? "0 0 0 3px rgba(5,150,105,0.25)" : "none" }} />
+                ))}
+                <div className="flex items-center gap-2 ml-1">
+                  <input type="color" value={form.theme_color} onChange={e => setForm(f => ({ ...f, theme_color: e.target.value }))} className="w-10 h-10 rounded-xl border border-cream-dark cursor-pointer p-0.5" title="Custom colour" />
+                  <span className="text-xs font-mono text-ink-light">{form.theme_color}</span>
+                </div>
+              </div>
+            </SectionCard>
+          )}
 
           <Button variant="primary" size="lg" className="w-full" loading={saving} onClick={save} leftIcon={!saving ? <Save className="h-4 w-4" /> : undefined}
             style={saved ? { backgroundColor: "#059669" } : {}}>

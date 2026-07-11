@@ -315,3 +315,113 @@ export async function deleteEmployeeAction(
   revalidatePath("/dashboard/company/employees");
   return { success: true };
 }
+
+// ── Suspend / Activate employee ─────────────────────────────────────────────
+
+/**
+ * Suspend an employee — sets their profile status to "suspended".
+ * Only callable by a company admin whose company the employee belongs to.
+ */
+export async function suspendEmployeeAction(
+  employeeProfileId: string
+): Promise<ActionResult<void>> {
+  const supabase = await getSupabase();
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return { success: false, error: "Not authenticated." };
+
+  const companyId = await resolveCompanyId();
+  if (!companyId) return { success: false, error: "No company linked to your account." };
+
+  // Verify the target employee belongs to the same company
+  const service = getServiceSupabase();
+  const { data: employeeLink } = await service
+    .from("profile_companies")
+    .select("id")
+    .eq("profile_id", employeeProfileId)
+    .eq("company_id", companyId)
+    .single();
+
+  if (!employeeLink) {
+    return { success: false, error: "Employee not found in your company." };
+  }
+
+  // Prevent self-suspend
+  if (employeeProfileId === user.id) {
+    return { success: false, error: "You cannot suspend your own account." };
+  }
+
+  // Verify current status is "active"
+  const { data: targetProfile } = await service
+    .from("profiles")
+    .select("status")
+    .eq("id", employeeProfileId)
+    .single();
+
+  if (!targetProfile || targetProfile.status !== "active") {
+    return { success: false, error: "Employee must be active to suspend." };
+  }
+
+  const { error } = await service
+    .from("profiles")
+    .update({ status: "suspended" })
+    .eq("id", employeeProfileId);
+
+  if (error) return { success: false, error: error.message };
+
+  revalidatePath("/dashboard/company/employees");
+  return { success: true };
+}
+
+/**
+ * Reactivate a suspended employee — sets their profile status back to "active".
+ * Only callable by a company admin whose company the employee belongs to.
+ */
+export async function activateEmployeeAction(
+  employeeProfileId: string
+): Promise<ActionResult<void>> {
+  const supabase = await getSupabase();
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return { success: false, error: "Not authenticated." };
+
+  const companyId = await resolveCompanyId();
+  if (!companyId) return { success: false, error: "No company linked to your account." };
+
+  // Verify the target employee belongs to the same company
+  const service = getServiceSupabase();
+  const { data: employeeLink } = await service
+    .from("profile_companies")
+    .select("id")
+    .eq("profile_id", employeeProfileId)
+    .eq("company_id", companyId)
+    .single();
+
+  if (!employeeLink) {
+    return { success: false, error: "Employee not found in your company." };
+  }
+
+  // Prevent self-activate (edge case)
+  if (employeeProfileId === user.id) {
+    return { success: false, error: "You cannot modify your own account." };
+  }
+
+  // Verify current status is "suspended"
+  const { data: targetProfile } = await service
+    .from("profiles")
+    .select("status")
+    .eq("id", employeeProfileId)
+    .single();
+
+  if (!targetProfile || targetProfile.status !== "suspended") {
+    return { success: false, error: "Employee must be suspended to reactivate." };
+  }
+
+  const { error } = await service
+    .from("profiles")
+    .update({ status: "active" })
+    .eq("id", employeeProfileId);
+
+  if (error) return { success: false, error: error.message };
+
+  revalidatePath("/dashboard/company/employees");
+  return { success: true };
+}

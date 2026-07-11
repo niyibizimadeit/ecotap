@@ -61,6 +61,62 @@ export async function updateMyCard(
 
   const serviceClient = getServiceSupabase();
 
+  // Fetch user role to enforce employee restrictions
+  const { data: profile } = await serviceClient
+    .from("profiles")
+    .select("role")
+    .eq("id", user.id)
+    .single();
+  const isEmployee = profile?.role === "employee";
+
+  // ── Employee company lock ───────────────────────────────────────────────
+  // Employees cannot change their company — they are locked to the one
+  // that invited them.
+  if (isEmployee && data.company?.trim()) {
+    return {
+      success: false,
+      error: "Employees cannot change their company. Contact your company admin.",
+    };
+  }
+
+  // ── Employee theme lock ─────────────────────────────────────────────────
+  // If the employee's primary company has theme_locked = true, reject any
+  // attempt to change the card accent colour.
+  if (isEmployee && data.theme_color) {
+    // Fetch the primary company's theme_locked flag
+    const { data: pcLink } = await serviceClient
+      .from("profile_companies")
+      .select("company_id")
+      .eq("profile_id", user.id)
+      .eq("is_primary", true)
+      .maybeSingle();
+
+    if (pcLink?.company_id) {
+      const { data: company } = await serviceClient
+        .from("companies")
+        .select("theme_locked, brand_color")
+        .eq("id", pcLink.company_id)
+        .single();
+
+      if (company?.theme_locked) {
+        // Fetch current theme to see if it's actually changing
+        const { data: currentCard } = await serviceClient
+          .from("cards")
+          .select("theme_color")
+          .eq("profile_id", user.id)
+          .single();
+
+        if (currentCard && data.theme_color !== currentCard.theme_color) {
+          return {
+            success: false,
+            error:
+              "Your company has locked the card colour. Contact your admin to change it.",
+          };
+        }
+      }
+    }
+  }
+
   // 1. Update profile full_name if provided
   if (data.full_name?.trim()) {
     await serviceClient

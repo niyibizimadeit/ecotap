@@ -11,6 +11,7 @@ import { Badge } from "@/components/ui/Badge";
 import { ExternalLink } from "lucide-react";
 import { getCompanyDashboardData } from "@/app/actions/company.actions";
 import { DeleteEmployeeButton } from "./DeleteEmployeeButton";
+import { ToggleEmployeeStatusButton } from "./ToggleEmployeeStatusButton";
 import { InviteButton } from "./InviteButton";
 
 export default function EmployeesPage() {
@@ -67,12 +68,12 @@ async function EmployeesContent() {
               style={{ borderColor: "rgba(6,78,59,0.08)" }}
             >
               {[
-                { label: "Name",   className: "px-4 py-3" },
-                { label: "Email",  className: "px-4 py-3 hidden sm:table-cell" },
-                { label: "Status", className: "px-4 py-3" },
-                { label: "Joined", className: "px-4 py-3 hidden md:table-cell" },
-                { label: "Card",   className: "px-4 py-3 text-right" },
-                { label: "",       className: "px-4 py-3 w-10" },
+                { label: "Name",    className: "px-4 py-3" },
+                { label: "Email",   className: "px-4 py-3 hidden sm:table-cell" },
+                { label: "Status",  className: "px-4 py-3" },
+                { label: "Joined",  className: "px-4 py-3 hidden md:table-cell" },
+                { label: "Card",    className: "px-4 py-3 text-right" },
+                { label: "Actions", className: "px-4 py-3 text-right" },
               ].map(({ label, className }) => (
                 <th
                   key={label}
@@ -139,12 +140,19 @@ async function EmployeesContent() {
                   </a>
                 </td>
 
-                {/* Delete */}
+                {/* Actions: Suspend/Activate + Delete */}
                 <td className="px-2 py-3">
-                  <DeleteEmployeeButton
-                    employeeId={emp.id}
-                    employeeName={emp.name}
-                  />
+                  <div className="flex items-center justify-end gap-1">
+                    <ToggleEmployeeStatusButton
+                      employeeId={emp.id}
+                      employeeName={emp.name}
+                      currentStatus={emp.status}
+                    />
+                    <DeleteEmployeeButton
+                      employeeId={emp.id}
+                      employeeName={emp.name}
+                    />
+                  </div>
                 </td>
               </tr>
             ))}
