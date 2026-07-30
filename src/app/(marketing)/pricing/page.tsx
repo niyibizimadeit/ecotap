@@ -43,7 +43,7 @@ export default function PricingPage() {
               desc: "Premium NFC business card for professionals, freelancers, and consultants.",
               features: [
                 "1× Premium Recycled PVC Smart Card",
-                "NTAG213 NFC chip (100,000+ taps)",
+                "Radio Frequency Enabled Chip",
                 "Laser-engraved EcoTap professional branding",
                 "Personal Executive Dashboard",
                 "Dynamic live web profile with social links",

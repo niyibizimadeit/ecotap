@@ -2,11 +2,13 @@
   "0": "cn",
   "1": "page.tsx",
   "2": "getSupabase",
+  "3": "PublicCardLayout.tsx",
   "4": "page.tsx",
   "5": "dependencies",
   "6": "admin.service.ts",
   "7": "page.tsx",
   "8": "uploads.actions.ts",
+  "9": "CardPreview.tsx",
   "10": "getServiceSupabase",
   "11": "admin.actions.ts",
   "12": "Button.tsx",
@@ -51,6 +53,5 @@
   "60": "CLAUDE.md",
   "61": "fetchOrders",
   "62": "card_orders.repo.ts",
-  "63": "deleteProfileCascade",
   "64": "VerifyResetForm.tsx"
 }
