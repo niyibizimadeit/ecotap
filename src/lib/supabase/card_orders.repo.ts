@@ -8,15 +8,33 @@ import type { CardOrder, CardOrderWithDesign, OrderStatus } from "@/types";
 // ── Reads ────────────────────────────────────────────────────────────────────
 
 export async function getOrdersByProfileId(
-  profileId: string
-): Promise<CardOrder[]> {
+  profileId: string,
+  page = 1,
+  pageSize = 10
+): Promise<{ orders: CardOrderWithDesign[]; total: number; page: number; totalPages: number }> {
   const supabase = await getSupabase();
-  const { data } = await supabase
+  const offset = (page - 1) * pageSize;
+
+  const query = supabase
     .from("card_orders")
-    .select("*")
+    .select(
+      `*,
+      design:card_designs!card_orders_design_id_fkey (*)`,
+      { count: "exact" }
+    )
     .eq("profile_id", profileId)
-    .order("created_at", { ascending: false });
-  return data ?? [];
+    .order("created_at", { ascending: false })
+    .range(offset, offset + pageSize - 1);
+
+  const { data, count } = await query;
+  const total = count ?? 0;
+
+  return {
+    orders: (data ?? []) as CardOrderWithDesign[],
+    total,
+    page,
+    totalPages: Math.max(1, Math.ceil(total / pageSize)),
+  };
 }
 
 export async function getAllOrders(filters?: {

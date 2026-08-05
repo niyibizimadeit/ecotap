@@ -108,10 +108,12 @@ export async function markDelivered(
 // ── Reads ────────────────────────────────────────────────────────────────────
 
 export async function getUserOrders(
-  profileId: string
-): Promise<ActionResult<CardOrder[]>> {
-  const orders = await ordersRepo.getOrdersByProfileId(profileId);
-  return { success: true, data: orders };
+  profileId: string,
+  page = 1,
+  pageSize = 10
+): Promise<ActionResult<{ orders: CardOrderWithDesign[]; total: number; page: number; totalPages: number }>> {
+  const result = await ordersRepo.getOrdersByProfileId(profileId, page, pageSize);
+  return { success: true, data: result };
 }
 
 export async function getAllOrders(

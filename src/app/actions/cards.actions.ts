@@ -141,11 +141,23 @@ export async function updateMyCard(
   // 3. Update existing profile_companies job_title for ALL linked companies
   //    This ensures job title changes reflect on the public card even when
   //    the user only edits their job title without touching the company field.
+  //    EXCEPTION: employees cannot overwrite the job_title their company admin assigned
+  //    on their primary company link — only update non-primary links.
   if (data.job_title !== undefined) {
-    await serviceClient
-      .from("profile_companies")
-      .update({ job_title: data.job_title || null })
-      .eq("profile_id", user.id);
+    if (isEmployee) {
+      // Only update non-primary profile_companies rows; preserve the admin-assigned
+      // job_title on the primary company link.
+      await serviceClient
+        .from("profile_companies")
+        .update({ job_title: data.job_title || null })
+        .eq("profile_id", user.id)
+        .eq("is_primary", false);
+    } else {
+      await serviceClient
+        .from("profile_companies")
+        .update({ job_title: data.job_title || null })
+        .eq("profile_id", user.id);
+    }
   }
 
   // 4. Handle company association if provided

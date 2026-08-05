@@ -2,7 +2,7 @@
 
 import { Suspense } from "react";
 import Link from "next/link";
-import { Users, CreditCard, ArrowRight, UserPlus, Palette } from "lucide-react";
+import { Users, CreditCard, ArrowRight, UserPlus, Palette, Clock, Building2 } from "lucide-react";
 import {
   StatCard,
   PageHeader,
@@ -113,7 +113,7 @@ async function CompanyOverviewContent() {
   if (!result.success) {
     return (
       <EmptyState
-        icon="🏢"
+        icon={<Building2 className="h-8 w-8 text-ink-light mx-auto" />}
         title="No company linked"
         description="Your account is not linked to a company yet."
       />
@@ -127,16 +127,16 @@ async function CompanyOverviewContent() {
       {/* Stats row */}
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mt-2 mb-6">
         <StatCard
-          label="Active cards"
+          label="Active employees"
           value={stats.active}
-          sub="Employees with live cards"
+          sub="Team members with live cards"
           icon={<Users className="h-5 w-5" />}
         />
         <StatCard
           label="Pending"
           value={stats.pending}
           sub="Awaiting activation"
-          icon={<ClockIcon />}
+          icon={<Clock className="h-5 w-5" />}
           accent="#D97706"
         />
         <StatCard
@@ -186,7 +186,13 @@ async function CompanyOverviewContent() {
             className="divide-y"
             style={{ borderColor: "rgba(6,78,59,0.06)" }}
           >
-            {employees.slice(0, 5).map((emp) => (
+            {employees
+              .sort((a, b) => {
+                const order = { active: 0, pending: 1, suspended: 2 };
+                return (order[a.status] ?? 3) - (order[b.status] ?? 3);
+              })
+              .slice(0, 5)
+              .map((emp) => (
               <div
                 key={emp.id}
                 className="px-6 py-3.5 flex items-center gap-3"
@@ -213,20 +219,5 @@ async function CompanyOverviewContent() {
         )}
       </div>
     </>
-  );
-}
-
-function ClockIcon() {
-  return (
-    <svg
-      className="h-5 w-5"
-      fill="none"
-      viewBox="0 0 24 24"
-      stroke="currentColor"
-      strokeWidth="2"
-    >
-      <circle cx="12" cy="12" r="10" />
-      <path d="M12 6v6l4 2" />
-    </svg>
   );
 }

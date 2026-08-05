@@ -4,7 +4,7 @@ import { Badge } from "@/components/ui/Badge";
 import { Button } from "@/components/ui/Button";
 import { Package, ArrowRight, MapPin, Calendar, ShoppingBag } from "lucide-react";
 import { getMyOrders } from "@/app/actions/orders.actions";
-import type { CardOrder, OrderStatus } from "@/types";
+import type { CardOrderWithDesign, OrderStatus } from "@/types";
 
 const STATUS_BADGE: Record<OrderStatus, "delivered" | "shipped" | "approved" | "pending"> = {
   delivered: "delivered",
@@ -19,7 +19,8 @@ const STATUS_STEP: Record<OrderStatus, number> = {
 
 export default async function OrdersPage() {
   const result = await getMyOrders();
-  const orders = (result.success ? result.data : []) ?? [];
+  const paginated = result.success ? result.data : null;
+  const orders = paginated?.orders ?? [];
 
   return (
     <div>
@@ -61,7 +62,7 @@ export default async function OrdersPage() {
       {/* Order history */}
       <SectionCard
         title="Order history"
-        subtitle={`${orders.length} orders placed`}
+        subtitle={`${paginated?.total ?? orders.length} orders placed`}
       >
         {orders.length === 0 ? (
           <EmptyState
@@ -82,7 +83,7 @@ export default async function OrdersPage() {
 }
 
 /* ── Order card sub-component ── */
-function OrderCard({ order }: { order: CardOrder }) {
+function OrderCard({ order }: { order: CardOrderWithDesign }) {
   const status = order.status as OrderStatus;
   const shippingAddr = order.shipping_address as unknown as Record<string, string>;
   const address = shippingAddr ? `${shippingAddr.street ?? ""}, ${shippingAddr.city ?? ""}` : "—";
@@ -116,7 +117,7 @@ function OrderCard({ order }: { order: CardOrder }) {
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-4">
           <div>
             <p className="text-xs text-ink-light mb-1">Design</p>
-            <p className="text-sm font-medium text-ink">{order.design_id.slice(0, 8)}</p>
+            <p className="text-sm font-medium text-ink">{order.design?.name ?? order.design_id.slice(0, 8)}</p>
           </div>
           <div>
             <p className="text-xs text-ink-light mb-1">Quantity</p>

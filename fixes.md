@@ -1,392 +1,302 @@
-# EcoTap — Fixes & Improvements Plan
+# Dashboard Audit — Logic, Backend & UX Flaws
 
-> Generated after a full repository audit on 2026-07-09.
-> Each section describes the problem, the root cause, affected files, and the step-by-step fix.
-
----
-
-## 1. Super Admin — Mobile Scrolling When a User is Clicked
-
-### Problem
-When the super admin taps a user row on mobile, the detail modal opens but the content overflows the viewport and cannot be scrolled. The page behind the modal also cannot be scrolled (by design), leaving the admin stuck.
-
-### Root Cause
-Two issues compound:
-
-1. **Modal component** (`src/components/ui/Modal.tsx:45-57`) — The modal panel uses `items-center justify-center` on the overlay which vertically centers the panel, but there is no `overflow-y-auto` or `max-h` constraint on the panel content. On a small mobile screen, the User Detail modal (which has ~500+ lines of content: profile, card, companies, orders, actions) extends past the bottom and is unreachable.
-
-2. **Admin layout** (`src/app/dashboard/admin/layout.tsx:180-183`) — The main content area does not use `overflow-y-auto` or a scrollable container at the page level. Combined with the modal's `body.style.overflow = "hidden"`, there is no scroll surface at all.
-
-### Affected Files
-| File | What needs to change |
-|---|---|
-| `src/components/ui/Modal.tsx` | Add `overflow-y-auto max-h-[90dvh]` to the panel content div |
-| `src/app/dashboard/admin/layout.tsx` | Ensure the main area uses `overflow-y-auto` with a height constraint |
-| `src/app/dashboard/admin/users/page.tsx` | The detail modal already uses `size="lg"` — ensure the content sections collapse gracefully on mobile |
-
-### Step-by-Step Fix
-
-**Step 1 — Fix the Modal component** (`src/components/ui/Modal.tsx`):
-- On the panel `<div>` (line 54-59), add `max-h-[90dvh] overflow-y-auto` so the modal itself becomes scrollable when its content overflows.
-- On the content wrapper (line 85), add `overflow-y-auto flex-1 min-h-0` so the body scrolls while the header stays sticky.
-- Add `overscroll-behavior: contain` to prevent the background from scrolling when reaching the modal's scroll boundary.
-
-**Step 2 — Fix the Admin layout** (`src/app/dashboard/admin/layout.tsx`):
-- On the main content div (line 181), ensure `overflow-y-auto` is present and the container uses `min-h-screen` or `h-screen` so it establishes a scroll container.
-
-**Step 3 — Fix mobile drawer behavior** (`src/app/dashboard/admin/layout.tsx`):
-- The mobile nav drawer (line 129) uses `fixed inset-0` but the drawer itself at `absolute top-14 inset-x-0` has no max-height. If nav items grow, they overflow. Add `max-h-[80vh] overflow-y-auto` to the nav drawer.
+> Compiled from a full review of `src/app/dashboard/company/**` and `src/app/dashboard/employee/**`, their server actions, services, and middleware.
 
 ---
 
-## 2. Age Must Be 18 (Not 13)
+## 🔴 Critical (Logic / Backend)
 
-### Problem
-The current minimum age for registration is 13. The requirement is to raise it to 18.
+### 1. Employee overview crashes when no card row exists
+**File:** `src/app/dashboard/employee/OverviewContent.tsx:31-35`
+```ts
+const { data: card } = await supabase
+  .from("cards")
+  .select("id, is_public")
+  .eq("profile_id", profileId)
+  .single();
+```
+Supabase `.single()` throws a PostgREST error (code `PGRST116`) when zero rows match — it does not return `{ data: null }`. New employees whose card hasn't been created yet (e.g., still pending activation) will crash the entire overview page with an unhandled promise rejection.  
+**Fix:** Use `.maybeSingle()` instead, and handle `null` gracefully.
 
-### Root Cause
-The age validation value `13` is hardcoded in three places: the Zod schema, the server action, and the UI hint text.
+### 2. `computeCardScores` engagement score is always 100 (math bug)
+**File:** `src/lib/services/analytics.service.ts:115-124`
+```ts
+const engagementScore = Math.min(100, Math.round(
+  ((viewCount / Math.max(totalEvents, 1)) * 30 +
+   (tapCount / Math.max(totalEvents, 1)) * 25 +
+   (exchangeCount / Math.max(totalEvents, 1)) * 25 +
+   (shareCount / Math.max(totalEvents, 1)) * 20) *
+  3.33
+));
+```
+Since `viewCount + tapCount + exchangeCount + shareCount === totalEvents`, the four ratios always sum to **1.0**. So the inner expression is always `(30+25+25+20) = 100`, multiplied by `3.33 = 333`, clamped to 100. **Every card with ≥1 event scores 100.** The ratio weighting is completely nullified — the score carries no signal.  
+**Fix:** Rewrite the formula to use absolute event counts normalized against a benchmark (e.g., events per day), not against themselves.
 
-### Affected Files
-| File | Line(s) | Current Value | New Value |
-|---|---|---|---|
-| `src/lib/validations/auth.ts` | 31 | `.min(13, ...)` | `.min(18, "You must be at least 18 years old")` |
-| `src/app/actions/auth.actions.ts` | 58 | `age < 13` | `age < 18` |
-| `src/app/actions/auth.actions.ts` | 124 | `age < 13` | `age < 18` |
-| `src/app/(auth)/register/page.tsx` | 115 | `"You must be at least 13 years old"` | `"You must be at least 18 years old"` |
-| `src/app/(auth)/org/register/page.tsx` | 266 | `"You must be at least 13 years old"` | `"You must be at least 18 years old"` |
+### 3. `recordCardEvent` return-visitor detection is broken
+**File:** `src/lib/services/analytics.service.ts:33-43`
+```ts
+const existing = await analyticsRepo.getEventsByCardId(payload.card_id, 1);
+isReturnVisitor = existing.some(e => e.visitor_id === payload.visitor_id);
+```
+Fetches only the **single most recent event** (limit=1) and checks if it matches the current visitor. A returning visitor whose last visit wasn't literally the most recent event is misclassified as new. This makes the `is_return_visitor` column meaningless for any card with >1 unique visitor.  
+**Fix:** Add a dedicated repo function `hasVisitorVisitedBefore(cardId, visitorId)` that queries by visitor_id directly.
 
-### Step-by-Step Fix
-
-1. **Update Zod validation** — In `src/lib/validations/auth.ts`, change the `age` schema's `.min(13, ...)` to `.min(18, "You must be at least 18 years old")` and update `.max(120, ...)` message if desired.
-
-2. **Update server-side validation** — In `src/app/actions/auth.actions.ts`:
-   - Line 58: Change `age < 13` to `age < 18`, update the error message to `"You must be at least 18 years old."`
-   - Line 124: Same change for `signUpOrg`.
-
-3. **Update UI hint text** — In both registration forms:
-   - `src/app/(auth)/register/page.tsx` line 115
-   - `src/app/(auth)/org/register/page.tsx` line 266
-
----
-
-## 3. Username Taken — Show Clear Error
-
-### Problem
-When a user registers with a username that already exists, the error message is generic ("Registration failed. Please try again.") or a raw Supabase error. The user doesn't know the username is the problem.
-
-### Root Cause
-The `signUp` server action calls `supabase.auth.signUp()` which creates both an auth user and triggers the `on_auth_user_created` DB trigger to insert into `profiles`. If the username already exists, the `profiles.username` unique constraint is violated inside the trigger, and Supabase returns a generic error. The server action does not pre-check username uniqueness.
-
-### Affected Files
-| File | What needs to change |
-|---|---|
-| `src/app/actions/auth.actions.ts` | Add a pre-check for username uniqueness before calling `signUp` |
-| `src/app/actions/auth.actions.ts` | Add a pre-check for email existence with clearer messaging |
-| `src/app/(auth)/register/page.tsx` | Already displays `serverError` — no UI change needed, but the error will now be clearer |
-
-### Step-by-Step Fix
-
-**Step 1 — Add username uniqueness pre-check in `signUp`** (`src/app/actions/auth.actions.ts`):
-
-Before the `supabase.auth.signUp()` call (around line 72), add:
-
-```typescript
-// Check if username is already taken
-const serviceClient = getServiceSupabase();
-const { data: existingUsername } = await serviceClient
-  .from("profiles")
-  .select("id")
-  .eq("username", username)
-  .maybeSingle();
-
-if (existingUsername) {
-  return {
-    success: false,
-    error: `The username "@${username}" is already taken. Please choose a different username.`,
-  };
+### 4. Contacts optimistic updates never roll back on failure
+**File:** `src/app/dashboard/employee/contacts/ContactsClient.tsx:33-54`
+```ts
+async function toggleFavorite(c: ContactExchange) {
+  const newVal = !c.is_favorite;
+  setContacts(prev => prev.map(x => (x.id === c.id ? { ...x, is_favorite: newVal } : x)));
+  await updateContactExchange(c.id, { is_favorite: newVal });  // 🔥 no try/catch, no rollback
 }
 ```
+All four mutation functions (`toggleFavorite`, `setLeadLevel`, `saveNotes`, `saveGroup`) optimistically update state but **never catch errors**. If the server call fails, the UI stays optimistically changed while the database is unchanged — a silent data-desync. The page must be refreshed to see the real state.  
+**Fix:** Wrap each `await` in try/catch; revert to the previous value on failure. Show a toast instead of silently swallowing.
 
-**Step 2 — Improve email duplicate detection** (already partially done):
-
-The current code at line 96 checks `data.user?.identities?.length === 0` for duplicate emails. Keep this but also add a pre-check for clarity:
-
-```typescript
-// Check if email is already registered
-const { data: existingEmail } = await serviceClient
-  .from("profiles")
-  .select("id")
-  .eq("email", email)
-  .maybeSingle();
-
-if (existingEmail) {
-  return {
-    success: false,
-    error: "An account with this email already exists. Please sign in instead, or use a different email.",
-  };
+### 5. `updateMyCard` — employees can overwrite admin-assigned job titles
+**File:** `src/app/actions/cards.actions.ts:143-148`
+```ts
+if (data.job_title !== undefined) {
+  await serviceClient
+    .from("profile_companies")
+    .update({ job_title: data.job_title || null })
+    .eq("profile_id", user.id);
 }
 ```
-
-**Step 3 — Apply the same checks to `signUpOrg`** for email uniqueness. (Org registration uses company name, not username, but the email check is still valuable.)
-
-**Step 4 — Handle the specific Supabase error codes** as a fallback:
-
-After the `supabase.auth.signUp()` call, inspect the error for known patterns:
-- If the error message contains "duplicate" or "already exists", return a user-friendly message.
-- The `identities?.length === 0` pattern (already present) should continue to work as a fallback.
+When an employee edits their profile, the new job title is written to **all** their `profile_companies` links, including the one managed by their company admin. There is no guard preventing an employee from overwriting the job title their admin assigned. The company lock only applies to the company name, not the job title.  
+**Fix:** Either prevent employees from editing `job_title` entirely (same as the company lock), or scope the update to only non-primary company links.
 
 ---
 
-## 4. Admin Deletes User — Full Deletion Including Email Reuse
+## 🟠 High (Data Integrity / UX)
 
-### Problem
-When a super admin deletes a user, some data is cleaned up but the Supabase Auth user may not be fully purged. This means:
-- The email cannot be reused to create a new account.
-- The email cannot be used for password recovery (but also shouldn't, since the account should be gone).
-- Orphaned data may remain in related tables.
+### 6. "Active cards" stat actually counts active employee profiles
+**File:** `src/app/dashboard/company/page.tsx:129-133` + `src/app/actions/company.actions.ts:153-158`
+```ts
+active: employees.filter((e) => e.status === "active").length,
+```
+The company dashboard stat is labeled "Active cards" with subtitle "Employees with live cards," but the count is `employees.filter(status === "active").length` — it counts employees whose **profile** is active, not whether they have a published card. An active employee whose card is private or doesn't exist yet is still counted.  
+**Fix:** Either rename to "Active employees" or join against the `cards` table to check `is_public = true`.
 
-### Root Cause
-In `deleteProfileCascade` (`src/lib/services/admin.service.ts:257-343`), the deletion order is:
-1. Delete card
-2. Delete profile_companies links + clean orphaned companies
-3. Delete card_orders
-4. Delete profile_activity
-5. **Delete the profile row** (from `profiles` table)
-6. **Delete the auth user** (via `supabase.auth.admin.deleteUser`)
+### 7. Employee orders list shows raw design UUID instead of design name
+**File:** `src/app/dashboard/employee/orders/page.tsx:119`
+```tsx
+<p className="text-sm font-medium text-ink">{order.design_id.slice(0, 8)}</p>
+```
+The `getMyOrders` action returns `CardOrder[]` which has no joined design data. Users see `a1b2c3d4` instead of, e.g., "Emerald Standard." The admin orders page uses `CardOrderWithDesign` which includes the design name — the employee page should too.  
+**Fix:** Use `getAllOrders` (which returns `CardOrderWithDesign`) or enrich `getUserOrders` with design names.
 
-There are several issues with this approach:
+### 8. `resolveCompanyId` is copy-pasted across 3 action files
+**Files:**
+- `src/app/actions/company.actions.ts:64-84`
+- `src/app/actions/invitations.actions.ts:15-34`
+- `src/app/actions/subscription.actions.ts:15-32`
 
-**Issue A — Race condition / order problem**: Step 5 deletes the profile, which has a foreign key `REFERENCES auth.users(id) ON DELETE CASCADE`. This FK means: "when auth.users row is deleted, cascade-delete profiles." It does NOT cascade the other way. However, if step 5 succeeds but step 6 fails (e.g., Supabase Auth admin API error), the profile is gone but the auth user remains — and the email is still locked in Supabase Auth.
+Three identical ~20-line functions. Any bug fix requires editing all three. Already diverging slightly (error handling differs).  
+**Fix:** Extract to a shared helper in `@/lib/utils/server` or `@/lib/services`.
 
-**Issue B — Missing cleanup**: The `contact_exchanges` table references `cards(id) ON DELETE CASCADE`, and `cards` references `profiles(id) ON DELETE CASCADE`. So when the profile is deleted, cards cascade, which cascades to contact_exchanges. BUT: if step 1 already deleted the card explicitly, and step 5 deletes the profile... the cascade from profile→cards→contact_exchanges won't fire because the card is already gone. However, `card_events` also references `cards(id) ON DELETE CASCADE` — and if the card was already deleted in step 1, card_events should have been cascade-deleted. Actually wait — step 1 uses `deleteCardService` which deletes from `cards` table. The `ON DELETE CASCADE` on `card_events.card_id → cards.id` should have handled that. Let me verify... looking at the schema: `card_events.card_id uuid not null references cards(id) on delete cascade` — yes, this should cascade. So card_events are cleaned up.
+### 9. Subscription payment amount is per-employee price, not total
+**File:** `src/app/dashboard/company/subscription/new/page.tsx:112`
+```ts
+formData.append("payment_amount", String(selectedPlan.price_per_employee));
+```
+The subscription flow doesn't ask for employee count — it submits the **per-employee** rate as the payment amount. The actual billing amount should be `price_per_employee × employee_count`, but `employee_count` is never captured during subscription.  
+**Fix:** Add an employee count field to the subscription form, or default to 1 and make it editable before submit.
 
-But what about `daily_card_stats`? Same cascade: `card_id uuid not null references cards(id) on delete cascade`. Should be fine.
+### 10. Payment screenshots from subscription flow are uploaded to `orders/pending` path
+**File:** `src/app/actions/uploads.actions.ts:140`
+```ts
+const result = await uploadToR2(buffer, file!.name, file!.type, "orders/pending");
+```
+The `uploadPaymentScreenshot` action hardcodes `"orders/pending"` as the R2 prefix. When called from the subscription payment flow, company subscription screenshots are incorrectly stored under the orders directory.  
+**Fix:** Accept an optional `folder` parameter or create a separate `uploadSubscriptionScreenshot` action.
 
-**Issue C — The REAL problem**: Supabase Auth's `admin.deleteUser()` should fully delete the user. But there's a subtlety: when the profiles row is already deleted (step 5), and then step 6 tries to delete the auth user, the cascade from `auth.users → profiles` tries to delete an already-deleted profiles row. This shouldn't fail... unless there's some referential integrity check.
-
-Actually, looking at the schema more carefully: `profiles.id uuid primary key references auth.users(id) on delete cascade` — this means `profiles.id` IS the FK referencing `auth.users.id`. So when we try to delete from `auth.users`, it cascades to `profiles`. But if `profiles` row is ALREADY deleted, there's nothing to cascade to. The `auth.users` delete should still succeed because the FK is on the child side (profiles).
-
-So why would the email not be reusable? The likely answer: **Supabase Auth soft-deletes users by default**, or the `admin.deleteUser` call is failing silently.
-
-### Affected Files
-| File | What needs to change |
-|---|---|
-| `src/lib/services/admin.service.ts` | Reorder `deleteProfileCascade` to delete auth user first (after removing restrict-FK data) |
-| `src/lib/supabase/profiles.repo.ts` | Ensure `deleteProfileService` is robust |
-| `src/app/actions/admin.actions.ts` | Add verification that deletion actually happened |
-
-### Step-by-Step Fix
-
-**Step 1 — Reorder `deleteProfileCascade` for reliability** (`src/lib/services/admin.service.ts`):
-
-The safest order is:
-1. Delete `card_orders` first (they have `ON DELETE RESTRICT` on `profiles`, which would block profile/auth deletion).
-2. Delete `profile_companies` links (track linked company IDs for orphan cleanup).
-3. Delete `profile_activity`.
-4. **Delete the auth user** via `supabase.auth.admin.deleteUser(profileId)` — this cascades to `profiles`, which cascades to `cards`, which cascades to `card_events`, `contact_exchanges`, `daily_card_stats`, `card_scores`, `card_groups`.
-5. Clean up orphaned companies (those with no remaining profile_companies links).
-6. Verify the auth user is truly gone by attempting a lookup.
-
-This order ensures:
-- The auth user is deleted while the profile still exists (no "profile already deleted" edge case).
-- The cascade handles all the card-related cleanup automatically.
-- If the auth deletion fails, the profile is still intact and the operation can be retried.
-
-**Step 2 — Add verification after deletion**:
-
-After step 4 (auth user deletion), add:
-```typescript
-// Verify the auth user is truly deleted
-const { data: verifyUser, error: verifyError } = await supabase.auth.admin.getUserById(profileId);
-if (!verifyError && verifyUser?.user) {
-  // User still exists — try once more with hard delete
-  await supabase.auth.admin.deleteUser(profileId, { shouldSoftDelete: false });
+### 11. Company settings doesn't check slug uniqueness
+**File:** `src/app/actions/company.actions.ts:241-243`
+```ts
+if (!/^[a-z0-9][a-z0-9\-]{1,48}[a-z0-9]$/.test(input.slug)) {
+  return { success: false, error: "INVALID_SLUG_FORMAT" };
 }
 ```
+Only validates format — never checks if another company already uses this slug. Two companies with the same slug would cause public page collisions at `ecotap.rw/{slug}`.  
+**Fix:** Add a uniqueness check against the `companies` table before updating.
 
-**Step 3 — Add explicit contact_exchanges cleanup** (belt-and-suspenders):
+### 12. Subscription page "Subscribe now" button always visible
+**File:** `src/app/dashboard/company/subscription/page.tsx:18-24`
+```tsx
+action={
+  <Link href="/dashboard/company/subscription/new">
+    <Button variant="primary" size="sm" ...>Subscribe now</Button>
+  </Link>
+}
+```
+The PageHeader action is **unconditional** — it renders "Subscribe now" even when the user is already viewing their active subscription details. This is confusing: "Am I subscribed or not?"  
+**Fix:** Make the button conditional — hide it or change to "Change plan" when an active subscription exists.
 
-Even though the cascade should handle it, add an explicit step to delete `contact_exchanges` for the user's card(s) before the cascade, to handle any edge cases where the cascade misses something.
+### 13. Subscription "Estimated monthly cost" label is wrong for annual plans
+**File:** `src/app/dashboard/company/subscription/page.tsx:159`
+```tsx
+<p className="text-xs text-ink-light mb-1">Estimated monthly cost</p>
+```
+Always says "monthly" regardless of the plan's `billing_cycle`. For annual plans, the displayed amount (employee_count × price_per_employee) should be labeled "Estimated annual cost" or the math should divide by 12.  
+**Fix:** Make the label dynamic based on `subscription.billing_cycle` or `plan.billing_cycle`.
 
-**Step 4 — Update `deleteEmployeeAction` in `company.actions.ts`**:
+### 14. No order pagination — fetches all orders unconditionally
+**File:** `src/app/dashboard/employee/orders/page.tsx:21`
+```ts
+const result = await getMyOrders();
+```
+Fetches every order for the user with no limit or pagination. For power users who order frequently, this grows unboundedly and the page renders everything in a single list.  
+**Fix:** Add server-side pagination to `getUserOrders` / `getMyOrders`.
 
-The same `deleteProfileCascade` function is used when a company admin deletes an employee. Ensure it also benefits from the improved reliability.
+### 15. `deleteEmployeeAction` uses inline dynamic imports unnecessarily
+**File:** `src/app/actions/company.actions.ts:292,308`
+```ts
+const { data: employeeLink } = await (await import("@/lib/supabase/server")).getServiceSupabase()...
+const { deleteProfileCascade } = await import("@/lib/services/admin.service");
+```
+Two separate dynamic `await import()` calls inside the same function. Both modules are already available — the top of the file imports `getServiceSupabase`. The dynamic imports add latency and make the code harder to follow.  
+**Fix:** Import both at the top of the file like all other dependencies.
 
 ---
 
-## 5. Contacts Shared — Mobile UI Improvements
+## 🟡 Medium (UX / Consistency)
 
-### Problem
-On mobile, the contacts shared page (employee dashboard → Contacts) is hard to use:
-- Contact email and phone are hidden (only visible on `md:` breakpoint and above).
-- The contact cards feel cramped with too many elements competing for space.
-- Group filter chips are tiny and easily missed.
-- Touch targets (star, expand button) are too small.
-- It's hard to quickly scan and find a specific contact.
-
-### Root Cause
-The `ContactsClient.tsx` component was designed desktop-first. Key contact actions (email, phone, lead level, date) are wrapped in `hidden md:flex` / `hidden md:block`, making them completely invisible on mobile. The mobile layout only shows name, star, and an expand toggle — users must tap into each contact to see details.
-
-### Affected Files
-| File | What needs to change |
-|---|---|
-| `src/app/dashboard/employee/contacts/ContactsClient.tsx` | Redesign the mobile contact card layout |
-
-### Step-by-Step Fix
-
-**Step 1 — Restructure the mobile contact card** (`ContactsClient.tsx`):
-
-Replace the current two-layer approach (main row + mobile-only row) with a cleaner card layout:
-
+### 16. Employee dashboard layout fetches user data client-side (waterfall + flash)
+**File:** `src/app/dashboard/employee/layout.tsx:28-40`
+```tsx
+useEffect(() => {
+  async function load() {
+    const result = await getMyCard();
+    if (result.success && result.data) { setUserData(...); }
+  }
+  load();
+}, []);
 ```
-┌──────────────────────────────────────────┐
-│ ★  [AV]  Ntwali Frankie          [📝]   │
-│           rdmc.rw                        │
-│                                         │
-│  📧 ntwali@example.com                  │
-│  📞 +250 788 123 456                    │
-│                                         │
-│  [Hot ▾]            📅 09 Jul 2026     │
-└──────────────────────────────────────────┘
+The employee layout is a `"use client"` component that fetches user identity in a `useEffect`. This causes:
+- A loading flash where the sidebar shows "—" for name/role.
+- A client-server waterfall: the page renders, then the client fetches, then re-renders.
+
+The **company layout** already uses the correct pattern — a server component that fetches data once and passes it as props.  
+**Fix:** Convert the employee layout to a server component (or wrap it in one) that fetches the user's name/role/username server-side.
+
+### 17. "View my card" link can point to `/you` (404)
+**File:** `src/app/dashboard/employee/layout.tsx:98`
+```tsx
+<a href={`/${userData.username || "you"}`} ...>
 ```
+If the `useEffect` hasn't resolved yet, `userData.username` is `""` (empty string), and the link becomes `/you` — a 404 page. The same pattern repeats in the mobile drawer at line 156.  
+**Fix:** Default to `#` or hide the link until `username` is loaded.
 
-- Show email and phone as tappable links (`mailto:` and `tel:`) on ALL screen sizes.
-- Make the star button larger (min 44×44px touch target).
-- Make the expand/notes button larger.
-- Keep the lead level dropdown and date visible on mobile.
+### 18. Employee actions (suspend/activate/delete) use `alert()` for error feedback
+**Files:**
+- `src/app/dashboard/company/employees/ToggleEmployeeStatusButton.tsx:33`
+- `src/app/dashboard/company/employees/DeleteEmployeeButton.tsx:25`
 
-**Step 2 — Improve touch targets**:
+```ts
+alert(result.error ?? "Failed.");
+```
+Native `alert()` dialogs are a poor UX pattern — they block the page, look unstyled, and can't be dismissed. The rest of the app uses inline error messages (red banners).  
+**Fix:** Use inline error state + a small error message below the button, consistent with the settings and profile pages.
 
-- Star button: `p-2` instead of default, `min-w-[44px] min-h-[44px]`.
-- Expand button: same treatment.
-- Lead level select: `py-2` for easier tapping.
+### 19. Employee overview "Pending" stat uses a custom ClockIcon instead of lucide-react
+**File:** `src/app/dashboard/company/page.tsx:219-231`
+```tsx
+function ClockIcon() { return (<svg ...>...</svg>); }
+```
+A 12-line inline SVG component defined at the bottom of the file. Lucide-react is already a dependency and has `Clock` — the custom SVG is unnecessary and inconsistent.  
+**Fix:** Replace with `import { Clock } from "lucide-react"`.
 
-**Step 3 — Add swipe-to-reveal or quick actions** (nice-to-have):
+### 20. No sign-out confirmation
+**Files:**
+- `src/app/dashboard/company/_components/CompanySidebar.tsx:136`
+- `src/app/dashboard/employee/layout.tsx:106`
 
-If time allows, add horizontal swipe on a contact card to reveal quick actions (call, email, favorite).
+Both sign-out buttons call `signOut()` immediately. Accidental clicks log the user out with no chance to cancel.  
+**Fix:** Add a one-click confirmation step ("Click again to sign out" or a confirm dialog).
 
-**Step 4 — Improve group filter chips**:
+### 21. Company overview employee list has no status filter
+**File:** `src/app/dashboard/company/page.tsx:189`
+```tsx
+{employees.slice(0, 5).map((emp) => (...))}
+```
+Shows the first 5 employees regardless of status. Pending and suspended employees are mixed in with active ones. A company with many pending invites sees those at the top instead of active team members.  
+**Fix:** Sort active employees first, or add a status filter/tab.
 
-- Make them `py-2 px-4` for larger touch targets.
-- Add a scroll container with `overflow-x-auto` and `flex-nowrap` so chips don't wrap and take half the screen.
-- Add a "Clear filter" chip when a filter is active.
+### 22. Employee overview "Card order" stat shows capitalized raw status
+**File:** `src/app/dashboard/employee/OverviewContent.tsx:101`
+```tsx
+value={latestOrder ? (latestOrder.status ?? "None").charAt(0).toUpperCase() + (latestOrder.status ?? "none").slice(1) : "None"}
+```
+Manual string capitalization. If the status is `pending_approval` (for subscriptions), it'll display as `Pending_approval`. There's no mapping to a user-friendly label.  
+**Fix:** Use a lookup map like `ORDER_STATUS_LABELS` from constants.
 
-**Step 5 — Add contact count to stat cards at mobile**:
+### 23. Employee contacts "With email" / "With phone" stats are raw integers without context
+**File:** `src/app/dashboard/employee/contacts/ContactsClient.tsx:87-89`
+```tsx
+const withEmail = contacts.filter((c) => c.visitor_email).length;
+const withPhone = contacts.filter((c) => c.visitor_phone).length;
+```
+These are simple counts. They'd be more useful as percentages or shown alongside the total. Currently they're just raw integers with no context.  
+**Fix:** Add percentage labels or use a format like "12/20 (60%)".
 
-The stat cards are already `grid-cols-2` on mobile, which is fine. Ensure they are tappable as quick filters (tap "Favorites" to filter by favorites, etc.).
+### 24. Order success page timeline is hardcoded and never dynamic
+**File:** `src/app/dashboard/employee/orders/success/page.tsx:61-103`
+The timeline is hardcoded — it always says "within 24 hours" regardless of when the order was actually placed. For USD/bank transfers that require manual coordination, the timeline is misleading.  
+**Fix:** Make the timeline dynamic or at least differentiate between MoMo (faster) and bank transfer (slower) timelines.
+
+### 25. QR code PNG download renders at 512×512 from a 200×200 SVG (blurry)
+**File:** `src/app/dashboard/employee/qr/page.tsx:53-54`
+```ts
+canvas.width = 512;
+canvas.height = 512;
+ctx.drawImage(img, 0, 0, 512, 512);
+```
+The QR code SVG is rendered at 200×200 via `<QRCodeSVG size={200}>`, then upscaled to 512×512 in the canvas. The result is a blurry, upscaled PNG.  
+**Fix:** Either render the QR at 512×512 directly, or use a higher source resolution.
 
 ---
 
-## 6. Organization Dashboard — Invite Employees Button + Backend Logic
+## 🟢 Low (Code Quality / Maintainability)
 
-### Problem
-In the Organization dashboard (Employees page), the "Invite employee" button is rendered but does nothing — it has no `onClick` handler, no link, no modal trigger. The entire invitation system (backend and frontend) is missing.
+### 26. Unused/duplicate import: `getServiceSupabase` in `deleteEmployeeAction`
+**File:** `src/app/actions/company.actions.ts:292`  
+The function dynamically imports `getServiceSupabase` even though it's already imported at the top of the file (line 4). The dynamic import is redundant and adds latency.
 
-### Root Cause
-The button in `src/app/dashboard/company/employees/page.tsx:26-32` has a `// TODO Phase 12: wire to invite flow (invitations.actions.ts)` comment. The `invitations` table exists in the database schema with the correct structure, but:
-- No server action for creating/sending invitations (`invitations.actions.ts` does not exist).
-- No API endpoint or email-sending logic for invitations.
-- No invitation acceptance page (registration-with-token flow).
-- The button itself is just a `<Button>` with no `onClick` or `href`.
+### 27. `EmptyState` icon prop inconsistency — sometimes emoji strings, sometimes JSX
+In `CompanyOverviewContent` the `EmptyState` receives `icon="🏢"` (emoji string), but `EmployeeOverviewContent` passes `icon={<User .../>}` (JSX). Both work but the inconsistency is confusing for contributors.  
+**Fix:** Standardize on one approach — prefer JSX for consistency with the design system.
 
-### Affected Files
-| File | What needs to change |
-|---|---|
-| `src/app/dashboard/company/employees/page.tsx` | Wire the invite button to open a modal or navigate to an invite page |
-| **NEW** `src/app/actions/invitations.actions.ts` | Create server actions for invitation CRUD |
-| **NEW** `src/lib/services/invitations.service.ts` | Business logic for creating, validating, accepting invitations |
-| **NEW** `src/lib/supabase/invitations.repo.ts` | Repository for invitations table queries |
-| `src/app/(auth)/register/page.tsx` | Support `?invite_token=xxx` to pre-fill and link to company |
-| **NEW** `src/app/dashboard/company/employees/InviteModal.tsx` | Modal UI for creating an invitation |
+### 28. Inline styles proliferation
+Nearly every component uses inline `style={{}}` objects mixed with Tailwind classes. This makes it hard to maintain a consistent design system. Brand colors (`#064E3B`, `#FEF9EF`, etc.) are repeated as magic strings in dozens of files instead of referencing CSS variables or Tailwind config tokens.  
+**Fix:** Extend the Tailwind theme with the brand palette and use semantic utility classes (e.g., `bg-emerald-deep`, `text-cream`).
 
-### Step-by-Step Fix
-
-**Step 1 — Create the invitations repository** (`src/lib/supabase/invitations.repo.ts`):
-
-```typescript
-// Functions needed:
-- createInvitation(companyId, createdBy, email?) → Invitation
-- getInvitationByToken(token) → Invitation | null
-- acceptInvitation(token, profileId) → void (update status + accepted_by)
-- getInvitationsByCompany(companyId) → Invitation[]
-- expireInvitation(id) → void
+### 29. Mock designs fallback hides real data issues
+**File:** `src/app/dashboard/employee/orders/new/page.tsx:61`
+```ts
+const [designs, setDesigns] = useState<CardDesignOption[]>(MOCK_DESIGNS);
 ```
+The design gallery initializes with `MOCK_DESIGNS` and only replaces them when the server fetch succeeds. If the fetch fails silently, users see mock designs and can place orders with fake design IDs that don't exist in the database.  
+**Fix:** Initialize with an empty array and show a loading skeleton; only render the gallery when real data is available.
 
-The token is auto-generated by the DB default (`encode(gen_random_bytes(32), 'hex')`), so the insert just needs `company_id`, `created_by`, and optional `email`.
-
-**Step 2 — Create the invitations service** (`src/lib/services/invitations.service.ts`):
-
-Business logic:
-- `createInvite`: Validate that the caller is a company admin, check employee count against subscription limits, create the invitation, return the invite URL.
-- `validateToken`: Check token exists, status is 'pending', not expired. Return the company info for the registration form.
-- `acceptInvite`: Mark invitation as accepted, link the new profile to the company via `profile_companies`.
-- `getCompanyInvites`: List all invitations for a company.
-
-**Step 3 — Create the server actions** (`src/app/actions/invitations.actions.ts`):
-
-```typescript
-export async function createInvitationAction(formData: FormData): Promise<ActionResult>
-export async function validateInviteTokenAction(token: string): Promise<ActionResult>
-export async function acceptInvitationAction(token: string): Promise<ActionResult>
-export async function getCompanyInvitationsAction(): Promise<ActionResult>
-export async function revokeInvitationAction(invitationId: string): Promise<ActionResult>
-```
-
-**Step 4 — Wire the "Invite employee" button** (`src/app/dashboard/company/employees/page.tsx`):
-
-The button should open a modal (`InviteModal`) with:
-- An email input (optional — can also just generate a link).
-- A "Generate invite link" button.
-- Display the generated link with a "Copy" button.
-- Show existing pending invites with expiry times and revoke buttons.
-
-Since the employees page is a Server Component (it uses `async function EmployeesContent()`), the modal needs to be a client component. Add the modal as a client component import.
-
-**Step 5 — Create the InviteModal component** (`src/app/dashboard/company/employees/InviteModal.tsx`):
-
-A client component with:
-- Email input field (optional).
-- "Generate invite link" button that calls `createInvitationAction`.
-- Display the generated invite URL: `https://ecotap.rw/register?invite=<token>`.
-- Copy-to-clipboard button.
-- List of pending invites with expiry countdown and revoke button.
-
-**Step 6 — Update the registration page** (`src/app/(auth)/register/page.tsx`):
-
-Read `?invite=<token>` from the URL search params. If present:
-- Validate the token server-side when the page loads.
-- Show the company name the user is joining.
-- Pre-fill the email if one was provided in the invitation.
-- On successful registration, call `acceptInvitationAction(token)` to link the new user to the company.
-- Hide the terms checkbox or pre-check it (they're joining a verified company).
-
-**Step 7 — Add email notification for invitations** (nice-to-have):
-
-When an invitation is created with an email address, send an email via Supabase's built-in email or Resend with the invite link. This can be done as a follow-up.
-
-**Step 8 — Update the company employees page to show invite status**:
-
-Add a section (or filter) showing pending invitations alongside active employees, so the admin can see who hasn't accepted yet.
+### 30. `updateMyCard` — empty company name can create orphaned companies
+**File:** `src/app/actions/cards.actions.ts:169-186`  
+When a user types a company name, the code does an `ilike` search and creates a new company if none matches. If the user types a typo, submits, then corrects it, two companies are created. There's no cleanup of the orphaned one.  
+**Fix:** Add a debounce to the company search, or show existing matches as suggestions instead of auto-creating.
 
 ---
 
-## Summary of All Changes
+## 📊 Summary
 
-| # | Issue | Files to Modify | Files to Create | Effort |
-|---|---|---|---|---|
-| 1 | Mobile scrolling (admin modal) | 2 | 0 | Small |
-| 2 | Age 18 minimum | 4 | 0 | Tiny |
-| 3 | Username taken error | 1 | 0 | Small |
-| 4 | Full user deletion | 2 | 0 | Medium |
-| 5 | Contacts mobile UI | 1 | 0 | Medium |
-| 6 | Invite employees | 2 | 4 | Large |
+| Severity | Count | Area |
+|----------|-------|------|
+| 🔴 Critical | 5 | Logic bugs, crashes, silent data corruption |
+| 🟠 High | 10 | Misleading stats, broken UX, data issues |
+| 🟡 Medium | 10 | UX polish, consistency, edge cases |
+| 🟢 Low | 5 | Code quality, maintainability |
 
-### Recommended Implementation Order
-
-1. **First**: #2 (Age 18) — simplest, purely value changes.
-2. **Second**: #3 (Username taken error) — small server-action change.
-3. **Third**: #1 (Mobile scrolling) — small CSS/layout fix, high user impact.
-4. **Fourth**: #4 (Full user deletion) — critical data integrity fix.
-5. **Fifth**: #5 (Contacts mobile UI) — UX improvement.
-6. **Sixth**: #6 (Invite employees) — largest feature, depends on #4 being solid for the cascade.
+**Key themes:**
+1. **Error handling is inconsistent** — some places use `.single()` (throws), some `.maybeSingle()` (returns null), some catch errors, some don't.
+2. **Optimistic updates without rollback** — the contacts page is the worst offender.
+3. **Unvalidated assumptions** — employee has a card, design IDs are fetchable, slugs are unique, scores are meaningful.
+4. **Server/client data fetching split** — company dashboard uses server components correctly; employee dashboard does not.

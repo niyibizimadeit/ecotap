@@ -1,7 +1,8 @@
 "use server";
 
 import { cache } from "react";
-import { getSupabase, getServiceSupabase } from "@/lib/supabase/server";
+import { getSupabase, getServiceSupabase, resolveCompanyId } from "@/lib/supabase/server";
+import { deleteProfileCascade } from "@/lib/services/admin.service";
 import { revalidatePath } from "next/cache";
 import type { ActionResult } from "@/types";
 
@@ -53,34 +54,6 @@ export interface CompanyDashboardData {
     suspended: number;
     total: number;
   };
-}
-
-// ─── Helpers ─────────────────────────────────────────────────────────────────
-
-/**
- * Resolves the company_id for the currently authenticated company_admin.
- * Returns null if the user has no primary company association.
- */
-async function resolveCompanyId(): Promise<string | null> {
-  try {
-    const supabase = await getSupabase();
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
-    if (!user) return null;
-
-    const { data: link } = await supabase
-      .from("profile_companies")
-      .select("company_id")
-      .eq("profile_id", user.id)
-      .eq("is_primary", true)
-      .single();
-
-    return link?.company_id ?? null;
-  } catch (error) {
-    console.error("resolveCompanyId failed:", error);
-    return null;
-  }
 }
 
 // ─── Reads ────────────────────────────────────────────────────────────────────
@@ -242,12 +215,23 @@ export async function updateMyCompany(
       return { success: false, error: "INVALID_SLUG_FORMAT" };
     }
 
+    // Guard: slug uniqueness — ensure no other company uses this slug
+    const service = getServiceSupabase();
+    const { data: slugConflict } = await service
+      .from("companies")
+      .select("id")
+      .eq("slug", input.slug)
+      .neq("id", companyId)
+      .maybeSingle();
+    if (slugConflict) {
+      return { success: false, error: "This URL slug is already taken by another company." };
+    }
+
     // Guard: brand_color hex format
     if (input.brand_color && !/^#[0-9a-fA-F]{6}$/.test(input.brand_color)) {
       return { success: false, error: "INVALID_COLOR_FORMAT" };
     }
 
-    const service = getServiceSupabase();
     const { error } = await service
       .from("companies")
       .update({
@@ -289,7 +273,8 @@ export async function deleteEmployeeAction(
   if (!companyId) return { success: false, error: "No company linked to your account." };
 
   // Verify the target employee belongs to the same company
-  const { data: employeeLink } = await (await import("@/lib/supabase/server")).getServiceSupabase()
+  const service = getServiceSupabase();
+  const { data: employeeLink } = await service
     .from("profile_companies")
     .select("id")
     .eq("profile_id", employeeProfileId)
@@ -305,7 +290,6 @@ export async function deleteEmployeeAction(
     return { success: false, error: "Use account settings to delete your own account." };
   }
 
-  const { deleteProfileCascade } = await import("@/lib/services/admin.service");
   const errors = await deleteProfileCascade(employeeProfileId);
 
   if (errors.length > 0) {

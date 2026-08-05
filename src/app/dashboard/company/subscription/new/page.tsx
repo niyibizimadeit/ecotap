@@ -19,6 +19,7 @@ type Currency = "RWF" | "USD";
 interface SubscriptionForm {
   plan_id: string;
   currency: Currency;
+  employee_count: number;
   screenshot_url: string | null;
 }
 
@@ -43,6 +44,7 @@ export default function NewSubscriptionPage() {
   const [form, setForm] = useState<SubscriptionForm>({
     plan_id: "",
     currency: "RWF",
+    employee_count: 1,
     screenshot_url: null,
   });
 
@@ -86,7 +88,7 @@ export default function NewSubscriptionPage() {
     setErrors({});
     const fd = new FormData();
     fd.append("file", file);
-    const result = await uploadPaymentScreenshot(fd);
+    const result = await uploadPaymentScreenshot(fd, "subscriptions/pending");
     setScreenshotUploading(false);
     if (result.success && result.data) {
       setForm((f) => ({ ...f, screenshot_url: result.data!.url }));
@@ -109,7 +111,8 @@ export default function NewSubscriptionPage() {
     const formData = new FormData();
     formData.append("plan_id", form.plan_id);
     formData.append("payment_currency", form.currency);
-    formData.append("payment_amount", String(selectedPlan.price_per_employee));
+    formData.append("payment_amount", String(selectedPlan.price_per_employee * form.employee_count));
+    formData.append("employee_count", String(form.employee_count));
     if (form.screenshot_url) {
       formData.append("payment_screenshot_url", form.screenshot_url);
     }
@@ -202,7 +205,31 @@ export default function NewSubscriptionPage() {
 
             {errors.plan && <p className="text-sm text-red-600">{errors.plan}</p>}
 
-            <Button variant="primary" size="lg" className="w-full sm:w-auto" rightIcon={<ArrowRight className="h-4 w-4" />} onClick={next}>
+            {/* Employee count — determines billing amount */}
+            <div className="rounded-2xl border p-5" style={{ backgroundColor: "#FEF9EF", borderColor: "rgba(6,78,59,0.08)" }}>
+              <p className="text-sm font-semibold text-emerald-deep mb-3">How many employees?</p>
+              <p className="text-xs text-ink-light mb-3">
+                Your total: {selectedPlan ? `${(selectedPlan.price_per_employee * form.employee_count).toLocaleString()} RWF / ${selectedPlan.billing_cycle}` : "—"}
+              </p>
+              <div className="flex items-center gap-4">
+                <button
+                  onClick={() => setForm(f => ({ ...f, employee_count: Math.max(1, f.employee_count - 1) }))}
+                  className="w-10 h-10 rounded-xl border text-lg font-medium transition-all hover:bg-emerald-pale"
+                  style={{ borderColor: "rgba(6,78,59,0.15)", color: "#064E3B" }}
+                >−</button>
+                <div className="text-center min-w-[60px]">
+                  <p className="font-serif text-3xl font-semibold text-emerald-deep">{form.employee_count}</p>
+                  <p className="text-xs text-ink-light">employee{form.employee_count !== 1 ? "s" : ""}</p>
+                </div>
+                <button
+                  onClick={() => setForm(f => ({ ...f, employee_count: Math.min(500, f.employee_count + 1) }))}
+                  className="w-10 h-10 rounded-xl border text-lg font-medium transition-all hover:bg-emerald-pale"
+                  style={{ borderColor: "rgba(6,78,59,0.15)", color: "#064E3B" }}
+                >+</button>
+              </div>
+            </div>
+
+            <Button variant="primary" size="lg" className="w-full sm:w-auto mt-4" rightIcon={<ArrowRight className="h-4 w-4" />} onClick={next}>
               Continue to payment
             </Button>
           </div>

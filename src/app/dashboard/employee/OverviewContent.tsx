@@ -6,6 +6,7 @@ import * as contactsService from "@/lib/services/contacts.service";
 import * as ordersService from "@/lib/services/orders.service";
 import { StatCard, EmptyState } from "@/components/dashboard/DashboardShared";
 import { Badge } from "@/components/ui/Badge";
+import { ORDER_STATUS_LABELS } from "@/constants";
 
 export async function EmployeeOverviewContent() {
   // ── Get current user + profile ────────────────────────────────────────
@@ -28,14 +29,16 @@ export async function EmployeeOverviewContent() {
   }
 
   // ── Fetch card ────────────────────────────────────────────────────────
+  // Use maybeSingle() — new employees may not have a card row yet.
+  // .single() throws PGRST116 when zero rows match, crashing the page.
   const { data: card } = await supabase
     .from("cards")
     .select("id, is_public")
     .eq("profile_id", profileId)
-    .single();
+    .maybeSingle();
 
   const cardId = card?.id;
-  const isActive = profile?.status === "active" && card?.is_public;
+  const isActive = profile?.status === "active" && card?.is_public === true;
 
   // ── Fetch stats in parallel ───────────────────────────────────────────
   const [eventCounts, contactsResult, ordersResult, recentActivity] = await Promise.all([
@@ -43,7 +46,7 @@ export async function EmployeeOverviewContent() {
       ? analyticsService.getCardEventCounts(cardId)
       : Promise.resolve({ success: true as const, data: {} }),
     contactsService.getInbox(profileId),
-    ordersService.getUserOrders(profileId),
+    ordersService.getUserOrders(profileId).then(r => ({ success: r.success, data: r.success ? r.data?.orders ?? [] : undefined })),
     analyticsService.getUserActivity(profileId, 5),
   ]);
 
@@ -98,7 +101,7 @@ export async function EmployeeOverviewContent() {
         <StatCard label="Contacts received" value={contacts} sub="From your card page" icon={<Users className="h-5 w-5" />} accent="#D97706" />
         <StatCard
           label="Card order"
-          value={latestOrder ? (latestOrder.status ?? "None").charAt(0).toUpperCase() + (latestOrder.status ?? "none").slice(1) : "None"}
+          value={latestOrder ? (ORDER_STATUS_LABELS[latestOrder.status as keyof typeof ORDER_STATUS_LABELS] ?? latestOrder.status) : "None"}
           sub={latestOrder ? `Physical NFC card` : "No orders yet"}
           icon={<Package className="h-5 w-5" />}
           accent={latestOrder?.status === "delivered" ? "#059669" : "#D97706"}

@@ -68,7 +68,7 @@ export default async function OrderSuccessPage({ searchParams }: Props) {
               {
                 icon: <CreditCard className="h-4 w-4" style={{ color: "#D97706" }} />,
                 title: "Payment verification",
-                desc:  "Our team will verify your payment within 24 hours.",
+                desc:  "Our team will verify your payment, typically within 1–2 business days.",
                 done:  false,
               },
               {
@@ -80,7 +80,7 @@ export default async function OrderSuccessPage({ searchParams }: Props) {
               {
                 icon: <Truck className="h-4 w-4" style={{ color: "#78716C" }} />,
                 title: "Production & shipping",
-                desc:  "Cards printed and shipped to your address in 3–5 days.",
+                desc:  "Cards printed and shipped to your address — typically 3–5 business days.",
                 done:  false,
               },
             ].map((step, i) => (

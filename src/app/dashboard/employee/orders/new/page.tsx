@@ -3,7 +3,7 @@
 import { useState, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { PageHeader } from "@/components/dashboard/DashboardShared";
-import { DesignGallery, MOCK_DESIGNS, dbDesignToOption, type CardDesignOption } from "@/components/orders/DesignGallery";
+import { DesignGallery, dbDesignToOption, type CardDesignOption } from "@/components/orders/DesignGallery";
 import { placeOrder, getActiveDesigns } from "@/app/actions/orders.actions";
 import { uploadPaymentScreenshot, linkPaymentToOrder } from "@/app/actions/uploads.actions";
 import { OrderSummary } from "@/components/orders/OrderSummary";
@@ -58,7 +58,7 @@ export default function NewOrderPage() {
   const [step,    setStep]    = useState<Step>(1);
   const [loading, setLoading] = useState(false);
   const [errors,  setErrors]  = useState<Record<string, string>>({});
-  const [designs, setDesigns] = useState<CardDesignOption[]>(MOCK_DESIGNS);
+  const [designs, setDesigns] = useState<CardDesignOption[]>([]);
   const [screenshotUploading, setScreenshotUploading] = useState(false);
   const [copied, setCopied]   = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);

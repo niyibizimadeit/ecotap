@@ -130,9 +130,9 @@
     "semantic_hash": "51b0004cb5c709bb5e38be641705383f"
   },
   "src/app/(marketing)/pricing/page.tsx": {
-    "mtime": 1785392690.0344226,
-    "ast_hash": "42cf95f55ae79373e09b4973b046fdc3",
-    "semantic_hash": ""
+    "mtime": 1782445982.2655563,
+    "ast_hash": "cfdad46a4c01a685983425ef37a866c0",
+    "semantic_hash": "cfdad46a4c01a685983425ef37a866c0"
   },
   "src/app/(marketing)/privacy/page.tsx": {
     "mtime": 1782432189.4238436,

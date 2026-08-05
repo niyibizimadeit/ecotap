@@ -148,7 +148,16 @@ interface DesignGalleryProps {
 }
 
 export function DesignGallery({ selected, onSelect, designs }: DesignGalleryProps) {
-  const items = designs && designs.length > 0 ? designs : MOCK_DESIGNS;
+  const items = designs && designs.length > 0 ? designs : [];
+
+  if (items.length === 0) {
+    return (
+      <div className="text-center py-12 border-2 border-dashed rounded-2xl" style={{ borderColor: "rgba(6,78,59,0.12)" }}>
+        <p className="text-sm text-ink-light">No card designs available.</p>
+        <p className="text-xs text-ink-light/60 mt-1">Please contact support to enable designs.</p>
+      </div>
+    );
+  }
 
   return (
     <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">

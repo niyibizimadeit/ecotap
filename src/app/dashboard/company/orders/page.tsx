@@ -19,7 +19,8 @@ const STATUS_STEP: Record<OrderStatus, number> = {
 
 export default async function CompanyOrdersPage() {
   const result = await getMyOrders();
-  const orders = (result.success ? result.data : []) ?? [];
+  const paginated = result.success ? result.data : null;
+  const orders = paginated?.orders ?? [];
 
   return (
     <div>

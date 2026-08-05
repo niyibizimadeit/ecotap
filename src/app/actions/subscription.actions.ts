@@ -5,31 +5,10 @@
 // Follows the same patterns as orders.actions.ts for the payment flow.
 // ─────────────────────────────────────────────────────────────────────────────
 
-import { getSupabase } from "@/lib/supabase/server";
+import { getSupabase, resolveCompanyId } from "@/lib/supabase/server";
 import { revalidatePath } from "next/cache";
 import * as subscriptionService from "@/lib/services/subscription.service";
 import type { ActionResult, BillingPlan, CompanySubscription } from "@/types";
-
-// ── Resolve company ──────────────────────────────────────────────────────────
-
-async function resolveCompanyId(): Promise<string | null> {
-  try {
-    const supabase = await getSupabase();
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) return null;
-
-    const { data: link } = await supabase
-      .from("profile_companies")
-      .select("company_id")
-      .eq("profile_id", user.id)
-      .eq("is_primary", true)
-      .single();
-
-    return link?.company_id ?? null;
-  } catch {
-    return null;
-  }
-}
 
 // ── Subscribe ────────────────────────────────────────────────────────────────
 
@@ -43,6 +22,8 @@ export async function subscribeAction(
   const paymentCurrency = (formData.get("payment_currency") as string) ?? "RWF";
   const paymentAmountStr = formData.get("payment_amount") as string;
   const paymentAmount = paymentAmountStr ? parseInt(paymentAmountStr, 10) : undefined;
+  const employeeCountStr = formData.get("employee_count") as string;
+  const employeeCount = employeeCountStr ? parseInt(employeeCountStr, 10) : 1;
   const paymentScreenshotUrl = (formData.get("payment_screenshot_url") as string) ?? undefined;
 
   if (!planId) return { success: false, error: "Please select a plan." };
@@ -52,6 +33,7 @@ export async function subscribeAction(
     planId,
     paymentAmount,
     paymentCurrency,
+    employeeCount,
     paymentScreenshotUrl,
   });
 

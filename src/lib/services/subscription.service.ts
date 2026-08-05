@@ -15,6 +15,7 @@ export interface SubscribeInput {
   planId: string;
   paymentAmount?: number;
   paymentCurrency?: string;
+  employeeCount?: number;
   paymentScreenshotUrl?: string;
 }
 
@@ -61,6 +62,7 @@ export async function subscribe(
   const subscription = await billingRepo.createSubscription({
     company_id:              input.companyId,
     plan_id:                 input.planId,
+    employee_count:          input.employeeCount ?? 0,
     payment_amount:          input.paymentAmount,
     payment_currency:        input.paymentCurrency,
     payment_screenshot_url:  input.paymentScreenshotUrl,

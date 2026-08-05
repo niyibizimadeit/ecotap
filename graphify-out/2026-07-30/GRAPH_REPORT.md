@@ -1,16 +1,16 @@
-# Graph Report - ecotap  (2026-07-30)
+# Graph Report - ecotap  (2026-07-11)
 
 ## Corpus Check
-- 152 files · ~115,749 words
+- 152 files · ~115,750 words
 - Verdict: corpus is large enough that graph structure adds value.
 
 ## Summary
-- 962 nodes · 1913 edges · 62 communities (54 shown, 8 thin omitted)
+- 962 nodes · 1917 edges · 55 communities (47 shown, 8 thin omitted)
 - Extraction: 100% EXTRACTED · 0% INFERRED · 0% AMBIGUOUS · INFERRED: 2 edges (avg confidence: 0.8)
 - Token cost: 0 input · 0 output
 
 ## Graph Freshness
-- Built from commit: `e1bcbcf2`
+- Built from commit: `e5a17cb1`
 - Run `git rev-parse HEAD` and compare to check if the graph is stale.
 - Run `graphify update .` after code changes (no API cost).
 
@@ -31,22 +31,16 @@
 - analytics.service.ts
 - page.tsx
 - compilerOptions
-- BrandLogo.tsx
 - contacts.service.ts
 - DashboardShared.tsx
 - index.ts
-- page.tsx
 - Input.tsx
-- cards.actions.ts
 - orders.service.ts
 - InviteModal.tsx
 - profiles.repo.ts
 - page.tsx
 - billing.repo.ts
-- CompanySidebar.tsx
 - cards.actions.ts
-- index.ts
-- ImageUpload.tsx
 - contact_exchanges.repo.ts
 - onboarding.service.ts
 - companies.repo.ts
@@ -73,7 +67,7 @@
 1. `getSupabase()` - 106 edges
 2. `getServiceSupabase` - 51 edges
 3. `cn()` - 43 edges
-4. `Button()` - 41 edges
+4. `Button()` - 42 edges
 5. `requireSuperAdmin()` - 29 edges
 6. `PageHeader()` - 20 edges
 7. `EcoTap — Architecture & Coding Conventions` - 19 edges
@@ -96,11 +90,11 @@
 ## Import Cycles
 - None detected.
 
-## Communities (62 total, 8 thin omitted)
+## Communities (55 total, 8 thin omitted)
 
 ### Community 0 - "cn"
-Cohesion: 0.26
-Nodes (11): Card(), CardContent(), CardDescription(), CardFooter(), CardHeader(), CardProps, CardTitle(), cardVariants (+3 more)
+Cohesion: 0.06
+Nodes (41): signOut(), AdminDashboardLayout(), NAV, ALL_ROLES, ROLE_LABELS, CompanySidebar(), NAV, Props (+33 more)
 
 ### Community 1 - "page.tsx"
 Cohesion: 0.07
@@ -127,8 +121,8 @@ Cohesion: 0.08
 Nodes (25): deleteCompanyAction(), deleteUserAction(), fetchContactExchangesCount(), fetchDesigns(), fetchUserCardUrl(), fetchUsers(), lookupUserForQR(), toggleUserStatusAction() (+17 more)
 
 ### Community 7 - "page.tsx"
-Cohesion: 0.11
-Nodes (21): activateEmployeeAction(), CompanyDashboardData, CompanyEmployee, deleteEmployeeAction(), getCompanyDashboardData, resolveCompanyId(), suspendEmployeeAction(), UpdateCompanyInput (+13 more)
+Cohesion: 0.09
+Nodes (27): activateEmployeeAction(), CompanyDashboardData, CompanyEmployee, deleteEmployeeAction(), getCompanyDashboardData, resolveCompanyId(), suspendEmployeeAction(), UpdateCompanyInput (+19 more)
 
 ### Community 8 - "uploads.actions.ts"
 Cohesion: 0.16
@@ -162,10 +156,6 @@ Nodes (18): OrgRegisterPage(), Step3Review(), STEPS, Select, COMPANY_SIZES, age,
 Cohesion: 0.10
 Nodes (19): compilerOptions, allowJs, esModuleInterop, incremental, isolatedModules, jsx, lib, module (+11 more)
 
-### Community 16 - "BrandLogo.tsx"
-Cohesion: 0.17
-Nodes (10): BrandIcon(), BrandIconProps, BrandLogo(), BrandLogoProps, ICON_SIZES, TEXT_COLORS, Footer(), FOOTER_LINKS (+2 more)
-
 ### Community 17 - "contacts.service.ts"
 Cohesion: 0.23
 Nodes (5): getCurrentProfileId(), getMyInbox(), updateContactExchange(), ActionResult, DeviceType
@@ -178,17 +168,9 @@ Nodes (38): getMyOrders(), PendingCompany, PendingIndividual, PendingItem, Desig
 Cohesion: 0.14
 Nodes (16): ABTestAssignment, AddCompanyForm, CardGroup, Company, CompanyWithRelations, CountryRep, EventType, IndividualRegisterForm (+8 more)
 
-### Community 20 - "page.tsx"
-Cohesion: 0.17
-Nodes (11): AdminUser, ALL_ROLES, ROLE_LABELS, Modal(), ModalProps, SIZE_CLASSES, Spinner(), SPINNER_SIZES (+3 more)
-
 ### Community 21 - "Input.tsx"
-Cohesion: 0.15
-Nodes (15): recordPageView(), getPublicCard, PublicCompanyData, PublicEmployee, resolveSlug, Props, EmployeeCardPage(), generateMetadata() (+7 more)
-
-### Community 23 - "cards.actions.ts"
-Cohesion: 0.21
-Nodes (9): deleteMyAccount(), getMyCard(), updateMyCard(), EmployeeDashboardLayout(), NAV, EMPTY_FORM, EMPTY_GROUP, FormState (+1 more)
+Cohesion: 0.10
+Nodes (22): recordPageView(), deleteMyAccount(), getMyCard(), getPublicCard, updateMyCard(), PublicCompanyData, PublicEmployee, resolveSlug (+14 more)
 
 ### Community 24 - "orders.service.ts"
 Cohesion: 0.19
@@ -210,21 +192,9 @@ Nodes (11): approveOrder(), fetchOrders(), markOrderShipped(), AdminOrder, PAYME
 Cohesion: 0.14
 Nodes (13): cancelSubscription(), createSubscription(), deletePlan(), getActivePlans(), getAllPlans(), getAllSubscriptions(), getAllSubscriptionsEnriched(), getPlanById() (+5 more)
 
-### Community 29 - "CompanySidebar.tsx"
-Cohesion: 0.32
-Nodes (6): signOut(), AdminDashboardLayout(), NAV, CompanySidebar(), NAV, Props
-
 ### Community 30 - "cards.actions.ts"
 Cohesion: 0.33
 Nodes (4): getOwnCard(), getPublicCard(), Card, CardProfileForm
-
-### Community 31 - "index.ts"
-Cohesion: 0.32
-Nodes (4): Avatar(), AvatarProps, SIZE_CLASSES, getInitials()
-
-### Community 32 - "ImageUpload.tsx"
-Cohesion: 0.33
-Nodes (6): createCroppedImage(), ICON_SIZES, ImageUpload(), ImageUploadProps, loadImage(), SIZES
 
 ### Community 33 - "contact_exchanges.repo.ts"
 Cohesion: 0.20
@@ -271,15 +241,15 @@ Cohesion: 0.40
 Nodes (4): Admin & Company, Demo Accounts, Notes, RDMC Employees
 
 ### Community 61 - "fetchOrders"
-Cohesion: 0.33
-Nodes (8): AUTH_PAGES, config, DASHBOARD_BASE, isAccessAllowed(), isPublicPath(), middleware(), PUBLIC_CARD_PATTERNS, NOTE: This file must be at src/middleware.ts for Next.js to execute it.
+Cohesion: 0.24
+Nodes (11): AdminUser, AUTH_PAGES, config, DASHBOARD_BASE, isAccessAllowed(), isPublicPath(), middleware(), PUBLIC_CARD_PATTERNS (+3 more)
 
 ### Community 62 - "card_orders.repo.ts"
 Cohesion: 0.22
 Nodes (9): createOrder(), deleteOrder(), getAllOrders(), getOrderById(), getOrdersByProfileId(), updateOrderPayment(), updateOrderStatus(), CardOrder (+1 more)
 
 ## Knowledge Gaps
-- **286 isolated node(s):** `VALID_TRANSITIONS`, `PendingQueue`, `UserFilters`, `AdminOverview`, `CompanyEmployee` (+281 more)
+- **285 isolated node(s):** `VALID_TRANSITIONS`, `PendingQueue`, `UserFilters`, `AdminOverview`, `CompanyEmployee` (+280 more)
   These have ≤1 connection - possible missing edges or undocumented components.
 - **8 thin communities (<3 nodes) omitted from report** — run `graphify query` to explore isolated nodes.
 
@@ -288,15 +258,15 @@ _Questions this graph is uniquely positioned to answer:_
 
 - **Why does `getSupabase()` connect `getSupabase` to `page.tsx`, `contact_exchanges.repo.ts`, `companies.repo.ts`, `page.tsx`, `server.ts`, `admin.service.ts`, `uploads.actions.ts`, `getServiceSupabase`, `admin.actions.ts`, `contacts.service.ts`, `DashboardShared.tsx`, `InviteModal.tsx`, `profiles.repo.ts`, `billing.repo.ts`, `card_orders.repo.ts`?**
   _High betweenness centrality (0.086) - this node is a cross-community bridge._
-- **Why does `Button()` connect `Button.tsx` to `VerifyResetForm.tsx`, `page.tsx`, `cn`, `page.tsx`, `Input.tsx`, `page.tsx`, `page.tsx`, `BrandLogo.tsx`, `DashboardShared.tsx`, `page.tsx`, `page.tsx`, `AuthLayout.tsx`, `InviteModal.tsx`, `page.tsx`?**
-  _High betweenness centrality (0.062) - this node is a cross-community bridge._
-- **Why does `cn()` connect `cn` to `ImageUpload.tsx`, `page.tsx`, `page.tsx`, `Input.tsx`, `Button.tsx`, `BrandLogo.tsx`, `DashboardShared.tsx`, `page.tsx`, `cards.actions.ts`, `CompanySidebar.tsx`, `index.ts`?**
+- **Why does `Button()` connect `Button.tsx` to `VerifyResetForm.tsx`, `page.tsx`, `cn`, `page.tsx`, `Input.tsx`, `page.tsx`, `page.tsx`, `DashboardShared.tsx`, `page.tsx`, `AuthLayout.tsx`, `InviteModal.tsx`, `page.tsx`?**
+  _High betweenness centrality (0.063) - this node is a cross-community bridge._
+- **Why does `cn()` connect `cn` to `page.tsx`, `page.tsx`, `Input.tsx`, `page.tsx`, `Button.tsx`, `DashboardShared.tsx`?**
   _High betweenness centrality (0.038) - this node is a cross-community bridge._
 - **What connects `VALID_TRANSITIONS`, `PendingQueue`, `UserFilters` to the rest of the system?**
-  _287 weakly-connected nodes found - possible documentation gaps or missing edges._
+  _286 weakly-connected nodes found - possible documentation gaps or missing edges._
+- **Should `cn` be split into smaller, more focused modules?**
+  _Cohesion score 0.06246799795186892 - nodes in this community are weakly interconnected._
 - **Should `page.tsx` be split into smaller, more focused modules?**
   _Cohesion score 0.06852497096399536 - nodes in this community are weakly interconnected._
 - **Should `getSupabase` be split into smaller, more focused modules?**
   _Cohesion score 0.10873440285204991 - nodes in this community are weakly interconnected._
-- **Should `page.tsx` be split into smaller, more focused modules?**
-  _Cohesion score 0.05786090005844535 - nodes in this community are weakly interconnected._

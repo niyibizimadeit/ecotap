@@ -132,13 +132,7 @@ export default function CompanySidebar({
             <ExternalLink className="h-4 w-4" />
             View company page
           </a>
-          <button
-            onClick={() => signOut()}
-            className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm text-ink-light hover:text-red-600 hover:bg-red-50 transition-all"
-          >
-            <LogOut className="h-4 w-4" />
-            Sign out
-          </button>
+          <SignOutButton />
         </div>
       </aside>
 
@@ -204,18 +198,46 @@ export default function CompanySidebar({
                   <ExternalLink className="h-4 w-4" />
                   View company page
                 </a>
-                <button
-                  onClick={() => signOut()}
-                  className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm text-ink-light hover:text-red-600 hover:bg-red-50 transition-all"
-                >
-                  <LogOut className="h-4 w-4" />
-                  Sign out
-                </button>
+                <SignOutButton />
               </div>
             </div>
           </div>
         </div>
       )}
     </>
+  );
+}
+
+/** Sign-out button with accidental-click protection. */
+function SignOutButton() {
+  const [confirming, setConfirming] = useState(false);
+
+  if (!confirming) {
+    return (
+      <button
+        onClick={() => setConfirming(true)}
+        className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm text-ink-light hover:text-red-600 hover:bg-red-50 transition-all"
+      >
+        <LogOut className="h-4 w-4" />
+        Sign out
+      </button>
+    );
+  }
+
+  return (
+    <div className="flex items-center gap-2 px-3 py-2.5">
+      <button
+        onClick={() => signOut()}
+        className="flex-1 px-3 py-1.5 text-xs font-medium rounded-lg bg-red-500 text-white hover:bg-red-600 transition-colors"
+      >
+        Confirm sign out
+      </button>
+      <button
+        onClick={() => setConfirming(false)}
+        className="px-3 py-1.5 text-xs font-medium rounded-lg border border-gray-300 text-ink-light hover:bg-gray-50 transition-colors"
+      >
+        Cancel
+      </button>
+    </div>
   );
 }

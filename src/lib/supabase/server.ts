@@ -62,6 +62,30 @@ export function getPublicSupabase() {
 }
 
 /**
+ * Resolves the company_id for the currently authenticated company_admin.
+ * Shared across company.actions, invitations.actions, and subscription.actions.
+ * Returns null if the user has no primary company association.
+ */
+export async function resolveCompanyId(): Promise<string | null> {
+  try {
+    const supabase = await getSupabase();
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return null;
+
+    const { data: link } = await supabase
+      .from("profile_companies")
+      .select("company_id")
+      .eq("profile_id", user.id)
+      .eq("is_primary", true)
+      .single();
+
+    return link?.company_id ?? null;
+  } catch {
+    return null;
+  }
+}
+
+/**
  * Service-role client for privileged server-side operations (both reads and writes).
  * Bypasses RLS — use only for server-side operations that need cross-table access
  * or mutations that should not be constrained by per-user RLS policies.

@@ -15,13 +15,6 @@ export default function SubscriptionPage() {
         eyebrow="Billing"
         title="Subscription"
         subtitle="Your current plan and usage."
-        action={
-          <Link href="/dashboard/company/subscription/new">
-            <Button variant="primary" size="sm" leftIcon={<CreditCard className="h-3.5 w-3.5" />}>
-              Subscribe now
-            </Button>
-          </Link>
-        }
       />
       <Suspense
         fallback={
@@ -147,7 +140,7 @@ async function SubscriptionContent() {
           </div>
         </div>
 
-        {/* Monthly cost estimate */}
+        {/* {plan.billing_cycle} cost estimate */}
         {plan && subscription.employee_count > 0 && (
           <div
             className="mt-4 rounded-xl p-4 border"
@@ -156,7 +149,9 @@ async function SubscriptionContent() {
               borderColor: "rgba(6,78,59,0.1)",
             }}
           >
-            <p className="text-xs text-ink-light mb-1">Estimated monthly cost</p>
+            <p className="text-xs text-ink-light mb-1">
+              Estimated {plan.billing_cycle === "annual" ? "annual" : "monthly"} cost
+            </p>
             <p className="text-lg font-semibold text-emerald-deep font-serif">
               {(
                 subscription.employee_count * plan.price_per_employee

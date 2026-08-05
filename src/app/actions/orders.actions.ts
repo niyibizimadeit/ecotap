@@ -2,7 +2,7 @@
 
 import { getSupabase, getServiceSupabase } from "@/lib/supabase/server";
 import * as ordersService from "@/lib/services/orders.service";
-import type { ActionResult, CardOrder, CardDesign, OrderForm } from "@/types";
+import type { ActionResult, CardOrder, CardOrderWithDesign, CardDesign, OrderForm } from "@/types";
 
 // ── Guard ────────────────────────────────────────────────────────────────────
 
@@ -24,10 +24,13 @@ export async function placeOrder(
 
 // ── My orders ────────────────────────────────────────────────────────────────
 
-export async function getMyOrders(): Promise<ActionResult<CardOrder[]>> {
+export async function getMyOrders(
+  page = 1,
+  pageSize = 10
+): Promise<ActionResult<{ orders: CardOrderWithDesign[]; total: number; page: number; totalPages: number }>> {
   const profileId = await getCurrentProfileId();
   if (!profileId) return { success: false, error: "Not authenticated." };
-  return ordersService.getUserOrders(profileId);
+  return ordersService.getUserOrders(profileId, page, pageSize);
 }
 
 // ── Active card designs (public) ─────────────────────────────────────────────

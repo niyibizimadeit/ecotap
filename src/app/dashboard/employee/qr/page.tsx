@@ -90,7 +90,7 @@ export default function QrPage() {
                 <div ref={qrRef} className="p-5 rounded-2xl border shadow-card" style={{ backgroundColor: "white", borderColor: "rgba(6,78,59,0.08)" }}>
                   <QRCodeSVG
                     value={cardUrl}
-                    size={200}
+                    size={256}
                     level="M"
                     fgColor="#064E3B"
                     bgColor="#FFFFFF"

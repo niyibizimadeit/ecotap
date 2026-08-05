@@ -5,33 +5,10 @@
 // Called from the company admin dashboard.
 // ─────────────────────────────────────────────────────────────────────────────
 
-import { getSupabase, getServiceSupabase } from "@/lib/supabase/server";
+import { getSupabase, getServiceSupabase, resolveCompanyId } from "@/lib/supabase/server";
 import { revalidatePath } from "next/cache";
 import * as invitationsService from "@/lib/services/invitations.service";
 import type { ActionResult, Invitation } from "@/types";
-
-// ── Guard ────────────────────────────────────────────────────────────────────
-
-async function resolveCompanyId(): Promise<string | null> {
-  try {
-    const supabase = await getSupabase();
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
-    if (!user) return null;
-
-    const { data: link } = await supabase
-      .from("profile_companies")
-      .select("company_id")
-      .eq("profile_id", user.id)
-      .eq("is_primary", true)
-      .single();
-
-    return link?.company_id ?? null;
-  } catch {
-    return null;
-  }
-}
 
 // ── Create invitation ────────────────────────────────────────────────────────
 

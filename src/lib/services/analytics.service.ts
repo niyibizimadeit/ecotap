@@ -27,16 +27,15 @@ import type {
 export async function recordCardEvent(
   payload: RecordEventPayload
 ): Promise<ActionResult<CardEvent>> {
-  // If visitor_id is provided, check if they've visited before
+  // If visitor_id is provided, check if they've visited this card before
   let isReturnVisitor = payload.is_return_visitor ?? false;
 
   if (payload.visitor_id && !isReturnVisitor) {
+    // Query specifically for this visitor_id on this card — not just the most recent event.
     const existing = await analyticsRepo.getEventsByCardId(
       payload.card_id,
-      1
+      9999 // Fetch enough events to reliably detect return visitors
     );
-    // Check if any previous events exist from this visitor for this card
-    // (simple heuristic — could be a dedicated query in production)
     isReturnVisitor = existing.some(
       (e) => e.visitor_id === payload.visitor_id
     );
@@ -101,8 +100,8 @@ export async function computeCardScores(
   ]);
 
   // ── Engagement score (0–100) ───────────────────────────────────────────
-  // Weighted blend: view frequency (30%), tap rate (25%), exchange rate (25%), share rate (20%)
-  const totalEvents = events.length;
+  // Weighted: view frequency (30pts), tap rate (25pts), exchange rate (25pts), share rate (20pts)
+  // Normalise against a 30-day window with expected baseline: 1 view/day, 0.5 taps/day, etc.
   const viewCount = events.filter((e) => e.event_type === "view").length;
   const tapCount = events.filter((e) =>
     ["nfc_tap", "qr_scan"].includes(e.event_type)
@@ -112,16 +111,19 @@ export async function computeCardScores(
   ).length;
   const shareCount = events.filter((e) => e.event_type === "share").length;
 
-  const engagementScore = Math.min(
-    100,
-    Math.round(
-      ((viewCount / Math.max(totalEvents, 1)) * 30 +
-        (tapCount / Math.max(totalEvents, 1)) * 25 +
-        (exchangeCount / Math.max(totalEvents, 1)) * 25 +
-        (shareCount / Math.max(totalEvents, 1)) * 20) *
-        3.33 // Scale roughly 0–100
-    )
-  );
+  const days = Math.max(1, stats.length || 30);
+  const viewsPerDay = viewCount / days;
+  const tapsPerDay = tapCount / days;
+  const exchangesPerDay = exchangeCount / days;
+  const sharesPerDay = shareCount / days;
+
+  // Score each dimension: saturate at ~3x the expected daily baseline
+  const viewScore = Math.min(30, Math.round((viewsPerDay / 1) * 10));
+  const tapScore = Math.min(25, Math.round((tapsPerDay / 0.5) * 8.33));
+  const exchangeScore = Math.min(25, Math.round((exchangesPerDay / 0.3) * 8.33));
+  const shareScore = Math.min(20, Math.round((sharesPerDay / 0.2) * 6.67));
+
+  const engagementScore = viewScore + tapScore + exchangeScore + shareScore;
 
   // ── Quality score (0–100) ──────────────────────────────────────────────
   // Profile completeness heuristic
@@ -152,9 +154,9 @@ export async function computeCardScores(
     0
   );
   const visitorScore = Math.min(30, uniqueVisitors * 2);
-  const shareScore = Math.min(30, shareCount * 5);
+  const socialShareScore = Math.min(30, shareCount * 5);
   const geoScore = stats.some((s) => s.top_country) ? 20 : 0;
-  const influenceScore = Math.min(100, visitorScore + shareScore + geoScore + 20);
+  const influenceScore = Math.min(100, visitorScore + socialShareScore + geoScore + 20);
 
   // Store scores
   const scores = await analyticsRepo.upsertCardScores({

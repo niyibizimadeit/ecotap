@@ -124,9 +124,11 @@ export async function uploadDesignImage(
 /**
  * Upload a payment screenshot to R2. Does NOT link to any order yet —
  * returns the URL so the caller can attach it when placing the order.
+ * Accepts an optional folder to separate order vs subscription screenshots.
  */
 export async function uploadPaymentScreenshot(
-  formData: FormData
+  formData: FormData,
+  folder: string = "orders/pending"
 ): Promise<ActionResult<{ url: string }>> {
   const supabase = await getSupabase();
   const { data: { user } } = await supabase.auth.getUser();
@@ -137,7 +139,7 @@ export async function uploadPaymentScreenshot(
   if (fileError) return { success: false, error: fileError };
 
   const buffer = Buffer.from(await file!.arrayBuffer());
-  const result = await uploadToR2(buffer, file!.name, file!.type, "orders/pending");
+  const result = await uploadToR2(buffer, file!.name, file!.type, folder);
 
   if (!result.success || !result.url) {
     return { success: false, error: result.error ?? "Upload failed." };

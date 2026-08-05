@@ -1,10 +1,10 @@
 "use client";
 
-import { useState, useMemo } from "react";
+import { useState, useMemo, useCallback } from "react";
 import { SectionCard } from "@/components/dashboard/DashboardShared";
 import { updateContactExchange } from "@/app/actions/contacts.actions";
 import type { ContactExchange } from "@/types";
-import { Mail, Phone, Calendar, Star, ChevronDown, MessageSquare, Search, ArrowUpDown } from "lucide-react";
+import { Mail, Phone, Calendar, Star, ChevronDown, MessageSquare, Search, ArrowUpDown, AlertCircle, X } from "lucide-react";
 
 type SortField = "date" | "name" | "lead_level" | "favorites";
 type SortDir = "asc" | "desc";
@@ -27,30 +27,66 @@ export function ContactsClient({ initialContacts }: Props) {
   const [sortDir, setSortDir] = useState<SortDir>("desc");
   const [expandedNotes, setExpandedNotes] = useState<Set<string>>(new Set());
   const [editingGroup, setEditingGroup] = useState<string | null>(null);
+  const [toast, setToast] = useState<string | null>(null);
 
-  // ── Mutations ──────────────────────────────────────────────────────────────
+  // ── Toast helper ─────────────────────────────────────────────────────────
+  const showToast = useCallback((msg: string) => {
+    setToast(msg);
+    setTimeout(() => setToast(null), 4000);
+  }, []);
+
+  // ── Mutations (with rollback on failure) ─────────────────────────────────
 
   async function toggleFavorite(c: ContactExchange) {
-    const newVal = !c.is_favorite;
+    const prevVal = c.is_favorite;
+    const newVal = !prevVal;
     // Optimistic update
     setContacts((prev) => prev.map((x) => (x.id === c.id ? { ...x, is_favorite: newVal } : x)));
-    await updateContactExchange(c.id, { is_favorite: newVal });
+    try {
+      const result = await updateContactExchange(c.id, { is_favorite: newVal });
+      if (!result.success) throw new Error(result.error ?? "Update failed");
+    } catch {
+      // Rollback on failure
+      setContacts((prev) => prev.map((x) => (x.id === c.id ? { ...x, is_favorite: prevVal } : x)));
+      showToast("Failed to update favorite. Please try again.");
+    }
   }
 
   async function setLeadLevel(c: ContactExchange, level: string) {
+    const prevLevel = c.lead_level;
     setContacts((prev) => prev.map((x) => (x.id === c.id ? { ...x, lead_level: level as ContactExchange["lead_level"] } : x)));
-    await updateContactExchange(c.id, { lead_level: level });
+    try {
+      const result = await updateContactExchange(c.id, { lead_level: level });
+      if (!result.success) throw new Error(result.error ?? "Update failed");
+    } catch {
+      setContacts((prev) => prev.map((x) => (x.id === c.id ? { ...x, lead_level: prevLevel } : x)));
+      showToast("Failed to update lead level. Please try again.");
+    }
   }
 
   async function saveNotes(c: ContactExchange, notes: string) {
+    const prevNotes = c.owner_notes;
     setContacts((prev) => prev.map((x) => (x.id === c.id ? { ...x, owner_notes: notes || null } : x)));
-    await updateContactExchange(c.id, { owner_notes: notes || null });
+    try {
+      const result = await updateContactExchange(c.id, { owner_notes: notes || null });
+      if (!result.success) throw new Error(result.error ?? "Update failed");
+    } catch {
+      setContacts((prev) => prev.map((x) => (x.id === c.id ? { ...x, owner_notes: prevNotes } : x)));
+      showToast("Failed to save notes. Please try again.");
+    }
   }
 
   async function saveGroup(c: ContactExchange, group: string) {
+    const prevGroup = c.lead_group;
     setContacts((prev) => prev.map((x) => (x.id === c.id ? { ...x, lead_group: group || null } : x)));
     setEditingGroup(null);
-    await updateContactExchange(c.id, { lead_group: group || null });
+    try {
+      const result = await updateContactExchange(c.id, { lead_group: group || null });
+      if (!result.success) throw new Error(result.error ?? "Update failed");
+    } catch {
+      setContacts((prev) => prev.map((x) => (x.id === c.id ? { ...x, lead_group: prevGroup } : x)));
+      showToast("Failed to update group. Please try again.");
+    }
   }
 
   // ── Filter & sort ──────────────────────────────────────────────────────────
@@ -90,17 +126,31 @@ export function ContactsClient({ initialContacts }: Props) {
 
   return (
     <>
+      {/* Toast error banner */}
+      {toast && (
+        <div className="fixed top-4 right-4 z-50 max-w-sm animate-fade-up">
+          <div className="flex items-start gap-2.5 bg-red-50 border border-red-200 rounded-xl p-3 shadow-card-lg">
+            <AlertCircle className="h-4 w-4 text-red-500 flex-shrink-0 mt-0.5" />
+            <p className="text-sm text-red-700 flex-1">{toast}</p>
+            <button onClick={() => setToast(null)} className="flex-shrink-0 text-red-400 hover:text-red-600">
+              <X className="h-4 w-4" />
+            </button>
+          </div>
+        </div>
+      )}
+
       {/* Stat cards */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
         {[
-          { label: "Total received", value: contacts.length },
-          { label: "Favorites", value: favorites },
-          { label: "With email", value: withEmail },
-          { label: "With phone", value: withPhone },
+          { label: "Total received", value: contacts.length, sub: null },
+          { label: "Favorites", value: favorites, sub: contacts.length > 0 ? `${Math.round((favorites / contacts.length) * 100)}%` : null },
+          { label: "With email", value: withEmail, sub: contacts.length > 0 ? `${Math.round((withEmail / contacts.length) * 100)}%` : null },
+          { label: "With phone", value: withPhone, sub: contacts.length > 0 ? `${Math.round((withPhone / contacts.length) * 100)}%` : null },
         ].map((s) => (
           <div key={s.label} className="rounded-2xl border p-4 text-center" style={{ backgroundColor: "#FEF9EF", borderColor: "rgba(6,78,59,0.08)" }}>
             <p className="font-serif text-2xl font-semibold text-emerald-deep">{s.value}</p>
             <p className="text-xs text-ink-light mt-0.5">{s.label}</p>
+            {s.sub && <p className="text-[10px] text-ink-light/60">{s.sub}</p>}
           </div>
         ))}
       </div>
