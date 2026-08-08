@@ -40,13 +40,23 @@ export default function UsersPage() {
   const [detailLoading,   setDetailLoading]   = useState(false);
   const [detailError,     setDetailError]     = useState<string | null>(null);
 
+  const [isReadOnly, setIsReadOnly] = useState(false);
+
   // Action states
   const [actionLoading,   setActionLoading]   = useState<string | null>(null);
   const [toast,           setToast]           = useState<{ message: string; type: "success" | "error" } | null>(null);
   const [confirmDeleteUser, setConfirmDeleteUser] = useState<AdminUser | null>(null);
   const [confirmDeleteCompany, setConfirmDeleteCompany] = useState<{ companyId: string; companyName: string } | null>(null);
 
-  useEffect(() => { loadUsers(); }, []);
+  useEffect(() => {
+    async function init() {
+      const { getCurrentUser } = await import("@/app/actions/auth.actions");
+      const user = await getCurrentUser();
+      setIsReadOnly(user?.role !== "super_admin");
+    }
+    init();
+    loadUsers();
+  }, []);
 
   async function loadUsers() {
     const { fetchUsers } = await import("@/app/actions/admin.actions");
@@ -426,6 +436,7 @@ export default function UsersPage() {
                           </p>
                         </div>
                       </div>
+                      {!isReadOnly && (
                       <button
                         onClick={() => setConfirmDeleteCompany({
                           companyId: pc.company?.id ?? pc.company_id,
@@ -437,6 +448,7 @@ export default function UsersPage() {
                       >
                         <Trash2 className="h-3.5 w-3.5" />
                       </button>
+                      )}
                     </div>
                   ))}
                 </div>
@@ -473,7 +485,8 @@ export default function UsersPage() {
               )}
             </div>
 
-            {/* Actions bar */}
+            {/* Actions bar — hidden for read-only country reps */}
+            {!isReadOnly && (
             <div className="border-t pt-5 space-y-4" style={{ borderColor: "rgba(6,78,59,0.08)" }}>
               {/* Role change */}
               <div className="flex items-center gap-3 flex-wrap">
@@ -518,6 +531,7 @@ export default function UsersPage() {
                 </Button>
               </div>
             </div>
+            )}
           </div>
         ) : (
           <div className="py-12 text-center text-sm text-ink-light">No data available.</div>

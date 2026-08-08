@@ -68,6 +68,7 @@ export default function BillingPage() {
   const [formName,   setFormName]   = useState("");
   const [formCycle,  setFormCycle]  = useState<BillingCycle>("monthly");
   const [formPrice,  setFormPrice]  = useState("");
+  const [isReadOnly, setIsReadOnly] = useState(false);
   const [saving,     setSaving]     = useState(false);
 
   // Subscription management
@@ -92,6 +93,15 @@ export default function BillingPage() {
     setFormPrice(String(p.price_per_employee));
     setModalOpen(true);
   }
+
+  useEffect(() => {
+    async function init() {
+      const { getCurrentUser } = await import("@/app/actions/auth.actions");
+      const user = await getCurrentUser();
+      setIsReadOnly(user?.role !== "super_admin");
+    }
+    init();
+  }, []);
 
   useEffect(() => {
     async function load() {
@@ -206,9 +216,11 @@ export default function BillingPage() {
         title="Billing plans"
         subtitle={`Manage pricing plans · ${pendingCount} subscription${pendingCount !== 1 ? "s" : ""} pending approval`}
         action={
+          !isReadOnly ? (
           <Button variant="primary" size="sm" leftIcon={<Plus className="h-3.5 w-3.5" />} onClick={openCreate}>
             Add plan
           </Button>
+          ) : undefined
         }
       />
 
@@ -266,6 +278,7 @@ export default function BillingPage() {
               </ul>
             </div>
 
+            {!isReadOnly && (
             <div className="px-5 py-3 flex gap-2">
               <button
                 onClick={() => openEdit(plan)}
@@ -286,9 +299,11 @@ export default function BillingPage() {
                 {plan.is_active ? "Deactivate" : "Activate"}
               </button>
             </div>
+            )}
           </div>
         ))}
 
+        {!isReadOnly && (
         <button
           onClick={openCreate}
           className="rounded-2xl border-2 border-dashed p-6 flex flex-col items-center justify-center gap-2 text-ink-light hover:text-emerald-bright hover:border-emerald-bright transition-all min-h-[280px]"
@@ -297,6 +312,7 @@ export default function BillingPage() {
           <Plus className="h-6 w-6" />
           <span className="text-sm font-medium">New plan</span>
         </button>
+        )}
       </div>
 
       {/* ── Subscription Management Section ── */}
@@ -441,8 +457,8 @@ export default function BillingPage() {
 
                       <div className="flex-1" />
 
-                      {/* Action buttons */}
-                      {isPending && (
+                      {/* Action buttons — hidden for read-only country reps */}
+                      {!isReadOnly && isPending && (
                         <div className="flex gap-2">
                           {sub.payment_status === "paid" && (
                             <Button variant="primary" size="sm" loading={actionLoading === sub.id}

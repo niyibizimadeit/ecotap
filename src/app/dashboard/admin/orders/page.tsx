@@ -102,8 +102,18 @@ export default function AdminOrdersPage() {
   const [filter,    setFilter]    = useState<OrderStatus | "all">("all");
   const [loadingId, setLoadingId] = useState<string | null>(null);
   const [previewImage, setPreviewImage] = useState<string | null>(null);
+  const [isReadOnly, setIsReadOnly] = useState(false);
 
   const filtered = filter === "all" ? orders : orders.filter(o => o.status === filter);
+
+  useEffect(() => {
+    async function init() {
+      const { getCurrentUser } = await import("@/app/actions/auth.actions");
+      const user = await getCurrentUser();
+      setIsReadOnly(user?.role !== "super_admin");
+    }
+    init();
+  }, []);
 
   useEffect(() => {
     async function load() {
@@ -259,7 +269,7 @@ export default function AdminOrdersPage() {
                   </div>
 
                   <div className="flex justify-end">
-                    {nextAction ? (
+                    {!isReadOnly && nextAction ? (
                       <Button
                         variant="primary"
                         size="sm"
@@ -269,6 +279,8 @@ export default function AdminOrdersPage() {
                       >
                         {nextAction.label}
                       </Button>
+                    ) : nextAction ? (
+                      <span className="text-xs text-ink-light italic">Read-only</span>
                     ) : (
                       <span className="flex items-center gap-1.5 text-xs font-medium px-3 py-1.5 rounded-xl"
                         style={{ backgroundColor: "#ECFDF5", color: "#065F46" }}>
@@ -323,7 +335,7 @@ export default function AdminOrdersPage() {
                   <div className="flex-1" />
 
                   {/* Verify payment button */}
-                  {order.payment_status === "paid" && (
+                  {!isReadOnly && order.payment_status === "paid" && (
                     <Button
                       variant="primary"
                       size="sm"

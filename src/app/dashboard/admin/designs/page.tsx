@@ -23,6 +23,16 @@ const PRESET_COLORS = ["#064E3B","#1a1a2e","#1e3a5f","#7c2d12","#3d6b4f","#0f0f0
 
 export default function DesignsPage() {
   const [designs,    setDesigns]    = useState<Design[]>([]);
+  const [isReadOnly, setIsReadOnly] = useState(false);
+
+  useEffect(() => {
+    async function init() {
+      const { getCurrentUser } = await import("@/app/actions/auth.actions");
+      const user = await getCurrentUser();
+      setIsReadOnly(user?.role !== "super_admin");
+    }
+    init();
+  }, []);
 
   useEffect(() => {
     async function load() {
@@ -107,9 +117,11 @@ export default function DesignsPage() {
         title="Card designs"
         subtitle={`${activeCount} active · ${inactiveCount} inactive`}
         action={
+          !isReadOnly ? (
           <Button variant="primary" size="sm" leftIcon={<Plus className="h-3.5 w-3.5" />} onClick={openCreate}>
             Add design
           </Button>
+          ) : undefined
         }
       />
 
@@ -118,8 +130,9 @@ export default function DesignsPage() {
         <p className="text-xs font-mono tracking-widest text-ink-light uppercase mb-3">Active — visible to users</p>
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 mb-8">
           {designs.filter(d => d.active).map(d => (
-            <DesignCard key={d.id} design={d} onEdit={() => openEdit(d)} onToggle={() => toggleActive(d.id)} />
+            <DesignCard key={d.id} design={d} onEdit={() => openEdit(d)} onToggle={() => toggleActive(d.id)} readOnly={isReadOnly} />
           ))}
+          {!isReadOnly && (
           <button
             onClick={openCreate}
             className="rounded-2xl border-2 border-dashed p-6 flex flex-col items-center justify-center gap-2 text-ink-light hover:text-emerald-bright hover:border-emerald-bright transition-all min-h-[160px]"
@@ -128,6 +141,7 @@ export default function DesignsPage() {
             <Plus className="h-6 w-6" />
             <span className="text-sm font-medium">New design</span>
           </button>
+          )}
         </div>
       </div>
 
@@ -137,7 +151,7 @@ export default function DesignsPage() {
           <p className="text-xs font-mono tracking-widest text-ink-light uppercase mb-3">Inactive — hidden from users</p>
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
             {designs.filter(d => !d.active).map(d => (
-              <DesignCard key={d.id} design={d} onEdit={() => openEdit(d)} onToggle={() => toggleActive(d.id)} />
+              <DesignCard key={d.id} design={d} onEdit={() => openEdit(d)} onToggle={() => toggleActive(d.id)} readOnly={isReadOnly} />
             ))}
           </div>
         </div>
@@ -203,7 +217,7 @@ export default function DesignsPage() {
   );
 }
 
-function DesignCard({ design, onEdit, onToggle }: { design: Design; onEdit: () => void; onToggle: () => void }) {
+function DesignCard({ design, onEdit, onToggle, readOnly }: { design: Design; onEdit: () => void; onToggle: () => void; readOnly?: boolean }) {
   return (
     <div
       className="rounded-2xl border overflow-hidden transition-all hover:shadow-card-lg"
@@ -248,6 +262,7 @@ function DesignCard({ design, onEdit, onToggle }: { design: Design; onEdit: () =
           <div className="w-5 h-5 rounded-lg flex-shrink-0" style={{ backgroundColor: design.color }} />
         </div>
 
+        {!readOnly && (
         <div className="flex gap-2">
           <button
             onClick={onEdit}
@@ -271,6 +286,7 @@ function DesignCard({ design, onEdit, onToggle }: { design: Design; onEdit: () =
             }
           </button>
         </div>
+        )}
       </div>
     </div>
   );
