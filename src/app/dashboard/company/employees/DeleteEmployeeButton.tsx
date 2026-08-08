@@ -25,7 +25,7 @@ export function DeleteEmployeeButton({ employeeId, employeeName }: Props) {
       router.refresh();
     } else {
       setError(result.error ?? "Failed to delete employee.");
-      setConfirm(false);
+      // Keep confirm mode open so the error is visible
     }
   }
 

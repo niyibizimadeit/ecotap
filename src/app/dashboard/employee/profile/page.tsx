@@ -45,6 +45,7 @@ const EMPTY_FORM: FormState = {
   company:              "",
   department:           "",
   phone:                "",
+  whatsapp:             "",
   email_public:         "",
   bio:                  "",
   theme_color:          "#064E3B",
@@ -65,6 +66,9 @@ export default function ProfilePage() {
   const [deleting, setDeleting] = useState(false);
   const [confirmDelete, setConfirmDelete] = useState(false);
   const [isThemeLocked, setIsThemeLocked] = useState(false);
+  const [isOrgLocked, setIsOrgLocked] = useState(false);
+  const [isJobTitleLocked, setIsJobTitleLocked] = useState(false);
+  const [isGroupsLocked, setIsGroupsLocked] = useState(false);
   const [isEmployee, setIsEmployee] = useState(false);
 
   // Load real data on mount
@@ -73,7 +77,12 @@ export default function ProfilePage() {
       const result = await getMyCard();
       if (result.success && result.data) {
         const card = result.data;
-        setIsThemeLocked(card.primary_company?.theme_locked ?? false);
+        const themeLocked = card.primary_company?.theme_locked ?? false;
+        const companyBrandColor = (card.primary_company as Record<string, unknown>)?.brand_color as string | null;
+        setIsThemeLocked(themeLocked);
+        setIsOrgLocked((card.primary_company as Record<string, unknown>)?.org_locked as boolean ?? false);
+        setIsJobTitleLocked((card.primary_company as Record<string, unknown>)?.job_title_locked as boolean ?? false);
+        setIsGroupsLocked((card.primary_company as Record<string, unknown>)?.groups_locked as boolean ?? false);
         setIsEmployee(card.profile?.role === "employee");
         setForm({
           full_name:    card.profile?.full_name ?? "",
@@ -81,9 +90,10 @@ export default function ProfilePage() {
           company:      card.primary_company?.name ?? "",
           department:   card.all_companies?.[0]?.department ?? "",
           phone:        card.phone ?? "",
+          whatsapp:     card.whatsapp || card.phone || "",
           email_public: card.email_public ?? "",
           bio:          card.bio ?? "",
-          theme_color:  card.theme_color ?? "#064E3B",
+          theme_color:  themeLocked && companyBrandColor ? companyBrandColor : (card.theme_color ?? "#064E3B"),
           social_links: {
             linkedin:  card.social_links?.linkedin ?? "",
             twitter:   card.social_links?.twitter ?? "",
@@ -180,6 +190,7 @@ export default function ProfilePage() {
       full_name:            form.full_name,
       job_title:            form.job_title,
       phone:                form.phone,
+      whatsapp:             form.whatsapp,
       email_public:         form.email_public,
       bio:                  form.bio,
       theme_color:          form.theme_color,
@@ -275,6 +286,22 @@ export default function ProfilePage() {
               <Input label="Full name" required value={form.full_name} onChange={set("full_name")} />
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <Input label="Phone" type="tel" placeholder="+250 7XX XXX XXX" value={form.phone} onChange={set("phone")} />
+                <div>
+                  <Input label="WhatsApp" type="tel" placeholder="Same as phone or different" value={form.whatsapp} onChange={set("whatsapp")} />
+                  <label className="flex items-center gap-2 mt-1.5 cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={form.whatsapp === form.phone}
+                      onChange={(e) => {
+                        if (e.target.checked) setForm(f => ({ ...f, whatsapp: f.phone }));
+                      }}
+                      className="w-3.5 h-3.5 rounded border-cream-dark text-emerald-deep focus:ring-emerald-bright"
+                    />
+                    <span className="text-xs text-ink-light">Same as phone number</span>
+                  </label>
+                </div>
+              </div>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <Input label="Email" type="email" value={form.email_public} onChange={set("email_public")} hint="Shown on your card" />
               </div>
               <Textarea label="Bio" placeholder="Tell visitors about yourself..." value={form.bio} onChange={set("bio")} hint="Keep it under 200 characters for best display." className="min-h-[90px]" />
@@ -311,8 +338,22 @@ export default function ProfilePage() {
                 <>
                   {/* Company & Job Title */}
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                    <Input label="Company" placeholder="Where you work" value={form.company} onChange={set("company")} hint={isEmployee ? "Your company is managed by your admin." : "Type a company name"} disabled={isEmployee} />
-                    <Input label="Job title" placeholder="e.g. Software Engineer" value={form.job_title} onChange={set("job_title")} hint="Your role at this company" />
+                    <Input
+                      label="Company"
+                      placeholder="Where you work"
+                      value={form.company}
+                      onChange={set("company")}
+                      hint={isOrgLocked ? "🔒 Locked by your company admin" : isEmployee ? "Your company is managed by your admin." : "Type a company name"}
+                      disabled={isEmployee || isOrgLocked}
+                    />
+                    <Input
+                      label="Job title"
+                      placeholder="e.g. Software Engineer"
+                      value={form.job_title}
+                      onChange={set("job_title")}
+                      hint={isJobTitleLocked ? "🔒 Locked by your company admin" : "Your role at this company"}
+                      disabled={isJobTitleLocked}
+                    />
                   </div>
                   <Input label="Department" placeholder="e.g. Engineering, Sales, Operations" value={form.department} onChange={set("department")} hint="Optional — your team or department" />
 
@@ -420,22 +461,30 @@ export default function ProfilePage() {
                 </div>
               ))}
 
-              {/* Add group button */}
-              {form.card_groups.length < MAX_CARD_GROUPS && (
-                <button
-                  onClick={addGroup}
-                  className="w-full flex items-center justify-center gap-2 py-3 rounded-2xl border-2 border-dashed transition-colors hover:bg-emerald-pale/20"
-                  style={{ borderColor: "rgba(6,78,59,0.15)", color: "#064E3B" }}
-                >
-                  <Plus className="h-4 w-4" />
-                  <span className="text-sm font-medium">Add group</span>
-                </button>
-              )}
-
-              {form.card_groups.length === 0 && (
+              {/* Add group button — hidden when locked */}
+              {isGroupsLocked ? (
                 <p className="text-center text-xs text-ink-light py-2">
-                  No groups yet. Click &ldquo;Add group&rdquo; to add an affiliation.
+                  🔒 Your company admin has locked groups &amp; affiliations.
                 </p>
+              ) : (
+                <>
+                  {form.card_groups.length < MAX_CARD_GROUPS && (
+                    <button
+                      onClick={addGroup}
+                      className="w-full flex items-center justify-center gap-2 py-3 rounded-2xl border-2 border-dashed transition-colors hover:bg-emerald-pale/20"
+                      style={{ borderColor: "rgba(6,78,59,0.15)", color: "#064E3B" }}
+                    >
+                      <Plus className="h-4 w-4" />
+                      <span className="text-sm font-medium">Add group</span>
+                    </button>
+                  )}
+
+                  {form.card_groups.length === 0 && (
+                    <p className="text-center text-xs text-ink-light py-2">
+                      No groups yet. Click &ldquo;Add group&rdquo; to add an affiliation.
+                    </p>
+                  )}
+                </>
               )}
             </div>
           </SectionCard>
@@ -451,13 +500,18 @@ export default function ProfilePage() {
 
           {/* Card accent color */}
           {isThemeLocked && isEmployee ? (
-            <SectionCard title="Card colour" subtitle="Your company has locked the card colour.">
-              <div className="rounded-xl border p-4 text-center" style={{ borderColor: "rgba(6,78,59,0.15)", backgroundColor: "#FEF9EF" }}>
-                <p className="text-sm text-ink-light">
-                  Your company administrator has locked the card colour to{" "}
-                  <span className="font-mono font-medium text-ink">{form.theme_color}</span>.
-                  Contact your admin to change it.
-                </p>
+            <SectionCard title="Card colour" subtitle="Set by your company — you cannot change it.">
+              <div className="flex items-center gap-4">
+                <div
+                  className="w-12 h-12 rounded-xl border-2 flex-shrink-0"
+                  style={{ backgroundColor: form.theme_color, borderColor: "rgba(6,78,59,0.15)" }}
+                />
+                <div>
+                  <p className="text-sm font-medium text-ink">{form.theme_color}</p>
+                  <p className="text-xs text-ink-light">
+                    Your company administrator has locked the card colour. Contact your admin to change it.
+                  </p>
+                </div>
               </div>
             </SectionCard>
           ) : (
@@ -542,6 +596,7 @@ export default function ProfilePage() {
               company={form.company}
               bio={form.bio}
               phone={form.phone}
+              whatsapp={form.whatsapp}
               accentColor={form.theme_color}
               socialLinks={form.social_links}
               companySocialLinks={form.company_social_links}

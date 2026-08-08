@@ -1,5 +1,6 @@
 "use client";
 
+import { useEffect } from "react";
 import { Button } from "@/components/ui/Button";
 import { AlertTriangle } from "lucide-react";
 
@@ -10,6 +11,11 @@ export default function ErrorPage({
   error: Error & { digest?: string };
   reset: () => void;
 }) {
+  useEffect(() => {
+    // Log the real error for debugging — never show raw messages to users.
+    console.error("Auth error boundary caught:", error);
+  }, [error]);
+
   return (
     <div className="min-h-screen flex items-center justify-center p-6 bg-ivory">
       <div className="text-center max-w-md">
@@ -20,7 +26,7 @@ export default function ErrorPage({
           Something went wrong
         </h2>
         <p className="text-sm text-ink-light mb-6">
-          {error.message || "An unexpected error occurred. Please try again."}
+          An unexpected error occurred. Please try again.
         </p>
         <Button variant="primary" onClick={reset}>
           Try again

@@ -106,7 +106,7 @@ export function ContactsClient({ initialContacts }: Props) {
     }
     return list.sort((a, b) => {
       const dir = sortDir === "asc" ? 1 : -1;
-      if (sortField === "favorites") return ((b.is_favorite ? 1 : 0) - (a.is_favorite ? 1 : 0)) * dir;
+      if (sortField === "favorites") return ((a.is_favorite ? 1 : 0) - (b.is_favorite ? 1 : 0)) * dir;
       if (sortField === "lead_level") {
         const order = { hot: 0, warm: 1, normal: 2, cold: 3 };
         return ((order[a.lead_level ?? "normal"] ?? 2) - (order[b.lead_level ?? "normal"] ?? 2)) * dir;

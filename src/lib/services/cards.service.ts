@@ -70,6 +70,7 @@ export async function updateCard(
     bio:              data.bio || null,
     job_title:        data.job_title || null,
     phone:            data.phone || null,
+    whatsapp:         data.whatsapp || null,
     email_public:     data.email_public || null,
     social_links:     data.social_links,
     show_organization: data.show_organization,

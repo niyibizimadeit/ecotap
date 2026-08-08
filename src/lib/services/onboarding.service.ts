@@ -194,3 +194,23 @@ export async function suspendUser(
 
   return { success: true, data: updated };
 }
+
+export async function rejectCompany(
+  companyId: string
+): Promise<ActionResult<Company>> {
+  const company = await companiesRepo.getCompanyById(companyId);
+
+  if (!company) return { success: false, error: "Company not found." };
+
+  if (!canTransition(company.status, "suspended")) {
+    return {
+      success: false,
+      error: `Cannot reject a company that is already ${company.status}.`,
+    };
+  }
+
+  const updated = await companiesRepo.updateCompanyStatus(companyId, "suspended");
+  if (!updated) return { success: false, error: "Failed to reject company." };
+
+  return { success: true, data: updated };
+}

@@ -213,20 +213,21 @@ export async function getProfileFull(profileId: string) {
   };
 }
 
-/** Search profiles by username or email (ilike), limited to 10 results */
+/** Search profiles by name, username, or email (ilike), limited to 10 results */
 export async function searchProfilesByQuery(query: string): Promise<Profile[]> {
   const supabase = getServiceSupabase();
   const q = `%${query}%`;
 
-  const [byEmail, byUsername] = await Promise.all([
+  const [byEmail, byUsername, byName] = await Promise.all([
     supabase.from("profiles").select("*").ilike("email", q).limit(10),
     supabase.from("profiles").select("*").ilike("username", q).limit(10),
+    supabase.from("profiles").select("*").ilike("full_name", q).limit(10),
   ]);
 
-  // Deduplicate by id, preferring email matches first
+  // Deduplicate by id, preferring email matches first, then name
   const seen = new Set<string>();
   const results: Profile[] = [];
-  for (const p of [...(byEmail.data ?? []), ...(byUsername.data ?? [])]) {
+  for (const p of [...(byEmail.data ?? []), ...(byName.data ?? []), ...(byUsername.data ?? [])]) {
     if (!seen.has(p.id)) {
       seen.add(p.id);
       results.push(p as Profile);

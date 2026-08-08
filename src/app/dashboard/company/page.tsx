@@ -141,7 +141,7 @@ async function CompanyOverviewContent() {
         />
         <StatCard
           label="Subscription"
-          value={subscription ? "Active" : "None"}
+          value={subscription ? (subscription.status === "pending_approval" ? "Pending" : "Active") : "None"}
           sub={
             subscription?.plan
               ? `${subscription.plan.name} · ${subscription.billing_cycle}`

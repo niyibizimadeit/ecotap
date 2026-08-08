@@ -33,7 +33,7 @@ export function ToggleEmployeeStatusButton({ employeeId, employeeName, currentSt
       router.refresh();
     } else {
       setError(result.error ?? "Failed.");
-      setConfirm(false);
+      // Keep confirm mode open so the error is visible
     }
   }
 

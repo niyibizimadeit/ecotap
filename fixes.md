@@ -1,302 +1,292 @@
-# Dashboard Audit — Logic, Backend & UX Flaws
+# EcoTap — Fixes & Testing Report
 
-> Compiled from a full review of `src/app/dashboard/company/**` and `src/app/dashboard/employee/**`, their server actions, services, and middleware.
+## ✅ Fixes Applied (from previous review)
 
----
+- ~~Fix #1: Company rejection broken~~ — Added `rejectCompany` to onboarding service + admin action + approvals page
+- ~~Fix #2: Employee profile save broken~~ — Employee company lock now only rejects when value differs from current primary company
+- ~~Fix #9: Middleware dot-bypass~~ — Reordered `isPublicPath` checks; dashboard guard runs before dot-file check
+- ~~Fix #10: Modal backdrop click~~ — Moved onClick to backdrop div; added `role="dialog" aria-modal="true"`
+- ~~Fix #38: revokeInvitationAction always reports success~~ — Wrapped in try/catch, returns error on failure
+- ~~Fix #43: error.tsx leaking raw error messages~~ — Generic message + console.error logging
+- ~~Fix #46: Deduplicate ROLE_LABELS~~ — Users page imports from @/constants
+- ~~Fix #47: Deduplicate DASHBOARD_BASE~~ — Middleware imports DASHBOARD_ROUTE from @/constants
+- ~~Fix #57: getInitials whitespace handling~~ — Uses `.split(/\s+/)` + `.filter(Boolean)`
+- ~~Fix #58: formatDate error handling~~ — Guards against invalid dates, returns "—"
+- ~~Fix #60: Default type="button" on Button~~ — Added `type="button"` default prop
+- ~~Fix #65: PasswordInput tabIndex={-1} removed~~ — Toggle now keyboard-accessible
+- ~~Fix #82: handleResend DOM manipulation~~ — Replaced with React state + aria-live
 
-## 🔴 Critical (Logic / Backend)
+## 🆕 New Features Added
 
-### 1. Employee overview crashes when no card row exists
-**File:** `src/app/dashboard/employee/OverviewContent.tsx:31-35`
-```ts
-const { data: card } = await supabase
-  .from("cards")
-  .select("id, is_public")
-  .eq("profile_id", profileId)
-  .single();
-```
-Supabase `.single()` throws a PostgREST error (code `PGRST116`) when zero rows match — it does not return `{ data: null }`. New employees whose card hasn't been created yet (e.g., still pending activation) will crash the entire overview page with an unhandled promise rejection.  
-**Fix:** Use `.maybeSingle()` instead, and handle `null` gracefully.
-
-### 2. `computeCardScores` engagement score is always 100 (math bug)
-**File:** `src/lib/services/analytics.service.ts:115-124`
-```ts
-const engagementScore = Math.min(100, Math.round(
-  ((viewCount / Math.max(totalEvents, 1)) * 30 +
-   (tapCount / Math.max(totalEvents, 1)) * 25 +
-   (exchangeCount / Math.max(totalEvents, 1)) * 25 +
-   (shareCount / Math.max(totalEvents, 1)) * 20) *
-  3.33
-));
-```
-Since `viewCount + tapCount + exchangeCount + shareCount === totalEvents`, the four ratios always sum to **1.0**. So the inner expression is always `(30+25+25+20) = 100`, multiplied by `3.33 = 333`, clamped to 100. **Every card with ≥1 event scores 100.** The ratio weighting is completely nullified — the score carries no signal.  
-**Fix:** Rewrite the formula to use absolute event counts normalized against a benchmark (e.g., events per day), not against themselves.
-
-### 3. `recordCardEvent` return-visitor detection is broken
-**File:** `src/lib/services/analytics.service.ts:33-43`
-```ts
-const existing = await analyticsRepo.getEventsByCardId(payload.card_id, 1);
-isReturnVisitor = existing.some(e => e.visitor_id === payload.visitor_id);
-```
-Fetches only the **single most recent event** (limit=1) and checks if it matches the current visitor. A returning visitor whose last visit wasn't literally the most recent event is misclassified as new. This makes the `is_return_visitor` column meaningless for any card with >1 unique visitor.  
-**Fix:** Add a dedicated repo function `hasVisitorVisitedBefore(cardId, visitorId)` that queries by visitor_id directly.
-
-### 4. Contacts optimistic updates never roll back on failure
-**File:** `src/app/dashboard/employee/contacts/ContactsClient.tsx:33-54`
-```ts
-async function toggleFavorite(c: ContactExchange) {
-  const newVal = !c.is_favorite;
-  setContacts(prev => prev.map(x => (x.id === c.id ? { ...x, is_favorite: newVal } : x)));
-  await updateContactExchange(c.id, { is_favorite: newVal });  // 🔥 no try/catch, no rollback
-}
-```
-All four mutation functions (`toggleFavorite`, `setLeadLevel`, `saveNotes`, `saveGroup`) optimistically update state but **never catch errors**. If the server call fails, the UI stays optimistically changed while the database is unchanged — a silent data-desync. The page must be refreshed to see the real state.  
-**Fix:** Wrap each `await` in try/catch; revert to the previous value on failure. Show a toast instead of silently swallowing.
-
-### 5. `updateMyCard` — employees can overwrite admin-assigned job titles
-**File:** `src/app/actions/cards.actions.ts:143-148`
-```ts
-if (data.job_title !== undefined) {
-  await serviceClient
-    .from("profile_companies")
-    .update({ job_title: data.job_title || null })
-    .eq("profile_id", user.id);
-}
-```
-When an employee edits their profile, the new job title is written to **all** their `profile_companies` links, including the one managed by their company admin. There is no guard preventing an employee from overwriting the job title their admin assigned. The company lock only applies to the company name, not the job title.  
-**Fix:** Either prevent employees from editing `job_title` entirely (same as the company lock), or scope the update to only non-primary company links.
+- **Employee lock controls** — Company admin can lock org, job titles, groups per employee
+- **Separate WhatsApp field** — Separate from phone with "Same as phone" auto-fill checkbox
+- **Org toggle now fully hides org info** — When "Show organization" is off, company name, job title, and org badge are all hidden
+- **SQL migration** — `supabase/migrations/019_employee_locks_and_whatsapp.sql`
 
 ---
 
-## 🟠 High (Data Integrity / UX)
+## 🔴 Testing Results — Critical Bugs Found
 
-### 6. "Active cards" stat actually counts active employee profiles
-**File:** `src/app/dashboard/company/page.tsx:129-133` + `src/app/actions/company.actions.ts:153-158`
-```ts
-active: employees.filter((e) => e.status === "active").length,
-```
-The company dashboard stat is labeled "Active cards" with subtitle "Employees with live cards," but the count is `employees.filter(status === "active").length` — it counts employees whose **profile** is active, not whether they have a published card. An active employee whose card is private or doesn't exist yet is still counted.  
-**Fix:** Either rename to "Active employees" or join against the `cards` table to check `is_public = true`.
+### B1. Billing "Save changes" creates a DUPLICATE plan instead of updating
+**File:** `admin/billing/page.tsx:149-176` + `billing.repo.ts:39-59`
+**What happens:** The save function does NOT include the plan's `id` in the FormData/upsert call. Supabase `.upsert()` with no `id` INSERTs a brand-new row. The UI patches the local card, so it looks correct until page refresh — then duplicates appear.
+**Fix:** Pass the plan's `id` in the upsert call when editing. Add `fd.set("id", editPlan.id)`.
 
-### 7. Employee orders list shows raw design UUID instead of design name
-**File:** `src/app/dashboard/employee/orders/page.tsx:119`
-```tsx
-<p className="text-sm font-medium text-ink">{order.design_id.slice(0, 8)}</p>
-```
-The `getMyOrders` action returns `CardOrder[]` which has no joined design data. Users see `a1b2c3d4` instead of, e.g., "Emerald Standard." The admin orders page uses `CardOrderWithDesign` which includes the design name — the employee page should too.  
-**Fix:** Use `getAllOrders` (which returns `CardOrderWithDesign`) or enrich `getUserOrders` with design names.
+### B2. Billing "Deactivate/Activate" is purely cosmetic — never persisted
+**File:** `admin/billing/page.tsx:178-180`
+**What happens:** `toggleActive()` only flips local React state. No server call. Refreshing reverts.
+**Fix:** Add an `updatePlanActive(id, isActive)` server action and call it from toggleActive.
 
-### 8. `resolveCompanyId` is copy-pasted across 3 action files
+### B3. Designs "Save changes" reactivates inactive designs + overwrites pattern
+**File:** `admin/designs/page.tsx:59-83`
+**What happens:** `fd.set("is_active", "on")` and `fd.set("pattern", "dots")` are unconditional. Editing any design silently reactivates it and resets its pattern to "dots". Also, the result of createDesign/updateDesign is completely ignored — no error handling, no loading state.
+**Fix:** Preserve the existing `is_active` state when editing. Don't overwrite pattern. Handle errors from the server actions.
+
+### B4. resolveCompanyId used WITHOUT role check — privilege escalation
+**Files:** `lib/supabase/server.ts:resolveCompanyId`, all `company.actions.ts`, `invitations.actions.ts`, `subscription.actions.ts`
+**What happens:** `resolveCompanyId` returns the company for ANY authenticated user with `is_primary: true` — never checks `role === "company_admin"`. Invited employees get `is_primary: true`. Any employee can delete/suspend coworkers, rename the company, change its slug, toggle locks, create/revoke invites, and subscribe — all actions that should be company_admin only.
+**Fix:** Add `role === "company_admin"` check inside `resolveCompanyId()` or in every protected server action.
+
+### B5. Service-role writes without ownership verification — 5 endpoints
 **Files:**
-- `src/app/actions/company.actions.ts:64-84`
-- `src/app/actions/invitations.actions.ts:15-34`
-- `src/app/actions/subscription.actions.ts:15-32`
+- `uploads.actions.ts:updateCompanyLogo(companyId)` — any user can overwrite any company's logo
+- `uploads.actions.ts:linkPaymentToOrder` — any user can mark any order as paid
+- `subscription.actions.ts:uploadSubscriptionScreenshotAction` — any user can mark any subscription as paid
+- `uploads.actions.ts:uploadDesignImage` — any authenticated user can upload design images (no super_admin guard)
+- `uploads.actions.ts:deleteUpload(url)` — any user can delete any R2 file by URL
 
-Three identical ~20-line functions. Any bug fix requires editing all three. Already diverging slightly (error handling differs).  
-**Fix:** Extract to a shared helper in `@/lib/utils/server` or `@/lib/services`.
+**Fix:** Add ownership verification before each service-role write:
+- `updateCompanyLogo`: verify `resolveCompanyId() === companyId`
+- `linkPaymentToOrder`: verify `order.profile_id === currentUser.id`
+- `uploadSubscriptionScreenshot`: verify subscription belongs to caller's company
+- `uploadDesignImage`: add `requireSuperAdmin()` guard
+- `deleteUpload`: verify the URL belongs to the caller's resources
 
-### 9. Subscription payment amount is per-employee price, not total
-**File:** `src/app/dashboard/company/subscription/new/page.tsx:112`
-```ts
-formData.append("payment_amount", String(selectedPlan.price_per_employee));
-```
-The subscription flow doesn't ask for employee count — it submits the **per-employee** rate as the payment amount. The actual billing amount should be `price_per_employee × employee_count`, but `employee_count` is never captured during subscription.  
-**Fix:** Add an employee count field to the subscription form, or default to 1 and make it editable before submit.
+### B6. User enumeration confirmed — 3 vectors
+**Files:** `auth.actions.ts`, `forgot-password/page.tsx`
+- `requestPasswordReset` returns `"NO_ACCOUNT"` → page renders "We couldn't find an account with {email}"
+- `signUp` returns distinct "username already taken" / "account with this email already exists"
+- `createInvite` returns "A user with this email is already a member of your company"
+**Fix:** Return uniform responses: "If an account exists, a code has been sent."
 
-### 10. Payment screenshots from subscription flow are uploaded to `orders/pending` path
-**File:** `src/app/actions/uploads.actions.ts:140`
-```ts
-const result = await uploadToR2(buffer, file!.name, file!.type, "orders/pending");
-```
-The `uploadPaymentScreenshot` action hardcodes `"orders/pending"` as the R2 prefix. When called from the subscription payment flow, company subscription screenshots are incorrectly stored under the orders directory.  
-**Fix:** Accept an optional `folder` parameter or create a separate `uploadSubscriptionScreenshot` action.
+### B7. Sign-in redirect param completely ignored — return-to-page flow broken
+**Files:** `middleware.ts:94`, `auth.actions.ts:signIn`, `login/page.tsx`, `org/login/page.tsx`
+**What happens:** Middleware sets `?redirect=<pathname>`, org login sends `redirect=/dashboard/company` as FormData — but `signIn` never reads either. Users always land on their role dashboard.
+**Fix:** Read `redirect` from FormData or searchParams in signIn, redirect there after login (validate it starts with `/` to prevent open redirect).
 
-### 11. Company settings doesn't check slug uniqueness
-**File:** `src/app/actions/company.actions.ts:241-243`
-```ts
-if (!/^[a-z0-9][a-z0-9\-]{1,48}[a-z0-9]$/.test(input.slug)) {
-  return { success: false, error: "INVALID_SLUG_FORMAT" };
-}
-```
-Only validates format — never checks if another company already uses this slug. Two companies with the same slug would cause public page collisions at `ecotap.rw/{slug}`.  
-**Fix:** Add a uniqueness check against the `companies` table before updating.
+### B8. Password reset link flow is broken
+**Files:** `auth.actions.ts:resetPasswordForEmail`, `reset-password/page.tsx`
+**What happens:** `resetPasswordForEmail` is called without a `redirectTo` param. There is no `/auth/` route to handle the recovery token. The `/reset-password` page calls `updateUser` which requires a session that the recovery link never creates.
+**Fix:** Either set a proper `redirectTo` to a callback route, or remove the link-based flow (OTP flow via `/forgot-password` → `/verify-reset` → `/new-password` works).
 
-### 12. Subscription page "Subscribe now" button always visible
-**File:** `src/app/dashboard/company/subscription/page.tsx:18-24`
-```tsx
-action={
-  <Link href="/dashboard/company/subscription/new">
-    <Button variant="primary" size="sm" ...>Subscribe now</Button>
-  </Link>
-}
-```
-The PageHeader action is **unconditional** — it renders "Subscribe now" even when the user is already viewing their active subscription details. This is confusing: "Am I subscribed or not?"  
-**Fix:** Make the button conditional — hide it or change to "Change plan" when an active subscription exists.
+### B9. Employee orders: `momo_phone` stores the USSD dial code, not a phone number
+**File:** `employee/orders/new/page.tsx:173` + `company/orders/new/page.tsx`
+**What happens:** `MOMO_PAY.code` (`"*182*8*1*04404#"`) is stored in the `momo_phone` database column. The payer's actual phone number is never collected anywhere in the flow. Admin views show a USSD code in the phone field.
+**Fix:** Add a phone number input for the payer's MoMo number. Display the USSD code in the UI but store the actual phone number.
 
-### 13. Subscription "Estimated monthly cost" label is wrong for annual plans
-**File:** `src/app/dashboard/company/subscription/page.tsx:159`
-```tsx
-<p className="text-xs text-ink-light mb-1">Estimated monthly cost</p>
-```
-Always says "monthly" regardless of the plan's `billing_cycle`. For annual plans, the displayed amount (employee_count × price_per_employee) should be labeled "Estimated annual cost" or the math should divide by 12.  
-**Fix:** Make the label dynamic based on `subscription.billing_cycle` or `plan.billing_cycle`.
+### B10. Employee contacts: "Favorites First" sort is inverted
+**File:** `employee/contacts/ContactsClient.tsx:109`
+**What happens:** `((b.is_favorite ? 1 : 0) - (a.is_favorite ? 1 : 0)) * dir` with default `sortDir = "desc"` puts non-favorites first. Selecting "Favorites First" shows non-favorites at the top; user must flip the direction toggle to asc.
+**Fix:** Reverse the subtraction: `(a.is_favorite ? 1 : 0) - (b.is_favorite ? 1 : 0)`.
 
-### 14. No order pagination — fetches all orders unconditionally
-**File:** `src/app/dashboard/employee/orders/page.tsx:21`
-```ts
-const result = await getMyOrders();
-```
-Fetches every order for the user with no limit or pagination. For power users who order frequently, this grows unboundedly and the page renders everything in a single list.  
-**Fix:** Add server-side pagination to `getUserOrders` / `getMyOrders`.
-
-### 15. `deleteEmployeeAction` uses inline dynamic imports unnecessarily
-**File:** `src/app/actions/company.actions.ts:292,308`
-```ts
-const { data: employeeLink } = await (await import("@/lib/supabase/server")).getServiceSupabase()...
-const { deleteProfileCascade } = await import("@/lib/services/admin.service");
-```
-Two separate dynamic `await import()` calls inside the same function. Both modules are already available — the top of the file imports `getServiceSupabase`. The dynamic imports add latency and make the code harder to follow.  
-**Fix:** Import both at the top of the file like all other dependencies.
+### B11. Failed payment screenshot link is silent, success page lies
+**File:** `employee/orders/new/page.tsx:177-181` + `company/orders/new/page.tsx`
+**What happens:** After `placeOrder` succeeds, if `linkPaymentToOrder` fails, only `console.error` is called. The user is still redirected to the success page which states "Your payment screenshot has been submitted." The order exists but is unpaid with no screenshot, and the uploaded file is orphaned in R2.
+**Fix:** Await the result and show an error on failure. Do not redirect to success page if the link fails.
 
 ---
 
-## 🟡 Medium (UX / Consistency)
+## 🟠 Testing Results — High Severity
 
-### 16. Employee dashboard layout fetches user data client-side (waterfall + flash)
-**File:** `src/app/dashboard/employee/layout.tsx:28-40`
-```tsx
-useEffect(() => {
-  async function load() {
-    const result = await getMyCard();
-    if (result.success && result.data) { setUserData(...); }
-  }
-  load();
-}, []);
-```
-The employee layout is a `"use client"` component that fetches user identity in a `useEffect`. This causes:
-- A loading flash where the sidebar shows "—" for name/role.
-- A client-server waterfall: the page renders, then the client fetches, then re-renders.
+### H1. Delete/Toggle employee error messages are invisible
+**Files:** `company/employees/DeleteEmployeeButton.tsx`, `ToggleEmployeeStatusButton.tsx`
+**What happens:** On failure, the code calls `setError(...)` then immediately `setConfirm(false)`. The error element only renders inside the confirm branch — it disappears before the user sees it. The button silently does nothing on error.
+**Fix:** Keep the confirm mode open on failure, or render the error outside the confirm branch.
 
-The **company layout** already uses the correct pattern — a server component that fetches data once and passes it as props.  
-**Fix:** Convert the employee layout to a server component (or wrap it in one) that fetches the user's name/role/username server-side.
+### H2. Subscription currency toggle: RWF amount stored as USD
+**File:** `company/subscription/new/page.tsx`
+**What happens:** USD mode shows "RWF" prices and sends RWF amounts tagged as `payment_currency: "USD"`. No conversion exists.
+**Fix:** Add `usdToRwf` conversion, or remove the non-functional USD toggle.
 
-### 17. "View my card" link can point to `/you` (404)
-**File:** `src/app/dashboard/employee/layout.tsx:98`
-```tsx
-<a href={`/${userData.username || "you"}`} ...>
-```
-If the `useEffect` hasn't resolved yet, `userData.username` is `""` (empty string), and the link becomes `/you` — a 404 page. The same pattern repeats in the mobile drawer at line 156.  
-**Fix:** Default to `#` or hide the link until `username` is loaded.
+### H3. "Company card orders" page shows only admin's personal orders
+**File:** `company/orders/page.tsx`
+**What happens:** `getMyOrders()` filters by `profile_id = current user`. The page says "Company card orders" but shows only orders placed by the admin personally. Employees' orders are invisible.
+**Fix:** Either add a company-scoped order query, or rename the page to "My orders".
 
-### 18. Employee actions (suspend/activate/delete) use `alert()` for error feedback
-**Files:**
-- `src/app/dashboard/company/employees/ToggleEmployeeStatusButton.tsx:33`
-- `src/app/dashboard/company/employees/DeleteEmployeeButton.tsx:25`
+### H4. Client-supplied payment amounts never validated server-side
+**Files:** `orders.service.ts:placeOrder`, `subscription.service.ts:subscribe`
+**What happens:** Both store `payment_amount`/`payment_currency` directly from the client without recomputing against `CARD_PRICES`/`billing_plans.price_per_employee`. An attacker can submit any amount.
+**Fix:** Recompute amounts server-side from the authoritative price constants or DB values.
 
-```ts
-alert(result.error ?? "Failed.");
-```
-Native `alert()` dialogs are a poor UX pattern — they block the page, look unstyled, and can't be dismissed. The rest of the app uses inline error messages (red banners).  
-**Fix:** Use inline error state + a small error message below the button, consistent with the settings and profile pages.
+### H5. No rate limiting anywhere
+**Files:** All auth actions, contact exchange endpoint, VCF route, page view tracker
+**What happens:** Zero rate limiting, throttling, captcha, or honeypot code exists. Login, signup, OTP verify, OTP resend, contact submission, and page views are all unbounded.
+**Fix:** Add rate limiting middleware or per-action rate checks. Consider Supabase's built-in rate limits or a Redis-based solution.
 
-### 19. Employee overview "Pending" stat uses a custom ClockIcon instead of lucide-react
-**File:** `src/app/dashboard/company/page.tsx:219-231`
-```tsx
-function ClockIcon() { return (<svg ...>...</svg>); }
-```
-A 12-line inline SVG component defined at the bottom of the file. Lucide-react is already a dependency and has `Clock` — the custom SVG is unnecessary and inconsistent.  
-**Fix:** Replace with `import { Clock } from "lucide-react"`.
+### H6. `/dev/components` is publicly accessible
+**File:** `middleware.ts:21` whitelists `/dev/`; the page itself says "DELETE this page before production"
+**Fix:** Remove the `/dev/` whitelist from middleware, or delete the dev page.
 
-### 20. No sign-out confirmation
-**Files:**
-- `src/app/dashboard/company/_components/CompanySidebar.tsx:136`
-- `src/app/dashboard/employee/layout.tsx:106`
+### H7. `country_rep` middleware access contradicts server action guards
+**Files:** `middleware.ts:40-43`, all `admin.actions.ts`
+**What happens:** Middleware allows `country_rep` into `/dashboard/admin`, but every admin server action requires `super_admin`. Result: country_reps see a dashboard where every fetch fails with "Unauthorized." The Overview RSC (which has no guard) leaks real platform stats.
+**Fix:** Either remove `country_rep` from admin dashboard access in middleware, or add `country_rep` support to admin actions with read-only permissions.
 
-Both sign-out buttons call `signOut()` immediately. Accidental clicks log the user out with no chance to cancel.  
-**Fix:** Add a one-click confirmation step ("Click again to sign out" or a confirm dialog).
+### H8. `approveSubscription` always sets next billing to +1 month
+**File:** `subscription.service.ts:132-135`
+**What happens:** Annual plans get monthly next-billing dates.
+**Fix:** Check `plan.billing_cycle`: if `"annual"`, add 12 months instead of 1.
 
-### 21. Company overview employee list has no status filter
-**File:** `src/app/dashboard/company/page.tsx:189`
-```tsx
-{employees.slice(0, 5).map((emp) => (...))}
-```
-Shows the first 5 employees regardless of status. Pending and suspended employees are mixed in with active ones. A company with many pending invites sees those at the top instead of active team members.  
-**Fix:** Sort active employees first, or add a status filter/tab.
+### H9. Designs page "0 orders placed" is hardcoded — never fetched
+**File:** `admin/designs/page.tsx`
+**What happens:** `orders: 0` is hardcoded in both data mappings. The design card always shows "0 orders placed" regardless of reality.
+**Fix:** Fetch order counts per design from the server, or remove the misleading stat.
 
-### 22. Employee overview "Card order" stat shows capitalized raw status
-**File:** `src/app/dashboard/employee/OverviewContent.tsx:101`
-```tsx
-value={latestOrder ? (latestOrder.status ?? "None").charAt(0).toUpperCase() + (latestOrder.status ?? "none").slice(1) : "None"}
-```
-Manual string capitalization. If the status is `pending_approval` (for subscriptions), it'll display as `Pending_approval`. There's no mapping to a user-friendly label.  
-**Fix:** Use a lookup map like `ORDER_STATUS_LABELS` from constants.
-
-### 23. Employee contacts "With email" / "With phone" stats are raw integers without context
-**File:** `src/app/dashboard/employee/contacts/ContactsClient.tsx:87-89`
-```tsx
-const withEmail = contacts.filter((c) => c.visitor_email).length;
-const withPhone = contacts.filter((c) => c.visitor_phone).length;
-```
-These are simple counts. They'd be more useful as percentages or shown alongside the total. Currently they're just raw integers with no context.  
-**Fix:** Add percentage labels or use a format like "12/20 (60%)".
-
-### 24. Order success page timeline is hardcoded and never dynamic
-**File:** `src/app/dashboard/employee/orders/success/page.tsx:61-103`
-The timeline is hardcoded — it always says "within 24 hours" regardless of when the order was actually placed. For USD/bank transfers that require manual coordination, the timeline is misleading.  
-**Fix:** Make the timeline dynamic or at least differentiate between MoMo (faster) and bank transfer (slower) timelines.
-
-### 25. QR code PNG download renders at 512×512 from a 200×200 SVG (blurry)
-**File:** `src/app/dashboard/employee/qr/page.tsx:53-54`
-```ts
-canvas.width = 512;
-canvas.height = 512;
-ctx.drawImage(img, 0, 0, 512, 512);
-```
-The QR code SVG is rendered at 200×200 via `<QRCodeSVG size={200}>`, then upscaled to 512×512 in the canvas. The result is a blurry, upscaled PNG.  
-**Fix:** Either render the QR at 512×512 directly, or use a higher source resolution.
+### H10. QR search "by name" doesn't search names
+**File:** `profiles.repo.ts:searchProfilesByQuery`
+**What happens:** Only `ilike`s `email` and `username`. Placeholder says "Search by name, email, or username" but name search returns nothing.
+**Fix:** Add `full_name` ilike to the search query.
 
 ---
 
-## 🟢 Low (Code Quality / Maintainability)
+## 🟡 Testing Results — Medium Severity
 
-### 26. Unused/duplicate import: `getServiceSupabase` in `deleteEmployeeAction`
-**File:** `src/app/actions/company.actions.ts:292`  
-The function dynamically imports `getServiceSupabase` even though it's already imported at the top of the file (line 4). The dynamic import is redundant and adds latency.
+### M1. Overview "Active companies" stat counts ALL companies
+**File:** `admin/page.tsx:87` + `admin.service.ts:getAdminOverview`
+**What happens:** Labeled "Active companies" but `totalCompanies` includes pending and suspended. Should filter by status or rename.
+**Fix:** Filter `companies.filter(c => c.status === "active").length` or rename to "Companies on platform."
 
-### 27. `EmptyState` icon prop inconsistency — sometimes emoji strings, sometimes JSX
-In `CompanyOverviewContent` the `EmptyState` receives `icon="🏢"` (emoji string), but `EmployeeOverviewContent` passes `icon={<User .../>}` (JSX). Both work but the inconsistency is confusing for contributors.  
-**Fix:** Standardize on one approach — prefer JSX for consistency with the design system.
+### M2. Admin users "Reactivate user" label is wrong for pending users
+**File:** `admin/users/page.tsx:493-501`
+**What happens:** For a pending user, the button says "Reactivate user" but the action actually activates them (pending→active, valid transition). The label implies they were previously active.
+**Fix:** Show "Activate user" when status is `pending`, "Reactivate user" when status is `suspended`.
 
-### 28. Inline styles proliferation
-Nearly every component uses inline `style={{}}` objects mixed with Tailwind classes. This makes it hard to maintain a consistent design system. Brand colors (`#064E3B`, `#FEF9EF`, etc.) are repeated as magic strings in dozens of files instead of referencing CSS variables or Tailwind config tokens.  
-**Fix:** Extend the Tailwind theme with the brand palette and use semantic utility classes (e.g., `bg-emerald-deep`, `text-cream`).
+### M3. Contacts stats "With email"/"This month" are per-page only
+**File:** `admin/contacts/page.tsx:55-60`
+**What happens:** Computed from the current 25 rows, displayed as platform totals alongside server-total "Total received." Numbers are wrong with >1 page.
+**Fix:** Fetch separate count queries, or compute from the full dataset.
 
-### 29. Mock designs fallback hides real data issues
-**File:** `src/app/dashboard/employee/orders/new/page.tsx:61`
-```ts
-const [designs, setDesigns] = useState<CardDesignOption[]>(MOCK_DESIGNS);
-```
-The design gallery initializes with `MOCK_DESIGNS` and only replaces them when the server fetch succeeds. If the fetch fails silently, users see mock designs and can place orders with fake design IDs that don't exist in the database.  
-**Fix:** Initialize with an empty array and show a loading skeleton; only render the gallery when real data is available.
+### M4. `/rdmc/{slug}` hardcoded link in users page
+**File:** `admin/users/page.tsx:290-299`
+**What happens:** Employee cards linked to `/rdmc/{slug}` — works only accidentally because `[slug]/[employee]` resolves by username. Gives employees a wrong URL.
+**Fix:** Store company slug in `AdminUser` and build the real URL: `/${companySlug}/${username}`.
 
-### 30. `updateMyCard` — empty company name can create orphaned companies
-**File:** `src/app/actions/cards.actions.ts:169-186`  
-When a user types a company name, the code does an `ilike` search and creates a new company if none matches. If the user types a typo, submits, then corrects it, two companies are created. There's no cleanup of the orphaned one.  
-**Fix:** Add a debounce to the company search, or show existing matches as suggestions instead of auto-creating.
+### M5. Admin users page has no loading state
+**File:** `admin/users/page.tsx`
+**What happens:** Shows "No users match your search" until fetch completes. No error state on failure.
+**Fix:** Add a loading skeleton and error banner with retry.
+
+### M6. Admin orders page has no loading state + uses alert()
+**File:** `admin/orders/page.tsx`
+**What happens:** Shows "No pending orders" until fetch completes. Uses `alert()` for action errors.
+**Fix:** Add a loading skeleton. Replace alert() with toast or inline error banner.
+
+### M7. Design save has no error handling or loading state
+**File:** `admin/designs/page.tsx:59-83`
+**What happens:** Server action results are completely ignored. Modal closes regardless of success/failure. No loading spinner.
+**Fix:** Add loading state, check server action results, show errors, only close modal on success.
+
+### M8. Dashboard error.tsx renders raw error.message to users
+**File:** `app/dashboard/error.tsx:23`
+**What happens:** Unlike the auth error boundary (fixed), the dashboard error boundary still renders `error.message` directly.
+**Fix:** Apply the same fix as the auth error boundary — generic message + console.error.
+
+### M9. Invite revocation has no loading/error state in UI
+**File:** `company/employees/InviteModal.tsx:handleRevoke`
+**What happens:** No spinner, no error feedback. Button silently does nothing on failure (even though the server action now correctly returns errors — the UI doesn't display them).
+**Fix:** Add loading state to the revoke button, show errors from the action result.
+
+### M10. Raw Supabase error messages returned to clients
+**Files:** `auth.actions.ts`, `company.actions.ts:updateMyCompany`
+**What happens:** `error.message` from Supabase is returned verbatim in action results. Can leak table names, constraint details.
+**Fix:** Map Supabase errors to user-friendly messages. Log the real error server-side.
+
+### M11. Settings page: no client-side required-name validation
+**File:** `company/settings/page.tsx`
+**What happens:** The `name` field has no required check. A company admin can clear the name and save — the server accepts empty names (only slug and color are validated). The sidebar initials break.
+**Fix:** Add required validation for company name. Add server-side check in `updateMyCompany`.
+
+### M12. Design edit modal: color swatch buttons have no aria-labels
+**File:** `admin/designs/page.tsx` + `admin/qr-codes/page.tsx`
+**What happens:** Color preset buttons have no `aria-label` or `aria-pressed`, making them invisible to screen readers.
+**Fix:** Add `aria-label={`Select color ${color}`}` and `aria-pressed={selected}`.
+
+### M13. Employee overview header "View my card" goes to profile editor, not public card
+**File:** `employee/page.tsx:15`
+**What happens:** Links to `/dashboard/employee/profile` (the edit form). The sidebar link with the SAME label goes to the public card. Two links labeled identically go to different places.
+**Fix:** Change the header link label to "Edit my card" or change the destination to the public card URL.
+
+### M14. Employee orders page has no error state distinction
+**File:** `employee/orders/page.tsx:21-23`
+**What happens:** If `getMyOrders()` fails, `orders = []` and the page shows "No orders yet" — indistinguishable from a new user. Same issue in `OverviewContent.tsx` (order stat shows "None" on failure).
+**Fix:** Distinguish empty vs error: check `result.success` and show an error banner on failure.
 
 ---
 
-## 📊 Summary
+## 🔵 Testing Results — Low Severity / Code Quality
 
-| Severity | Count | Area |
-|----------|-------|------|
-| 🔴 Critical | 5 | Logic bugs, crashes, silent data corruption |
-| 🟠 High | 10 | Misleading stats, broken UX, data issues |
-| 🟡 Medium | 10 | UX polish, consistency, edge cases |
-| 🟢 Low | 5 | Code quality, maintainability |
+- **"Add employee" quick action** navigates to the list page instead of opening the invite modal directly
+- **"Volume discounts for 100+ cards"** is marketing copy with no backing code logic
+- **Settings says "PNG or SVG"** but ImageUpload rejects SVG client-side
+- **Designs "X orders placed"** always shows 0
+- **Fake "QR code" in design card preview** shows NFC ripple, not a QR code — purely cosmetic
+- **Employee sidebar mobile drawer** lacks Escape-to-close and focus trap
+- **Order quantity +/- buttons** and range slider lack aria-labels
+- **Step indicators** (orders/new, subscription/new) lack aria-current/step semantics
+- **Support email inconsistency**: `support@ecotap.rw` (pending page) vs `ecotap@rdmc.rw` (contact page)
+- **Employee profile: no way to remove photo** — `onRemove` is not passed to ImageUpload; only replacement is possible
+- **Employee groups: no blur-to-save on group name edit** — clicking away from the group input leaves it in edit mode with unsaved changes
+- **Employee QR: hardcoded `https://ecotap.rw`** domain — breaks in dev/staging
+- **Employee QR failure mislabeled** — server error shows "No card found. Set up your profile first." which is wrong guidance
+- **Company sidebar active link**: exact `pathname === href` match misses sub-routes (`/orders/new`, `/orders/success`)
+- **Settings slug hint** says `ecotap.rw/{slug}/employee` but real URL is `/{slug}/{username}`
+- **Grain overlay z-index: 9999** sits above all modals on public pages
+- **No `prefers-reduced-motion`** handling anywhere (WCAG 2.3.3)
+- **`Database = any`** in types/database.ts — root cause of pervasive unsafe casts
 
-**Key themes:**
-1. **Error handling is inconsistent** — some places use `.single()` (throws), some `.maybeSingle()` (returns null), some catch errors, some don't.
-2. **Optimistic updates without rollback** — the contacts page is the worst offender.
-3. **Unvalidated assumptions** — employee has a card, design IDs are fetchable, slugs are unique, scores are meaningful.
-4. **Server/client data fetching split** — company dashboard uses server components correctly; employee dashboard does not.
+---
+
+## SQL Migration Applied
+
+```sql
+-- 019_employee_locks_and_whatsapp.sql
+ALTER TABLE companies ADD COLUMN IF NOT EXISTS org_locked boolean NOT NULL DEFAULT false;
+ALTER TABLE companies ADD COLUMN IF NOT EXISTS job_title_locked boolean NOT NULL DEFAULT false;
+ALTER TABLE companies ADD COLUMN IF NOT EXISTS groups_locked boolean NOT NULL DEFAULT false;
+ALTER TABLE cards ADD COLUMN IF NOT EXISTS whatsapp text;
+```
+
+---
+
+## Priority Fix Queue
+
+### Immediate (this session)
+1. Fix B1 (billing save creates duplicate plan)
+2. Fix B2 (billing deactivate/activate cosmetic only)
+3. Fix B4 (resolveCompanyId role check)
+4. Fix B5 (service-role ownership verification — 5 endpoints)
+5. Fix H1 (delete/toggle error invisible)
+6. Fix H2 (subscription currency RWF-as-USD)
+7. Fix M8 (dashboard error.tsx raw error.message)
+
+### Short-term
+8. Fix B3 (designs save reactivates + overwrites pattern)
+9. Fix B6 (user enumeration)
+10. Fix B7 (sign-in redirect)
+11. Fix B8 (password reset link flow)
+12. Fix H3 (company orders scope)
+13. Fix H4 (client-supplied amounts)
+14. Fix H5 (rate limiting)
+15. Fix H6 (remove /dev/ from middleware)
+16. Fix H7 (country_rep middleware vs actions mismatch)
+17. Fix H8 (annual subscription billing date)
+18. Fix H9 (designs 0 orders hardcoded)
+19. Fix H10 (QR search by name)
+
+### Medium-term
+20. Fix M1-M12 (label mismatches, loading states, aria labels)
+21. Migrate `Database = any` to generated Supabase types
+22. Add E2E tests for critical flows
+23. RLS policy audit on all Supabase tables
+24. Fix `prefers-reduced-motion` in globals.css
+25. Extract inline styles to CSS variables/Tailwind tokens

@@ -71,12 +71,12 @@ export default function ApprovalsPage() {
   async function handleAction(id: string, action: "approve"|"reject") {
     setActionError(null);
     setActionStates(s => ({ ...s, [id]: action === "approve" ? "approving" : "rejecting" }));
-    const { approveCompany, approveIndividual, rejectUser } = await import("@/app/actions/admin.actions");
+    const { approveCompany, approveIndividual, rejectUser, rejectCompany } = await import("@/app/actions/admin.actions");
     let result;
     if (action === "approve") {
       result = tab === "companies" ? await approveCompany(id) : await approveIndividual(id);
     } else {
-      result = await rejectUser(id);
+      result = tab === "companies" ? await rejectCompany(id) : await rejectUser(id);
     }
     if (!result.success) {
       setActionError(result.error ?? `Failed to ${action} this application.`);

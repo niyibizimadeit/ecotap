@@ -52,6 +52,13 @@ export async function rejectUser(profileId: string): Promise<AnyActionResult> {
   return onboardingService.rejectUser(profileId);
 }
 
+export async function rejectCompany(companyId: string): Promise<AnyActionResult> {
+  if (!(await requireSuperAdmin())) {
+    return { success: false, error: "Unauthorized. Super admin only." };
+  }
+  return onboardingService.rejectCompany(companyId);
+}
+
 // ── Card designs ─────────────────────────────────────────────────────────────
 
 export async function createDesign(formData: FormData): Promise<AnyActionResult> {
@@ -92,12 +99,21 @@ export async function upsertPlan(formData: FormData): Promise<AnyActionResult> {
     return { success: false, error: "Unauthorized. Super admin only." };
   }
 
+  const id = formData.get("id") as string | null;
   return adminService.upsertPlan({
+    id:                 id || undefined,
     name:               formData.get("name") as string,
     billing_cycle:      (formData.get("billing_cycle") as "monthly" | "annual"),
     price_per_employee: parseInt(formData.get("price_per_employee") as string, 10),
-    is_active:          formData.get("is_active") === "on",
+    is_active:          formData.get("is_active") === "on" || formData.get("is_active") === "true",
   });
+}
+
+export async function togglePlanActive(id: string, isActive: boolean): Promise<AnyActionResult> {
+  if (!(await requireSuperAdmin())) {
+    return { success: false, error: "Unauthorized. Super admin only." };
+  }
+  return adminService.upsertPlan({ id, is_active: isActive } as Parameters<typeof adminService.upsertPlan>[0]);
 }
 
 export async function deletePlan(id: string): Promise<AnyActionResult> {

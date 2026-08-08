@@ -1,6 +1,6 @@
 "use server";
 
-import { getSupabase, getServiceSupabase } from "@/lib/supabase/server";
+import { getSupabase, getServiceSupabase, resolveCompanyId } from "@/lib/supabase/server";
 import { uploadProfilePhoto, uploadCompanyLogo, uploadDesignPreview, uploadToR2, deleteFromR2, keyFromUrl } from "@/lib/r2/upload";
 import { uploadPaymentScreenshot as uploadPaymentScreenshotService } from "@/lib/services/orders.service";
 import type { ActionResult } from "@/types";
@@ -62,6 +62,12 @@ export async function updateCompanyLogo(
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return { success: false, error: "Not authenticated." };
 
+  // Verify the caller is an admin of this company
+  const callerCompanyId = await resolveCompanyId();
+  if (!callerCompanyId || callerCompanyId !== companyId) {
+    return { success: false, error: "Unauthorized. You can only update your own company logo." };
+  }
+
   const file = formData.get("file") as File | null;
   const fileError = validateFile(file);
   if (fileError) return { success: false, error: fileError };
@@ -94,6 +100,17 @@ export async function uploadDesignImage(
   const supabase = await getSupabase();
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return { success: false, error: "Not authenticated." };
+
+  // Only super admins can upload design previews
+  const { data: profile } = await supabase
+    .from("profiles")
+    .select("role")
+    .eq("id", user.id)
+    .single();
+
+  if (profile?.role !== "super_admin") {
+    return { success: false, error: "Unauthorized. Super admin only." };
+  }
 
   const file = formData.get("file") as File | null;
   if (!file || file.size === 0) {
@@ -160,6 +177,18 @@ export async function linkPaymentToOrder(
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return { success: false, error: "Not authenticated." };
 
+  // Verify the order belongs to the caller
+  const serviceClient = getServiceSupabase();
+  const { data: order } = await serviceClient
+    .from("card_orders")
+    .select("profile_id")
+    .eq("id", orderId)
+    .single();
+
+  if (!order || order.profile_id !== user.id) {
+    return { success: false, error: "Order not found." };
+  }
+
   const updated = await uploadPaymentScreenshotService(orderId, screenshotUrl);
   if (!updated.success) {
     return { success: false, error: updated.error ?? "Failed to record payment." };
@@ -174,6 +203,17 @@ export async function deleteUpload(url: string): Promise<ActionResult> {
   const supabase = await getSupabase();
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return { success: false, error: "Not authenticated." };
+
+  // Only super admins can delete uploads — prevents arbitrary file deletion via leaked URLs
+  const { data: profile } = await supabase
+    .from("profiles")
+    .select("role")
+    .eq("id", user.id)
+    .single();
+
+  if (profile?.role !== "super_admin") {
+    return { success: false, error: "Unauthorized. Super admin only." };
+  }
 
   const key = keyFromUrl(url);
   if (!key) return { success: false, error: "Invalid file URL." };

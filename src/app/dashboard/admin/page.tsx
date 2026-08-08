@@ -43,7 +43,7 @@ export default function AdminOverviewPage() {
 function AdminOverviewSkeleton() {
   return (
     <>
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3 sm:gap-4 mb-6">
         {Array.from({ length: 5 }).map((_, i) => <StatCardSkeleton key={i} />)}
       </div>
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
@@ -80,12 +80,22 @@ async function AdminOverviewContent() {
 
   return (
     <>
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
-        <StatCard label="Pending approvals" value={stats?.pendingApprovals ?? 0} sub="Needs action" icon={<Clock className="h-5 w-5" />} accent="#D97706" />
-        <StatCard label="Active users" value={stats?.activeUsers ?? 0} sub="Companies + individuals" icon={<Users className="h-5 w-5" />} />
-        <StatCard label="Open card orders" value={stats?.pendingOrders ?? 0} sub="Awaiting approval" icon={<Package className="h-5 w-5" />} accent="#D97706" />
-        <StatCard label="Active companies" value={stats?.totalCompanies ?? 0} sub="On platform" icon={<Building2 className="h-5 w-5" />} />
-        <StatCard label="Contact exchanges" value={contactsCount.success ? contactsCount.data ?? 0 : 0} sub="Across all cards" icon={<Inbox className="h-5 w-5" />} />
+      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3 sm:gap-4 mb-6">
+        <Link href="/dashboard/admin/approvals" className="block group transition-all hover:-translate-y-0.5 hover:shadow-card-lg rounded-2xl">
+          <StatCard label="Pending approvals" value={stats?.pendingApprovals ?? 0} sub="Needs action" icon={<Clock className="h-5 w-5" />} accent="#D97706" />
+        </Link>
+        <Link href="/dashboard/admin/users" className="block group transition-all hover:-translate-y-0.5 hover:shadow-card-lg rounded-2xl">
+          <StatCard label="Active users" value={stats?.activeUsers ?? 0} sub="Companies + individuals" icon={<Users className="h-5 w-5" />} />
+        </Link>
+        <Link href="/dashboard/admin/orders" className="block group transition-all hover:-translate-y-0.5 hover:shadow-card-lg rounded-2xl">
+          <StatCard label="Open card orders" value={stats?.pendingOrders ?? 0} sub="Awaiting approval" icon={<Package className="h-5 w-5" />} accent="#D97706" />
+        </Link>
+        <Link href="/dashboard/admin/users" className="block group transition-all hover:-translate-y-0.5 hover:shadow-card-lg rounded-2xl">
+          <StatCard label="Companies" value={stats?.totalCompanies ?? 0} sub="On platform (all statuses)" icon={<Building2 className="h-5 w-5" />} />
+        </Link>
+        <Link href="/dashboard/admin/contacts" className="block group transition-all hover:-translate-y-0.5 hover:shadow-card-lg rounded-2xl">
+          <StatCard label="Contact exchanges" value={contactsCount.success ? contactsCount.data ?? 0 : 0} sub="Across all cards" icon={<Inbox className="h-5 w-5" />} />
+        </Link>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">

@@ -185,6 +185,7 @@ export async function updateCard(
       | "bio"
       | "job_title"
       | "phone"
+      | "whatsapp"
       | "email_public"
       | "social_links"
       | "show_organization"

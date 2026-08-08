@@ -56,6 +56,12 @@ export interface Company {
   status:                UserStatus;
   /** If true, employees under this company cannot change their card theme_color */
   theme_locked:          boolean;
+  /** If true, employees cannot change their primary organization */
+  org_locked:            boolean;
+  /** If true, employees cannot change their job title */
+  job_title_locked:      boolean;
+  /** If true, employees cannot add/remove card affiliation groups */
+  groups_locked:         boolean;
   /** Captured at registration — legal rep confirmation checkbox */
   legal_rep_confirmed:   boolean;
   /** Optional company-level social links — shared across all employees */
@@ -152,6 +158,7 @@ export interface Card {
   bio:              string | null;
   job_title:        string | null; // Fallback if no primary company job_title set
   phone:            string | null;
+  whatsapp:         string | null; // Separate WhatsApp number — can auto-fill from phone
   email_public:     string | null; // Shown on card (may differ from auth email)
   social_links:     SocialLinks;
   show_organization:boolean;       // Show company, department, job title, company socials on card
@@ -476,6 +483,7 @@ export interface IndividualRegisterForm {
 export interface CardProfileForm {
   job_title:         string;
   phone:             string;
+  whatsapp:          string;
   email_public:      string;
   bio:               string;
   theme_color:       string;

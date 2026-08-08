@@ -129,9 +129,17 @@ export async function approveSubscription(
     return { success: false, error: "Payment must be verified before approving the subscription." };
   }
 
+  // Determine billing cycle from the plan
+  const plan = await billingRepo.getPlanById(sub.plan_id);
+  const isAnnual = plan?.billing_cycle === "annual";
+
   const now = new Date();
   const nextBilling = new Date(now);
-  nextBilling.setMonth(nextBilling.getMonth() + 1);
+  if (isAnnual) {
+    nextBilling.setFullYear(nextBilling.getFullYear() + 1);
+  } else {
+    nextBilling.setMonth(nextBilling.getMonth() + 1);
+  }
   const nextBillingDate = nextBilling.toISOString().slice(0, 10);
 
   const updated = await billingRepo.updateSubscription(subscriptionId, {

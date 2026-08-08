@@ -141,11 +141,11 @@ export default function AdminContactsPage() {
               className="grid grid-cols-12 gap-3 px-4 py-2 rounded-xl mb-2 text-xs font-mono tracking-wide text-ink-light uppercase"
               style={{ backgroundColor: "#F0E6D3" }}
             >
-              <div className="col-span-4 sm:col-span-3">Visitor</div>
-              <div className="col-span-4 sm:col-span-3">Card Owner</div>
-              <div className="col-span-2 sm:col-span-2 hidden sm:block">Contact</div>
-              <div className="col-span-2 sm:col-span-2 hidden md:block">Date</div>
-              <div className="col-span-2 sm:col-span-2 hidden lg:block">Message</div>
+              <div className="col-span-6 sm:col-span-3">Visitor</div>
+              <div className="col-span-6 sm:col-span-3">Card Owner</div>
+              <div className="col-span-2 hidden md:block">Contact</div>
+              <div className="col-span-2 hidden lg:block">Date</div>
+              <div className="col-span-2 hidden lg:block">Message</div>
             </div>
 
             {/* Rows */}
@@ -157,18 +157,36 @@ export default function AdminContactsPage() {
                   style={{ backgroundColor: "#FEFCE8", borderColor: "rgba(6,78,59,0.06)" }}
                 >
                   {/* Visitor */}
-                  <div className="col-span-4 sm:col-span-3 min-w-0">
+                  <div className="col-span-6 sm:col-span-3 min-w-0">
                     <p className="text-sm font-medium text-ink truncate">{exchange.visitor_name}</p>
                     {exchange.visitor_organization && (
                       <p className="flex items-center gap-1 text-xs text-ink-light truncate">
-                        <Building className="h-3 w-3" />
+                        <Building className="h-3 w-3 flex-shrink-0" />
                         {exchange.visitor_organization}
                       </p>
                     )}
+                    {/* Mobile-only: contact info + date inline */}
+                    <div className="flex flex-wrap items-center gap-x-2 gap-y-0.5 mt-1 md:hidden">
+                      {exchange.visitor_email && (
+                        <span className="flex items-center gap-1 text-[11px] text-ink-mid">
+                          <Mail className="h-3 w-3 flex-shrink-0" />
+                          <span className="truncate max-w-[120px]">{exchange.visitor_email}</span>
+                        </span>
+                      )}
+                      {exchange.visitor_phone && (
+                        <span className="flex items-center gap-1 text-[11px] text-ink-mid">
+                          <Phone className="h-3 w-3 flex-shrink-0" />
+                          {exchange.visitor_phone}
+                        </span>
+                      )}
+                      <span className="text-[11px] text-ink-light font-mono">
+                        {exchange.created_at ? new Date(exchange.created_at).toLocaleDateString() : "—"}
+                      </span>
+                    </div>
                   </div>
 
                   {/* Card owner */}
-                  <div className="col-span-4 sm:col-span-3 min-w-0">
+                  <div className="col-span-6 sm:col-span-3 min-w-0">
                     {exchange.card_owner ? (
                       <>
                         <p className="text-sm text-ink-mid truncate">{exchange.card_owner.full_name}</p>
@@ -179,8 +197,8 @@ export default function AdminContactsPage() {
                     )}
                   </div>
 
-                  {/* Contact info */}
-                  <div className="col-span-2 sm:col-span-2 hidden sm:flex flex-col gap-0.5 min-w-0">
+                  {/* Contact info — tablet+ */}
+                  <div className="col-span-2 hidden md:flex flex-col gap-0.5 min-w-0">
                     {exchange.visitor_email && (
                       <span className="flex items-center gap-1 text-xs text-ink-mid truncate">
                         <Mail className="h-3 w-3 flex-shrink-0" />
@@ -198,15 +216,15 @@ export default function AdminContactsPage() {
                     )}
                   </div>
 
-                  {/* Date */}
-                  <div className="col-span-2 sm:col-span-2 hidden md:block">
+                  {/* Date — large screens only */}
+                  <div className="col-span-2 hidden lg:block">
                     <p className="text-xs text-ink-light font-mono">
                       {exchange.created_at ? new Date(exchange.created_at).toLocaleDateString() : "—"}
                     </p>
                   </div>
 
-                  {/* Message */}
-                  <div className="col-span-2 sm:col-span-2 hidden lg:block">
+                  {/* Message — large screens only */}
+                  <div className="col-span-2 hidden lg:block">
                     <p className="text-xs text-ink-light truncate">
                       {exchange.message ?? <span className="italic">—</span>}
                     </p>

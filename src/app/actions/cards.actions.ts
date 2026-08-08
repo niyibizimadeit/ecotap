@@ -71,19 +71,36 @@ export async function updateMyCard(
 
   // ── Employee company lock ───────────────────────────────────────────────
   // Employees cannot change their company — they are locked to the one
-  // that invited them.
+  // that invited them. But if the submitted value matches their current
+  // primary company, allow it through (the profile page pre-fills this field).
   if (isEmployee && data.company?.trim()) {
-    return {
-      success: false,
-      error: "Employees cannot change their company. Contact your company admin.",
-    };
+    const { data: primaryLink } = await serviceClient
+      .from("profile_companies")
+      .select("company_id")
+      .eq("profile_id", user.id)
+      .eq("is_primary", true)
+      .maybeSingle();
+
+    if (primaryLink?.company_id) {
+      const { data: primaryCompany } = await serviceClient
+        .from("companies")
+        .select("name")
+        .eq("id", primaryLink.company_id)
+        .single();
+
+      if (primaryCompany && data.company.trim().toLowerCase() !== primaryCompany.name.toLowerCase()) {
+        return {
+          success: false,
+          error: "Employees cannot change their company. Contact your company admin.",
+        };
+      }
+    }
   }
 
-  // ── Employee theme lock ─────────────────────────────────────────────────
-  // If the employee's primary company has theme_locked = true, reject any
-  // attempt to change the card accent colour.
-  if (isEmployee && data.theme_color) {
-    // Fetch the primary company's theme_locked flag
+  // ── Employee locks — fetch primary company's lock config once ───────────
+  let companyLocks: { theme_locked: boolean; org_locked: boolean; job_title_locked: boolean; groups_locked: boolean; brand_color: string | null } | null = null;
+
+  if (isEmployee) {
     const { data: pcLink } = await serviceClient
       .from("profile_companies")
       .select("company_id")
@@ -94,27 +111,62 @@ export async function updateMyCard(
     if (pcLink?.company_id) {
       const { data: company } = await serviceClient
         .from("companies")
-        .select("theme_locked, brand_color")
+        .select("theme_locked, org_locked, job_title_locked, groups_locked, brand_color")
         .eq("id", pcLink.company_id)
         .single();
 
-      if (company?.theme_locked) {
-        // Fetch current theme to see if it's actually changing
-        const { data: currentCard } = await serviceClient
-          .from("cards")
-          .select("theme_color")
-          .eq("profile_id", user.id)
-          .single();
-
-        if (currentCard && data.theme_color !== currentCard.theme_color) {
-          return {
-            success: false,
-            error:
-              "Your company has locked the card colour. Contact your admin to change it.",
-          };
-        }
+      if (company) {
+        companyLocks = company;
       }
     }
+  }
+
+  // ── Employee theme lock ─────────────────────────────────────────────────
+  // When the company has locked the theme, force the company's brand colour
+  // onto the employee's card. The employee cannot override it.
+  if (companyLocks?.theme_locked && companyLocks.brand_color) {
+    data.theme_color = companyLocks.brand_color;
+  }
+
+  // ── Employee org lock — prevent changing primary organization ────────────
+  if (companyLocks?.org_locked && data.company?.trim()) {
+    const { data: primaryLink } = await serviceClient
+      .from("profile_companies")
+      .select("company_id")
+      .eq("profile_id", user.id)
+      .eq("is_primary", true)
+      .maybeSingle();
+
+    if (primaryLink?.company_id) {
+      const { data: primaryCompany } = await serviceClient
+        .from("companies")
+        .select("name")
+        .eq("id", primaryLink.company_id)
+        .single();
+
+      if (primaryCompany && data.company.trim().toLowerCase() !== primaryCompany.name.toLowerCase()) {
+        return {
+          success: false,
+          error: "Your company has locked the organization. Contact your admin to change it.",
+        };
+      }
+    }
+  }
+
+  // ── Employee job title lock ──────────────────────────────────────────────
+  if (companyLocks?.job_title_locked && data.job_title?.trim()) {
+    return {
+      success: false,
+      error: "Your company has locked job titles. Contact your admin to change it.",
+    };
+  }
+
+  // ── Employee groups lock ─────────────────────────────────────────────────
+  if (companyLocks?.groups_locked && data.card_groups !== undefined) {
+    return {
+      success: false,
+      error: "Your company has locked card groups. Contact your admin to change them.",
+    };
   }
 
   // 1. Update profile full_name if provided
@@ -129,6 +181,7 @@ export async function updateMyCard(
   const cardResult = await cardsService.updateCard(user.id, {
     job_title:         data.job_title,
     phone:             data.phone,
+    whatsapp:          data.whatsapp || data.phone || "",
     email_public:      data.email_public,
     bio:               data.bio,
     theme_color:       data.theme_color,
@@ -164,6 +217,16 @@ export async function updateMyCard(
   if (data.company?.trim()) {
     const companyName = data.company.trim();
 
+    // Remember the user's current primary company BEFORE changing it,
+    // so we can clean up the old one if it becomes orphaned.
+    const { data: oldLink } = await serviceClient
+      .from("profile_companies")
+      .select("company_id")
+      .eq("profile_id", user.id)
+      .eq("is_primary", true)
+      .maybeSingle();
+    const oldCompanyId = oldLink?.company_id ?? null;
+
     // Find or create the company (use maybeSingle — zero rows is normal for new companies)
     let companyId: string;
     const { data: existing, error: findErr } = await serviceClient
@@ -185,9 +248,12 @@ export async function updateMyCard(
         .replace(/[^a-z0-9]+/g, "-")
         .replace(/(-+)/g, "-")
         .replace(/(^-|-$)/g, "");
+      // Self-serve companies created by individuals/employees don't need
+      // admin approval — they are just display labels on the user's card.
+      // Only org registrations (signUpOrg) go through the approval queue.
       const { data: created, error: createErr } = await serviceClient
         .from("companies")
-        .insert({ name: companyName, slug, status: "pending" })
+        .insert({ name: companyName, slug, status: "active" })
         .select("id")
         .single();
       if (createErr || !created) {
@@ -270,6 +336,42 @@ export async function updateMyCard(
     // 5. Update company social links if provided
     if (data.company_social_links) {
       await updateCompanySocialLinks(companyId, data.company_social_links);
+    }
+
+    // 6. Clean up orphaned old company — if the user switched companies,
+    //    delete their old profile_companies link. If the old company has
+    //    no remaining members, delete it too (self-serve only).
+    if (oldCompanyId && oldCompanyId !== companyId) {
+      // Remove the user's old company link entirely
+      await serviceClient
+        .from("profile_companies")
+        .delete()
+        .eq("profile_id", user.id)
+        .eq("company_id", oldCompanyId);
+
+      // Check if the old company has any remaining members
+      const { data: remainingLinks } = await serviceClient
+        .from("profile_companies")
+        .select("profile_id")
+        .eq("company_id", oldCompanyId);
+
+      if (!remainingLinks || remainingLinks.length === 0) {
+        // Only auto-delete self-serve active companies, not org-registered ones
+        const { data: oldCompany } = await serviceClient
+          .from("companies")
+          .select("id, status")
+          .eq("id", oldCompanyId)
+          .single();
+
+        if (oldCompany && oldCompany.status === "active") {
+          try {
+            await serviceClient.from("departments").delete().eq("company_id", oldCompanyId);
+            await serviceClient.from("companies").delete().eq("id", oldCompanyId);
+          } catch (err) {
+            console.error("updateMyCard: orphan company cleanup error:", err);
+          }
+        }
+      }
     }
   }
 

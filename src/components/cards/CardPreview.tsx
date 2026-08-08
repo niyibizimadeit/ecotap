@@ -26,6 +26,7 @@ interface CardPreviewProps {
   company:             string;
   bio:                 string;
   phone:               string;
+  whatsapp?:           string;
   accentColor:         string;
   socialLinks:         SocialLinks;
   companySocialLinks?:  SocialLinks;
@@ -36,7 +37,7 @@ interface CardPreviewProps {
 }
 
 export function CardPreview({
-  name, jobTitle, company, bio, phone, accentColor, socialLinks, companySocialLinks, cardSlug, avatarUrl, showOrganization, cardGroups,
+  name, jobTitle, company, bio, phone, whatsapp, accentColor, socialLinks, companySocialLinks, cardSlug, avatarUrl, showOrganization, cardGroups,
 }: CardPreviewProps) {
   const initials    = getInitials(name || "?");
   const activeSocial = (Object.entries(socialLinks) as [keyof SocialLinks, string][])
@@ -96,25 +97,30 @@ export function CardPreview({
               {name || <span className="text-ink-light opacity-40">Your name</span>}
             </h3>
 
-            {/* Title & company */}
-            {(jobTitle || company) && (
+            {/* Title & company — only shown when showOrganization is ON */}
+            {showOrganization && (jobTitle || company) && (
               <div className="mt-0.5 mb-3">
                 {jobTitle && <p className="text-xs font-medium text-ink-mid">{jobTitle}</p>}
-                {company && showOrganization ? (
+                {company && (
                   <div className="flex items-center gap-1.5 mt-1">
                     <Building2 className="h-3 w-3 flex-shrink-0" style={{ color: accentColor }} />
                     <p className="text-xs font-medium" style={{ color: accentColor }}>{company}</p>
                     <span className="text-[10px] px-1.5 py-px rounded-full" style={{ backgroundColor: accentColor, color: "#FEFCE8" }}>org</span>
                   </div>
-                ) : company ? (
-                  <p className="text-xs text-ink-light">{company}</p>
-                ) : null}
+                )}
               </div>
             )}
 
-            {/* Phone */}
-            {phone && (
-              <p className="text-xs mb-3" style={{ color: accentColor }}>{phone}</p>
+            {/* Phone & WhatsApp */}
+            {(phone || whatsapp) && (
+              <div className="mb-3 space-y-1">
+                {phone && (
+                  <p className="text-xs" style={{ color: accentColor }}>📞 {phone}</p>
+                )}
+                {whatsapp && whatsapp !== phone && (
+                  <p className="text-xs" style={{ color: "#25D366" }}>💬 {whatsapp}</p>
+                )}
+              </div>
             )}
 
             {/* Bio */}

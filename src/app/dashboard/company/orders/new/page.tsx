@@ -24,6 +24,7 @@ interface OrderForm {
   shipping_address: ShippingAddress;
   currency:         Currency;
   screenshot_url:   string | null;
+  momo_phone:       string;
 }
 
 const EMPTY_ADDRESS: ShippingAddress = {
@@ -69,6 +70,7 @@ export default function CompanyNewOrderPage() {
     shipping_address: EMPTY_ADDRESS,
     currency:         "RWF",
     screenshot_url:   null,
+    momo_phone:       "",
   });
 
   useEffect(() => {
@@ -150,13 +152,15 @@ export default function CompanyNewOrderPage() {
       shipping_address: form.shipping_address,
       payment_currency: form.currency,
       payment_amount:   totalPrice,
-      momo_phone:       form.currency === "RWF" ? MOMO_PAY.code : undefined,
+      momo_phone:       form.currency === "RWF" ? (form.momo_phone || undefined) : undefined,
     });
     if (result.success && result.data) {
       if (form.screenshot_url) {
         const linkResult = await linkPaymentToOrder(result.data.id, form.screenshot_url);
         if (!linkResult.success) {
-          console.error("Failed to link payment screenshot:", linkResult.error);
+          setErrors({ ...errors, submit: `Order placed but payment proof failed to attach: ${linkResult.error}. Please contact support.` });
+          setLoading(false);
+          return;
         }
       }
       router.push(`/dashboard/company/orders/success?order=${result.data.id}`);

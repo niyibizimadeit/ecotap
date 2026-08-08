@@ -35,6 +35,9 @@ interface FormState {
   description: string;
   brand_color: string;
   theme_locked: boolean;
+  org_locked: boolean;
+  job_title_locked: boolean;
+  groups_locked: boolean;
 }
 
 const DEFAULT_FORM: FormState = {
@@ -45,6 +48,9 @@ const DEFAULT_FORM: FormState = {
   description: "",
   brand_color: "#064E3B",
   theme_locked: false,
+  org_locked: false,
+  job_title_locked: false,
+  groups_locked: false,
 };
 
 export default function CompanySettingsPage() {
@@ -70,6 +76,9 @@ export default function CompanySettingsPage() {
         description: company.description ?? "",
         brand_color: company.brand_color,
         theme_locked: company.theme_locked,
+        org_locked: company.org_locked,
+        job_title_locked: company.job_title_locked,
+        groups_locked: company.groups_locked,
       });
     });
   }, []);
@@ -93,6 +102,9 @@ export default function CompanySettingsPage() {
         description: form.description || undefined,
         brand_color: form.brand_color,
         theme_locked: form.theme_locked,
+        org_locked: form.org_locked,
+        job_title_locked: form.job_title_locked,
+        groups_locked: form.groups_locked,
       });
 
       if (result.success) {
@@ -283,6 +295,118 @@ export default function CompanySettingsPage() {
                 </p>
               </div>
             </label>
+
+            {/* ── Employee lock toggles ── */}
+            <div
+              className="border-t pt-4 mt-2"
+              style={{ borderColor: "rgba(6,78,59,0.08)" }}
+            >
+              <p className="text-xs font-mono tracking-widest text-ink-light uppercase mb-3">
+                Employee Restrictions
+              </p>
+
+              {/* Lock organization */}
+              <label className="flex items-center gap-3 cursor-pointer mb-3">
+                <div className="relative">
+                  <input
+                    type="checkbox"
+                    className="sr-only"
+                    checked={form.org_locked}
+                    onChange={(e) =>
+                      setForm((f) => ({ ...f, org_locked: e.target.checked }))
+                    }
+                  />
+                  <div
+                    className="w-10 h-5 rounded-full transition-colors"
+                    style={{
+                      backgroundColor: form.org_locked ? "#064E3B" : "#D4D0CA",
+                    }}
+                  />
+                  <div
+                    className="absolute top-0.5 left-0.5 w-4 h-4 bg-white rounded-full shadow transition-transform"
+                    style={{
+                      transform: form.org_locked
+                        ? "translateX(20px)"
+                        : "translateX(0)",
+                    }}
+                  />
+                </div>
+                <div>
+                  <p className="text-sm font-medium text-ink">Lock organization</p>
+                  <p className="text-xs text-ink-light">
+                    Employees cannot change their primary organization on their card.
+                  </p>
+                </div>
+              </label>
+
+              {/* Lock job title */}
+              <label className="flex items-center gap-3 cursor-pointer mb-3">
+                <div className="relative">
+                  <input
+                    type="checkbox"
+                    className="sr-only"
+                    checked={form.job_title_locked}
+                    onChange={(e) =>
+                      setForm((f) => ({ ...f, job_title_locked: e.target.checked }))
+                    }
+                  />
+                  <div
+                    className="w-10 h-5 rounded-full transition-colors"
+                    style={{
+                      backgroundColor: form.job_title_locked ? "#064E3B" : "#D4D0CA",
+                    }}
+                  />
+                  <div
+                    className="absolute top-0.5 left-0.5 w-4 h-4 bg-white rounded-full shadow transition-transform"
+                    style={{
+                      transform: form.job_title_locked
+                        ? "translateX(20px)"
+                        : "translateX(0)",
+                    }}
+                  />
+                </div>
+                <div>
+                  <p className="text-sm font-medium text-ink">Lock job titles</p>
+                  <p className="text-xs text-ink-light">
+                    Employees cannot edit their job title or position.
+                  </p>
+                </div>
+              </label>
+
+              {/* Lock groups */}
+              <label className="flex items-center gap-3 cursor-pointer">
+                <div className="relative">
+                  <input
+                    type="checkbox"
+                    className="sr-only"
+                    checked={form.groups_locked}
+                    onChange={(e) =>
+                      setForm((f) => ({ ...f, groups_locked: e.target.checked }))
+                    }
+                  />
+                  <div
+                    className="w-10 h-5 rounded-full transition-colors"
+                    style={{
+                      backgroundColor: form.groups_locked ? "#064E3B" : "#D4D0CA",
+                    }}
+                  />
+                  <div
+                    className="absolute top-0.5 left-0.5 w-4 h-4 bg-white rounded-full shadow transition-transform"
+                    style={{
+                      transform: form.groups_locked
+                        ? "translateX(20px)"
+                        : "translateX(0)",
+                    }}
+                  />
+                </div>
+                <div>
+                  <p className="text-sm font-medium text-ink">Lock groups &amp; affiliations</p>
+                  <p className="text-xs text-ink-light">
+                    Employees cannot add or remove card affiliation groups.
+                  </p>
+                </div>
+              </label>
+            </div>
 
             {/* Live card preview */}
             <div>

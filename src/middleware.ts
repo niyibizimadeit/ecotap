@@ -7,6 +7,7 @@
 import { createServerClient } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
 import type { UserRole, UserStatus } from "@/types";
+import { DASHBOARD_ROUTE } from "@/constants";
 
 // ── Route patterns ───────────────────────────────────────────────────────────
 
@@ -16,14 +17,18 @@ const PUBLIC_CARD_PATTERNS = [/^\/[^/]+\/[^/]+$/, /^\/[^/]+$/]; // /slug and /sl
 function isPublicPath(pathname: string): boolean {
   // Home page, auth pages, api routes, static assets
   if (pathname === "/") return true;
+
+  // Dashboard routes are NEVER public — check this BEFORE the dot-file
+  // check below, otherwise /dashboard/foo.bar would bypass auth entirely.
+  if (pathname.startsWith("/dashboard")) return false;
+
   if (AUTH_PAGES.some((p) => pathname.startsWith(p))) return true;
   if (pathname.startsWith("/api/")) return true;
   if (pathname.startsWith("/dev/")) return true;
   if (pathname.startsWith("/_next/")) return true;
   if (pathname.includes(".")) return true; // Static files
 
-  // Public card pages: /username or /company/employee (but not /dashboard/...)
-  if (pathname.startsWith("/dashboard")) return false;
+  // Public card pages: /username or /company/employee
   if (PUBLIC_CARD_PATTERNS.some((p) => p.test(pathname))) return true;
 
   // Default: protect unknown routes
@@ -32,17 +37,9 @@ function isPublicPath(pathname: string): boolean {
 
 // ── Role-based dashboard access ──────────────────────────────────────────────
 
-const DASHBOARD_BASE: Record<UserRole, string> = {
-  super_admin:   "/dashboard/admin",
-  country_rep:   "/dashboard/admin",
-  company_admin: "/dashboard/company",
-  employee:      "/dashboard/employee",
-  individual:    "/dashboard/employee",
-};
-
 function isAccessAllowed(pathname: string, role: UserRole): boolean {
   if (pathname.startsWith("/dashboard/admin")) {
-    return role === "super_admin" || role === "country_rep";
+    return role === "super_admin";
   }
   if (pathname.startsWith("/dashboard/company")) {
     return role === "company_admin" || role === "super_admin";
@@ -122,7 +119,7 @@ export async function middleware(request: NextRequest) {
   // ── Role-based access check ───────────────────────────────────────────
   if (!isAccessAllowed(pathname, role)) {
     // Redirect to their correct dashboard
-    const correctDashboard = DASHBOARD_BASE[role];
+    const correctDashboard = DASHBOARD_ROUTE[role];
     return NextResponse.redirect(new URL(correctDashboard, request.url));
   }
 

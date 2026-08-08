@@ -29,6 +29,9 @@ export interface CompanyDashboardData {
     website: string | null;
     description: string | null;
     theme_locked: boolean;
+    org_locked: boolean;
+    job_title_locked: boolean;
+    groups_locked: boolean;
   };
   employees: CompanyEmployee[];
   subscription: {
@@ -168,6 +171,9 @@ const _getCompanyDashboardData = cache(async (
           website: company.website ?? null,
           description: company.description ?? null,
           theme_locked: company.theme_locked ?? false,
+          org_locked: (company as Record<string, unknown>).org_locked as boolean ?? false,
+          job_title_locked: (company as Record<string, unknown>).job_title_locked as boolean ?? false,
+          groups_locked: (company as Record<string, unknown>).groups_locked as boolean ?? false,
         },
         employees,
         subscription,
@@ -201,6 +207,9 @@ export interface UpdateCompanyInput {
   description?: string;
   brand_color?: string;
   theme_locked?: boolean;
+  org_locked?: boolean;
+  job_title_locked?: boolean;
+  groups_locked?: boolean;
 }
 
 export async function updateMyCompany(
@@ -242,6 +251,9 @@ export async function updateMyCompany(
         description: input.description ?? null,
         brand_color: input.brand_color ?? "#064E3B",
         theme_locked: input.theme_locked ?? false,
+        org_locked: input.org_locked ?? false,
+        job_title_locked: input.job_title_locked ?? false,
+        groups_locked: input.groups_locked ?? false,
       })
       .eq("id", companyId);
 

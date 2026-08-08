@@ -72,6 +72,17 @@ export async function resolveCompanyId(): Promise<string | null> {
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return null;
 
+    // Verify the caller has admin privileges — employees cannot manage the company.
+    const { data: profile } = await supabase
+      .from("profiles")
+      .select("role")
+      .eq("id", user.id)
+      .single();
+
+    if (!profile || (profile.role !== "company_admin" && profile.role !== "super_admin")) {
+      return null;
+    }
+
     const { data: link } = await supabase
       .from("profile_companies")
       .select("company_id")

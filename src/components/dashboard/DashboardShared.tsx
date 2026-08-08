@@ -9,19 +9,19 @@ interface StatCardProps {
   export function StatCard({ label, value, sub, icon, accent = "#064E3B" }: StatCardProps) {
     return (
       <div
-        className="rounded-2xl border p-5 flex items-start gap-4"
+        className="rounded-2xl border p-4 sm:p-5 flex items-start gap-3 sm:gap-4"
         style={{ backgroundColor: "#FEF9EF", borderColor: "rgba(6,78,59,0.08)" }}
       >
         <div
-          className="w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0"
+          className="w-9 h-9 sm:w-10 sm:h-10 rounded-xl flex items-center justify-center flex-shrink-0"
           style={{ backgroundColor: `${accent}15` }}
         >
           <span style={{ color: accent }}>{icon}</span>
         </div>
-        <div>
-          <p className="text-xs font-mono tracking-widest text-ink-light uppercase mb-1">{label}</p>
-          <p className="font-serif text-2xl font-semibold text-emerald-deep leading-none">{value}</p>
-          {sub && <p className="text-xs text-ink-light mt-1">{sub}</p>}
+        <div className="min-w-0">
+          <p className="text-[10px] sm:text-xs font-mono tracking-widest text-ink-light uppercase mb-0.5 sm:mb-1">{label}</p>
+          <p className="font-serif text-xl sm:text-2xl font-semibold text-emerald-deep leading-none truncate">{value}</p>
+          {sub && <p className="text-[10px] sm:text-xs text-ink-light mt-0.5 sm:mt-1 truncate">{sub}</p>}
         </div>
       </div>
     );

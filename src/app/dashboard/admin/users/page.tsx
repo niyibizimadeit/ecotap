@@ -13,6 +13,7 @@ import {
   Mail, Calendar, Briefcase, Palette, Globe,
 } from "lucide-react";
 import type { UserRole, UserStatus, ProfileFull } from "@/types";
+import { ROLE_LABELS } from "@/constants";
 
 interface AdminUser {
   id:      string;
@@ -24,14 +25,6 @@ interface AdminUser {
   joined:  string;
   slug:    string;
 }
-
-const ROLE_LABELS: Record<UserRole, string> = {
-  super_admin:   "Super Admin",
-  country_rep:   "Country Rep",
-  company_admin: "Company Admin",
-  employee:      "Employee",
-  individual:    "Individual",
-};
 
 const ALL_ROLES: UserRole[] = ["super_admin", "country_rep", "company_admin", "employee", "individual"];
 
@@ -240,11 +233,11 @@ export default function UsersPage() {
         className="grid grid-cols-12 gap-3 px-4 py-2 rounded-xl mb-2 text-xs font-mono tracking-wide text-ink-light uppercase"
         style={{ backgroundColor: "#F0E6D3" }}
       >
-        <div className="col-span-4">User</div>
-        <div className="col-span-2 hidden md:block">Role</div>
+        <div className="col-span-8 sm:col-span-5">User</div>
+        <div className="col-span-2 hidden sm:block">Role</div>
         <div className="col-span-2 hidden sm:block">Status</div>
         <div className="col-span-3 hidden lg:block">Company</div>
-        <div className="col-span-1"></div>
+        <div className="col-span-4 sm:col-span-1"></div>
       </div>
 
       {/* Rows */}
@@ -258,8 +251,8 @@ export default function UsersPage() {
             className="grid grid-cols-12 gap-3 px-4 py-3.5 rounded-xl border items-center transition-all hover:shadow-card group w-full text-left cursor-pointer"
             style={{ backgroundColor: "#FEFCE8", borderColor: "rgba(6,78,59,0.06)" }}
           >
-            {/* Name */}
-            <div className="col-span-4 flex items-center gap-3 min-w-0">
+            {/* Name — takes most of the row on mobile */}
+            <div className="col-span-8 sm:col-span-5 flex items-center gap-3 min-w-0">
               <div
                 className="w-8 h-8 rounded-xl flex items-center justify-center flex-shrink-0 font-medium text-xs"
                 style={{ backgroundColor: "#ECFDF5", color: "#065F46" }}
@@ -269,11 +262,15 @@ export default function UsersPage() {
               <div className="min-w-0">
                 <p className="text-sm font-medium text-ink truncate">{user.name}</p>
                 <p className="text-xs text-ink-light truncate">{user.email}</p>
+                {/* Mobile-only: inline role + status */}
+                <p className="text-xs text-ink-light mt-0.5 sm:hidden">
+                  {ROLE_LABELS[user.role]} · {user.status}
+                </p>
               </div>
             </div>
 
             {/* Role */}
-            <div className="col-span-2 hidden md:block">
+            <div className="col-span-2 hidden sm:block">
               <span
                 className="text-xs px-2 py-1 rounded-lg font-mono"
                 style={{ backgroundColor: "#F0E6D3", color: "#78716C" }}
@@ -292,8 +289,8 @@ export default function UsersPage() {
               {user.company ?? <span className="text-ink-light italic">—</span>}
             </div>
 
-            {/* Chevron */}
-            <div className="col-span-8 sm:col-span-6 md:col-span-4 lg:col-span-1 flex justify-end items-center gap-2">
+            {/* Chevron — compact on mobile */}
+            <div className="col-span-4 sm:col-span-1 flex justify-end items-center gap-2">
               <a
                 href={user.role === "employee" && user.company
                   ? `/rdmc/${user.slug}`
@@ -504,7 +501,7 @@ export default function UsersPage() {
                   onClick={() => handleToggleStatus(userDetail.id)}
                   leftIcon={userDetail.status === "active" ? <XCircle className="h-4 w-4" /> : <UserCheck className="h-4 w-4" />}
                 >
-                  {userDetail.status === "active" ? "Suspend user" : "Reactivate user"}
+                  {userDetail.status === "active" ? "Suspend user" : userDetail.status === "pending" ? "Activate user" : "Reactivate user"}
                 </Button>
               </div>
 

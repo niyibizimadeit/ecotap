@@ -134,16 +134,84 @@ export async function signUp(formData: FormData): Promise<ActionResult> {
   }
 
   // If registering via invite, accept the invitation server-side.
-  // This links the new profile to the company and marks the invite as accepted.
-  // Done atomically inside signUp to avoid session-cookie race conditions.
+  // This links the new profile to the company, activates the profile
+  // (invited employees are pre-approved), and pre-fills their card.
   if (inviteToken && role === "employee" && data.user) {
     const { acceptInvite } = await import("@/lib/services/invitations.service");
     const acceptResult = await acceptInvite(inviteToken, data.user.id);
     if (!acceptResult.success) {
-      console.error("Failed to accept invitation during signUp:", acceptResult.error);
-      // Non-fatal: registration succeeded, but company link failed.
-      // The profile is still active — admin can re-invite if needed.
+      return { success: false, error: acceptResult.error ?? "Failed to accept invitation." };
     }
+
+    // Pre-fill the employee's card with their registration info + company data
+    const companyData = acceptResult.data;
+    if (companyData) {
+      const serviceClient = getServiceSupabase();
+
+      // All invited employees should have a public card visible immediately.
+      // Wait for the DB trigger to create the cards row, or create it ourselves.
+      let cardId: string | null = null;
+
+      for (let attempt = 0; attempt < 5; attempt++) {
+        if (attempt > 0) await new Promise((r) => setTimeout(r, 500 * attempt));
+        const { data: card } = await serviceClient
+          .from("cards")
+          .select("id")
+          .eq("profile_id", data.user.id)
+          .maybeSingle();
+        if (card) {
+          cardId = card.id;
+          break;
+        }
+      }
+
+      if (cardId) {
+        await serviceClient
+          .from("cards")
+          .update({
+            is_public: true,
+            show_organization: true,
+            phone: phone || undefined,
+            whatsapp: phone || undefined,
+            email_public: email,
+            theme_color: companyData.themeLocked && companyData.brandColor
+              ? companyData.brandColor
+              : undefined,
+            social_links: companyData.companySocialLinks ?? undefined,
+          })
+          .eq("id", cardId);
+      } else {
+        // Card row was never created by the trigger — create it now
+        const username = (formData.get("username") as string) || "";
+        const { data: newCard } = await serviceClient
+          .from("cards")
+          .insert({
+            profile_id: data.user.id,
+            slug: username,
+            is_public: true,
+            show_organization: true,
+            phone: phone || null,
+            whatsapp: phone || null,
+            email_public: email,
+            theme_color: companyData.themeLocked && companyData.brandColor
+              ? companyData.brandColor
+              : "#064E3B",
+            social_links: companyData.companySocialLinks ?? {},
+          })
+          .select("id")
+          .single();
+        cardId = newCard?.id ?? null;
+      }
+    }
+  }
+
+  // Ensure profile full_name is set (belt-and-suspenders with the DB trigger)
+  if (data.user?.id) {
+    const svcClient = getServiceSupabase();
+    await svcClient
+      .from("profiles")
+      .update({ full_name: fullName })
+      .eq("id", data.user.id);
   }
 
   return { success: true };
@@ -328,17 +396,34 @@ export async function signUpOrg(formData: FormData): Promise<ActionResult> {
     company = newCompany;
   }
 
-  // Link the admin to the company as primary
-  const { error: linkError } = await serviceClient
-    .from("profile_companies")
-    .insert({
-      profile_id: userId,
-      company_id: company.id,
-      is_primary: true,
-    });
+  // 3. Link the admin to the company as primary.
+  //    The DB trigger on_auth_user_created creates the profiles row asynchronously.
+  //    If it hasn't fired yet, the FK constraint on profile_companies fails.
+  //    Retry up to 5 times with increasing delay to handle trigger timing.
+  let linkError: { message: string } | null = null;
+  for (let attempt = 0; attempt < 5; attempt++) {
+    if (attempt > 0) {
+      await new Promise((r) => setTimeout(r, 300 * attempt));
+    }
+
+    const { error } = await serviceClient
+      .from("profile_companies")
+      .insert({
+        profile_id: userId,
+        company_id: company.id,
+        is_primary: true,
+      });
+
+    if (!error) {
+      linkError = null;
+      break;
+    }
+    linkError = error;
+    console.warn(`profile_companies insert attempt ${attempt + 1} failed:`, error.message);
+  }
 
   if (linkError) {
-    console.error("Failed to link admin to company:", linkError.message);
+    console.error("Failed to link admin to company after retries:", linkError.message);
     // Clean up the company only if we just created it (not if we reused an existing one)
     if (!existingCompany) {
       await serviceClient.from("companies").delete().eq("id", company.id);
@@ -635,8 +720,16 @@ export async function getSession() {
 
 // ── Get current user ─────────────────────────────────────────────────────────
 
-export async function getCurrentUser() {
+export async function getCurrentUser(): Promise<{ id: string; role: string } | null> {
   const supabase = await getSupabaseServerAction();
   const { data: { user } } = await supabase.auth.getUser();
-  return user;
+  if (!user) return null;
+
+  const { data: profile } = await supabase
+    .from("profiles")
+    .select("role")
+    .eq("id", user.id)
+    .single();
+
+  return { id: user.id, role: profile?.role ?? "individual" };
 }

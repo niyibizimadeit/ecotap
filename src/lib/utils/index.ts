@@ -16,17 +16,20 @@ export function slugify(text: string): string {
 }
 
 export function formatDate(dateString: string, locale = "en-RW"): string {
+  const date = new Date(dateString);
+  if (Number.isNaN(date.getTime())) return "—";
   return new Intl.DateTimeFormat(locale, {
     year: "numeric",
     month: "short",
     day: "numeric",
-  }).format(new Date(dateString));
+  }).format(date);
 }
 
 export function getInitials(name: string): string {
   return name
-    .split(" ")
+    .split(/\s+/)
     .map((n) => n[0])
+    .filter(Boolean)
     .slice(0, 2)
     .join("")
     .toUpperCase();

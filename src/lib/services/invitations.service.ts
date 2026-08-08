@@ -165,7 +165,14 @@ export async function validateInviteToken(
 export async function acceptInvite(
   token: string,
   profileId: string
-): Promise<ActionResult<{ companyId: string }>> {
+): Promise<ActionResult<{
+  companyId: string;
+  companyName: string | null;
+  companySlug: string | null;
+  brandColor: string | null;
+  themeLocked: boolean;
+  companySocialLinks: Record<string, unknown> | null;
+}>> {
   const invitation = await invitationsRepo.getInvitationByToken(token);
 
   if (!invitation) {
@@ -181,7 +188,10 @@ export async function acceptInvite(
     return { success: false, error: "This invitation has expired." };
   }
 
-  // Link the profile to the company
+  // Link the profile to the company.
+  // The DB trigger on_auth_user_created creates the profiles row asynchronously.
+  // If it hasn't fired yet, the FK constraint on profile_companies fails.
+  // Retry up to 5 times with increasing delay to handle trigger timing.
   const supabase = getServiceSupabase();
 
   // Check if already linked
@@ -193,13 +203,26 @@ export async function acceptInvite(
     .maybeSingle();
 
   if (!existingLink) {
-    const { error: linkError } = await supabase
-      .from("profile_companies")
-      .insert({
-        profile_id: profileId,
-        company_id: invitation.company_id,
-        is_primary: true,  // Invited employee's primary (and only) company
-      });
+    let linkError: { message: string } | null = null;
+    for (let attempt = 0; attempt < 5; attempt++) {
+      if (attempt > 0) {
+        await new Promise((r) => setTimeout(r, 300 * attempt));
+      }
+
+      const { error } = await supabase
+        .from("profile_companies")
+        .insert({
+          profile_id: profileId,
+          company_id: invitation.company_id,
+          is_primary: true,
+        });
+
+      if (!error) {
+        linkError = null;
+        break;
+      }
+      linkError = error;
+    }
 
     if (linkError) {
       return { success: false, error: "Failed to link to company." };
@@ -215,9 +238,47 @@ export async function acceptInvite(
   // Mark invitation as accepted
   await invitationsRepo.acceptInvitation(token, profileId);
 
+  // Invited employees are pre-approved — activate their profile immediately.
+  // Retry in case the DB trigger hasn't created the profiles row yet.
+  for (let attempt = 0; attempt < 5; attempt++) {
+    if (attempt > 0) {
+      await new Promise((r) => setTimeout(r, 300 * attempt));
+    }
+
+    const { data: profile, error: profileErr } = await supabase
+      .from("profiles")
+      .select("status")
+      .eq("id", profileId)
+      .maybeSingle();
+
+    if (profileErr || !profile) continue; // Row not created yet, retry
+
+    if (profile.status === "pending") {
+      await supabase
+        .from("profiles")
+        .update({ status: "active" })
+        .eq("id", profileId);
+    }
+    break;
+  }
+
+  // Fetch company data so the caller can pre-fill the employee's card
+  const { data: company } = await supabase
+    .from("companies")
+    .select("name, slug, brand_color, theme_locked, social_links")
+    .eq("id", invitation.company_id)
+    .single();
+
   return {
     success: true,
-    data: { companyId: invitation.company_id },
+    data: {
+      companyId: invitation.company_id,
+      companyName: company?.name ?? null,
+      companySlug: company?.slug ?? null,
+      brandColor: company?.brand_color ?? null,
+      themeLocked: company?.theme_locked ?? false,
+      companySocialLinks: company?.social_links ?? null,
+    },
   };
 }
 

@@ -45,13 +45,19 @@ export function Modal({ open, onClose, title, description, children, className, 
     <div
       ref={overlayRef}
       className="fixed inset-0 z-50 flex items-center justify-center p-4"
-      onClick={(e) => { if (e.target === overlayRef.current) onClose(); }}
     >
-      {/* Backdrop */}
-      <div className="absolute inset-0 bg-ink/40 backdrop-blur-sm animate-fade-in" />
+      {/* Backdrop — click to close */}
+      {/* eslint-disable-next-line jsx-a11y/no-static-element-interactions, jsx-a11y/click-events-have-key-events */}
+      <div
+        className="absolute inset-0 bg-ink/40 backdrop-blur-sm animate-fade-in"
+        onClick={onClose}
+        role="presentation"
+      />
 
       {/* Panel */}
       <div
+        role="dialog"
+        aria-modal="true"
         className={cn(
           "relative w-full bg-cream rounded-3xl shadow-card-xl border border-cream-dark/60 animate-scale-in",
           "max-h-[90dvh] flex flex-col",

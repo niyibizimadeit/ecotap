@@ -114,7 +114,14 @@ export async function revokeInvitationAction(
   const { revokeInvitation } = await import(
     "@/lib/supabase/invitations.repo"
   );
-  await revokeInvitation(invitationId);
+  try {
+    await revokeInvitation(invitationId);
+  } catch (err) {
+    return {
+      success: false,
+      error: err instanceof Error ? err.message : "Failed to revoke invitation.",
+    };
+  }
 
   revalidatePath("/dashboard/company/employees");
   return { success: true };

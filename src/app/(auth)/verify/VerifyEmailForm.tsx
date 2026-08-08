@@ -17,6 +17,7 @@ export default function VerifyEmailForm() {
   const [code, setCode] = useState<string[]>(Array(6).fill(""));
   const [error, setError] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [resendHint, setResendHint] = useState<string | null>(null);
   const inputRefs = useRef<(HTMLInputElement | null)[]>([]);
 
   // Redirect to register if no email provided
@@ -81,19 +82,27 @@ export default function VerifyEmailForm() {
       setError(result.error ?? "Verification failed. Please check your code and try again.");
       setIsSubmitting(false);
     } else {
-      router.push("/pending");
+      // Redirect to the correct dashboard based on role.
+      // Middleware will bounce to /pending if the profile is still under review.
+      const { getCurrentUser } = await import("@/app/actions/auth.actions");
+      const currentUser = await getCurrentUser();
+      if (currentUser?.role === "company_admin") {
+        router.push("/dashboard/company");
+      } else {
+        router.push("/dashboard/employee");
+      }
     }
   }
 
   async function handleResend() {
     setError(null);
+    setResendHint(null);
     const result = await resendOtp(email, "signup");
-    const hint = document.getElementById("resend-hint");
-    if (result.success && hint) {
-      hint.textContent = "Code resent — check your inbox.";
-      setTimeout(() => { if (hint) hint.textContent = ""; }, 4000);
-    } else if (hint) {
-      hint.textContent = result.error ?? "Could not resend. Please wait a moment and try again.";
+    if (result.success) {
+      setResendHint("Code resent — check your inbox.");
+      setTimeout(() => setResendHint(null), 4000);
+    } else {
+      setResendHint(result.error ?? "Could not resend. Please wait a moment and try again.");
     }
   }
 
@@ -147,7 +156,9 @@ export default function VerifyEmailForm() {
           )}
 
           {/* Resend hint */}
-          <p id="resend-hint" className="text-xs text-emerald-bright text-center min-h-[1em]" />
+          <p className="text-xs text-emerald-bright text-center min-h-[1em]" aria-live="polite">
+            {resendHint ?? ""}
+          </p>
 
           {/* Submit */}
           <Button

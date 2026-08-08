@@ -151,32 +151,40 @@ export default function BillingPage() {
     setSaving(true);
     const { upsertPlan } = await import("@/app/actions/admin.actions");
     const fd = new FormData();
+    if (editPlan) fd.set("id", editPlan.id);
     fd.set("name", formName);
     fd.set("billing_cycle", formCycle);
     fd.set("price_per_employee", String(formPrice));
-    fd.set("is_active", "on");
-    await upsertPlan(fd);
-    if (editPlan) {
-      setPlans(ps => ps.map(p => p.id === editPlan.id
-        ? { ...p, name: formName, billing_cycle: formCycle, price_per_employee: Number(formPrice) }
-        : p
-      ));
-    } else {
-      setPlans(ps => [...ps, {
-        id:                 String(Date.now()),
-        name:               formName,
-        billing_cycle:      formCycle,
-        price_per_employee: Number(formPrice),
-        is_active:          true,
-        companies:          0,
-      }]);
+    fd.set("is_active", editPlan ? String(editPlan.is_active) : "on");
+    const result = await upsertPlan(fd);
+    if (result.success && result.data) {
+      const p = result.data as Record<string, unknown>;
+      if (editPlan) {
+        setPlans(ps => ps.map(pl => pl.id === editPlan.id
+          ? { ...pl, name: formName, billing_cycle: formCycle, price_per_employee: Number(formPrice) }
+          : pl
+        ));
+      } else {
+        setPlans(ps => [...ps, {
+          id:                 p.id as string,
+          name:               formName,
+          billing_cycle:      formCycle,
+          price_per_employee: Number(formPrice),
+          is_active:          true,
+          companies:          0,
+        }]);
+      }
+      setModalOpen(false);
     }
     setSaving(false);
-    setModalOpen(false);
   }
 
-  function toggleActive(id: string) {
-    setPlans(ps => ps.map(p => p.id === id ? { ...p, is_active: !p.is_active } : p));
+  async function toggleActive(id: string, currentActive: boolean) {
+    const { togglePlanActive } = await import("@/app/actions/admin.actions");
+    const result = await togglePlanActive(id, !currentActive);
+    if (result.success) {
+      setPlans(ps => ps.map(p => p.id === id ? { ...p, is_active: !currentActive } : p));
+    }
   }
 
   const filteredSubs = subFilter === "all"
@@ -267,7 +275,7 @@ export default function BillingPage() {
                 <Pencil className="h-3 w-3" /> Edit
               </button>
               <button
-                onClick={() => toggleActive(plan.id)}
+                onClick={() => toggleActive(plan.id, plan.is_active)}
                 className="flex-1 flex items-center justify-center gap-1.5 py-2 rounded-xl text-xs font-medium border transition-all"
                 style={{
                   borderColor:     plan.is_active ? "rgba(239,68,68,0.2)" : "rgba(5,150,105,0.2)",

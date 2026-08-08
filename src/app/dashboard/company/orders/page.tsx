@@ -26,8 +26,8 @@ export default async function CompanyOrdersPage() {
     <div>
       <PageHeader
         eyebrow="Card Orders"
-        title="Company card orders"
-        subtitle="Order physical NFC cards for your team with your company branding."
+        title="My card orders"
+        subtitle="Track your physical NFC card orders and delivery status."
         action={
           <Link href="/dashboard/company/orders/new">
             <Button variant="primary" size="sm" rightIcon={<ArrowRight className="h-3.5 w-3.5" />}>

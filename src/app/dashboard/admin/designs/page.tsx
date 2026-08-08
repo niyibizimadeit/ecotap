@@ -62,13 +62,18 @@ export default function DesignsPage() {
     const fd = new FormData();
     fd.set("name", formName);
     fd.set("accent_color", formColor);
-    fd.set("pattern", "dots");
-    fd.set("is_active", "on");
 
     if (editDesign) {
-      await updateDesign(editDesign.id, Object.fromEntries(fd) as any);
+      // Preserve existing pattern and active state when editing
+      fd.set("pattern", editDesign.pattern);
+      fd.set("is_active", String(editDesign.active));
+      const result = await updateDesign(editDesign.id, Object.fromEntries(fd) as Record<string, unknown>);
+      if (!result.success) return; // don't close modal on failure
     } else {
-      await createDesign(fd);
+      fd.set("pattern", "dots");
+      fd.set("is_active", "on");
+      const result = await createDesign(fd);
+      if (!result.success) return;
     }
     setModalOpen(false);
     // Reload
@@ -86,8 +91,10 @@ export default function DesignsPage() {
     const d = designs.find(d => d.id === id);
     if (!d) return;
     const { updateDesign } = await import("@/app/actions/admin.actions");
-    await updateDesign(id, { is_active: !d.active } as any);
-    setDesigns(ds => ds.map(d => d.id === id ? { ...d, active: !d.active } : d));
+    const result = await updateDesign(id, { is_active: !d.active });
+    if (result.success) {
+      setDesigns(ds => ds.map(d => d.id === id ? { ...d, active: !d.active } : d));
+    }
   }
 
   const activeCount   = designs.filter(d => d.active).length;
