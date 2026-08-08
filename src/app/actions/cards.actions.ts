@@ -154,19 +154,62 @@ export async function updateMyCard(
   }
 
   // ── Employee job title lock ──────────────────────────────────────────────
+  // Only enforce when the job title is actually changing, not just sent unchanged.
   if (companyLocks?.job_title_locked && data.job_title?.trim()) {
-    return {
-      success: false,
-      error: "Your company has locked job titles. Contact your admin to change it.",
-    };
+    const { data: currentCard } = await serviceClient
+      .from("cards")
+      .select("job_title")
+      .eq("profile_id", user.id)
+      .single();
+
+    if (currentCard && data.job_title.trim() !== (currentCard.job_title ?? "").trim()) {
+      return {
+        success: false,
+        error: "Your company has locked job titles. Contact your admin to change it.",
+      };
+    }
   }
 
   // ── Employee groups lock ─────────────────────────────────────────────────
+  // Only enforce when the employee is actually modifying groups — not just
+  // sending the existing groups array in the payload.
   if (companyLocks?.groups_locked && data.card_groups !== undefined) {
-    return {
-      success: false,
-      error: "Your company has locked card groups. Contact your admin to change them.",
-    };
+    const { data: currentCard } = await serviceClient
+      .from("cards")
+      .select("id")
+      .eq("profile_id", user.id)
+      .single();
+
+    if (currentCard) {
+      const { data: existingGroups } = await serviceClient
+        .from("card_groups")
+        .select("id")
+        .eq("card_id", currentCard.id);
+
+      const existingCount = (existingGroups ?? []).length;
+      const incomingCount = data.card_groups.filter((g) => g.organization_name?.trim()).length;
+
+      // Allow if the count and IDs haven't changed (employee isn't modifying groups)
+      if (existingCount === incomingCount && incomingCount === data.card_groups.length) {
+        // Count matches — check if all incoming groups have IDs matching existing ones
+        const existingIds = new Set((existingGroups ?? []).map((g) => g.id));
+        const allExisting = data.card_groups.every((g) => !g.id || existingIds.has(g.id));
+        if (allExisting) {
+          // Groups unchanged — skip enforcement
+        } else {
+          return {
+            success: false,
+            error: "Your company has locked card groups. Contact your admin to change them.",
+          };
+        }
+      } else {
+        // Count changed — employee is trying to add/remove groups
+        return {
+          success: false,
+          error: "Your company has locked card groups. Contact your admin to change them.",
+        };
+      }
+    }
   }
 
   // 1. Update profile full_name if provided

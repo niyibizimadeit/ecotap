@@ -39,7 +39,7 @@ function isPublicPath(pathname: string): boolean {
 
 function isAccessAllowed(pathname: string, role: UserRole): boolean {
   if (pathname.startsWith("/dashboard/admin")) {
-    return role === "super_admin";
+    return role === "super_admin" || role === "country_rep";
   }
   if (pathname.startsWith("/dashboard/company")) {
     return role === "company_admin" || role === "super_admin";
@@ -110,10 +110,15 @@ export async function middleware(request: NextRequest) {
     return NextResponse.redirect(new URL("/pending", request.url));
   }
 
-  // ── Suspended users → redirect to login ───────────────────────────────
+  // ── Suspended users → sign out + redirect to login ─────────────────────
   if (status === "suspended") {
     await supabase.auth.signOut();
-    return NextResponse.redirect(new URL("/login", request.url));
+    // signOut updated supabaseResponse's cookies via setAll.
+    // Redirect using supabaseResponse so the cleared cookies are sent.
+    const loginUrl = new URL("/login", request.url);
+    return NextResponse.redirect(loginUrl, {
+      headers: supabaseResponse.headers,
+    });
   }
 
   // ── Role-based access check ───────────────────────────────────────────

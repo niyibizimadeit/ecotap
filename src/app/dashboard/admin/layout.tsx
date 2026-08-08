@@ -1,10 +1,12 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { BrandLogo } from "@/components/brand/BrandLogo";
 import { signOut } from "@/app/actions/auth.actions";
+import { ROLE_LABELS } from "@/constants";
+import type { UserRole } from "@/types";
 
 import {
   LayoutDashboard, Clock, Package, Palette,
@@ -25,7 +27,17 @@ const NAV = [
 
 export default function AdminDashboardLayout({ children }: { children: React.ReactNode }) {
   const [mobileOpen, setMobileOpen] = useState(false);
+  const [role, setRole] = useState<UserRole | null>(null);
   const pathname = usePathname();
+
+  useEffect(() => {
+    async function load() {
+      const { getCurrentUser } = await import("@/app/actions/auth.actions");
+      const user = await getCurrentUser();
+      if (user) setRole(user.role as UserRole);
+    }
+    load();
+  }, []);
 
   return (
     <div className="min-h-screen flex" style={{ backgroundColor: "#FEFCE8" }}>
@@ -53,8 +65,12 @@ export default function AdminDashboardLayout({ children }: { children: React.Rea
               <Shield className="h-4 w-4" style={{ color: "#D1FAE5" }} />
             </div>
             <div className="min-w-0">
-              <p className="text-sm font-semibold truncate" style={{ color: "#FEFCE8" }}>Super Admin</p>
-              <p className="text-xs truncate" style={{ color: "rgba(254,252,232,0.5)" }}>Platform owner</p>
+              <p className="text-sm font-semibold truncate" style={{ color: "#FEFCE8" }}>
+                {role ? ROLE_LABELS[role] : "Admin"}
+              </p>
+              <p className="text-xs truncate" style={{ color: "rgba(254,252,232,0.5)" }}>
+                {role === "country_rep" ? "Read-only access" : "Platform owner"}
+              </p>
             </div>
           </div>
         </div>

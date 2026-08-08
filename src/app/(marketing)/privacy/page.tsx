@@ -1,3 +1,10 @@
+import type { Metadata } from "next";
+
+export const metadata: Metadata = {
+  title: "Privacy Policy",
+  description: "How EcoTap collects, uses, and protects your personal data.",
+};
+
 // Pure static page — no data dependencies.
 export const dynamic = "force-static";
 

@@ -1,3 +1,10 @@
+import type { Metadata } from "next";
+
+export const metadata: Metadata = {
+  title: "Terms and Conditions",
+  description: "Terms of service for EcoTap — NFC smart cards and digital networking platform.",
+};
+
 // Pure static page — no data dependencies.
 export const dynamic = "force-static";
 

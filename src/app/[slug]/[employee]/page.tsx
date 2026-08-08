@@ -13,7 +13,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const result = await getPublicCard(employee);
 
   if (!result.success || !result.data) {
-    return { title: "Card not found | EcoTap" };
+    return { title: "Card not found" };
   }
 
   const card = result.data;
@@ -23,12 +23,12 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
     : name;
 
   return {
-    title: `${titleStr} | EcoTap`,
+    title: titleStr,
     description: card.bio ?? `View ${name}'s digital business card on EcoTap.`,
     openGraph: {
       title: titleStr,
       description: card.bio ?? `View ${name}'s digital business card on EcoTap.`,
-      url: `https://ecotap.rw/${result.data.primary_company?.slug ?? "_"}/${employee}`,
+      url: `https://ecotap.rw/${result.data.primary_company?.slug || employee}/${employee}`,
       type: "profile",
     },
   };

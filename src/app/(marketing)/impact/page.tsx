@@ -1,4 +1,11 @@
+import type { Metadata } from "next";
 import { Trees, Wind, Trash2, Droplets, GraduationCap, Leaf } from "lucide-react";
+
+export const metadata: Metadata = {
+  title: "Environmental Impact — EcoTap",
+  description:
+    "See how EcoTap NFC cards reduce paper waste, CO₂ emissions, and water consumption. Every card replaces thousands of paper business cards.",
+};
 
 // Pure static page — no data dependencies.
 export const dynamic = "force-static";

@@ -28,7 +28,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   if (result.type === "company") {
     const { name, industry, description } = result.data;
     return {
-      title: `${name}${industry ? ` — ${industry}` : ""} on EcoTap`,
+      title: `${name}${industry ? ` — ${industry}` : ""}`,
       description: description ?? `Meet the team at ${name}.`,
     };
   }
@@ -43,7 +43,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
         ? `${name} — ${card.primary_job_title}${card.primary_company ? ` at ${card.primary_company.name}` : ""}`
         : name;
       return {
-        title: `${titleStr} | EcoTap`,
+        title: titleStr,
         description: card.bio ?? `View ${name}'s digital business card on EcoTap.`,
         openGraph: {
           title: titleStr,
@@ -55,7 +55,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
     }
   }
 
-  return { title: "EcoTap" };
+  return { title: { absolute: "EcoTap" } };
 }
 
 export default async function SlugPage({ params }: Props) {

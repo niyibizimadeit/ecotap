@@ -1,6 +1,13 @@
+import type { Metadata } from "next";
 import Link from "next/link";
 import { Button } from "@/components/ui/Button";
 import { ArrowRight, Check } from "lucide-react";
+
+export const metadata: Metadata = {
+  title: "Pricing — EcoTap NFC Business Cards",
+  description:
+    "Eco-friendly NFC business cards starting at $30 USD. Corporate plans from $25/card. Sustainable, reusable, and always up-to-date.",
+};
 import { CARD_ORIGINAL_PRICES } from "@/constants";
 
 // Pure static page — no data dependencies.

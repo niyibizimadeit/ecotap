@@ -18,7 +18,7 @@ export function generateVcf(card: PublicCard): string {
   if (job_title) lines.push(`TITLE:${job_title}`);
   if (company)   lines.push(`ORG:${company.name}`);
   if (phone)     lines.push(`TEL;TYPE=CELL:${phone}`);
-  if (profile.email) lines.push(`EMAIL:${profile.email}`);
+  if (card.email_public) lines.push(`EMAIL:${card.email_public}`);
 
   if (social_links.website)  lines.push(`URL:${social_links.website}`);
   if (social_links.linkedin) lines.push(`X-SOCIALPROFILE;type=linkedin:${social_links.linkedin}`);

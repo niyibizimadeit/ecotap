@@ -10,7 +10,7 @@ import * as onboardingService from "@/lib/services/onboarding.service";
 import * as adminService from "@/lib/services/admin.service";
 import type { ActionResult } from "@/types";
 
-// ── Guard ────────────────────────────────────────────────────────────────────
+// ── Guards ────────────────────────────────────────────────────────────────────
 
 async function requireSuperAdmin(): Promise<boolean> {
   const supabase = await getSupabase();
@@ -24,6 +24,21 @@ async function requireSuperAdmin(): Promise<boolean> {
     .single();
 
   return profile?.role === "super_admin";
+}
+
+/** Allows both super_admin (full access) and country_rep (read-only). */
+async function requireAdminAccess(): Promise<boolean> {
+  const supabase = await getSupabase();
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return false;
+
+  const { data: profile } = await supabase
+    .from("profiles")
+    .select("role")
+    .eq("id", user.id)
+    .single();
+
+  return profile?.role === "super_admin" || profile?.role === "country_rep";
 }
 
 // ── Approvals ────────────────────────────────────────────────────────────────
@@ -163,7 +178,7 @@ export async function verifyPayment(orderId: string): Promise<AnyActionResult> {
 // ── Data fetching (server-action safe for client components) ─────────────────
 
 export async function fetchOrders(): Promise<AnyActionResult> {
-  if (!(await requireSuperAdmin())) {
+  if (!(await requireAdminAccess())) {
     return { success: false, error: "Unauthorized." };
   }
   const { getAllOrdersAdmin } = await import("@/lib/services/admin.service");
@@ -171,7 +186,7 @@ export async function fetchOrders(): Promise<AnyActionResult> {
 }
 
 export async function fetchPendingQueue(): Promise<AnyActionResult> {
-  if (!(await requireSuperAdmin())) {
+  if (!(await requireAdminAccess())) {
     return { success: false, error: "Unauthorized." };
   }
   const { getPendingQueue } = await import("@/lib/services/admin.service");
@@ -179,7 +194,7 @@ export async function fetchPendingQueue(): Promise<AnyActionResult> {
 }
 
 export async function fetchPlans(): Promise<AnyActionResult> {
-  if (!(await requireSuperAdmin())) {
+  if (!(await requireAdminAccess())) {
     return { success: false, error: "Unauthorized." };
   }
   const { getAllPlansAdmin } = await import("@/lib/services/admin.service");
@@ -187,7 +202,7 @@ export async function fetchPlans(): Promise<AnyActionResult> {
 }
 
 export async function fetchUsers(): Promise<AnyActionResult> {
-  if (!(await requireSuperAdmin())) {
+  if (!(await requireAdminAccess())) {
     return { success: false, error: "Unauthorized." };
   }
   const { getAllUsers } = await import("@/lib/services/admin.service");
@@ -195,7 +210,7 @@ export async function fetchUsers(): Promise<AnyActionResult> {
 }
 
 export async function fetchDesigns(): Promise<AnyActionResult> {
-  if (!(await requireSuperAdmin())) {
+  if (!(await requireAdminAccess())) {
     return { success: false, error: "Unauthorized." };
   }
   const { getAllDesignsAdmin } = await import("@/lib/services/admin.service");
@@ -231,7 +246,7 @@ export async function updateCompany(
 // ── User management (CRUD) ────────────────────────────────────────────────────
 
 export async function fetchUserProfile(profileId: string): Promise<AnyActionResult> {
-  if (!(await requireSuperAdmin())) {
+  if (!(await requireAdminAccess())) {
     return { success: false, error: "Unauthorized." };
   }
   const { getUserProfileFull } = await import("@/lib/services/admin.service");
@@ -286,7 +301,7 @@ export async function fetchAllContactExchanges(options: {
   pageSize?: number;
   sortDir?: "asc" | "desc";
 }): Promise<AnyActionResult> {
-  if (!(await requireSuperAdmin())) {
+  if (!(await requireAdminAccess())) {
     return { success: false, error: "Unauthorized." };
   }
   const { getAllContactExchangesAdmin } = await import("@/lib/services/admin.service");
@@ -294,7 +309,7 @@ export async function fetchAllContactExchanges(options: {
 }
 
 export async function fetchContactExchangesCount(): Promise<AnyActionResult> {
-  if (!(await requireSuperAdmin())) {
+  if (!(await requireAdminAccess())) {
     return { success: false, error: "Unauthorized." };
   }
   const { getContactExchangesCount } = await import("@/lib/services/admin.service");
@@ -304,7 +319,7 @@ export async function fetchContactExchangesCount(): Promise<AnyActionResult> {
 // ── QR code lookup (admin) ────────────────────────────────────────────────────
 
 export async function lookupUserForQR(query: string): Promise<AnyActionResult> {
-  if (!(await requireSuperAdmin())) {
+  if (!(await requireAdminAccess())) {
     return { success: false, error: "Unauthorized." };
   }
   const { lookupUserByQuery } = await import("@/lib/services/admin.service");
@@ -312,7 +327,7 @@ export async function lookupUserForQR(query: string): Promise<AnyActionResult> {
 }
 
 export async function fetchUserCardUrl(profileId: string): Promise<AnyActionResult> {
-  if (!(await requireSuperAdmin())) {
+  if (!(await requireAdminAccess())) {
     return { success: false, error: "Unauthorized." };
   }
   const { getUserCardUrl } = await import("@/lib/services/admin.service");

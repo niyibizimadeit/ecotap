@@ -1,6 +1,18 @@
+import type { Metadata } from "next";
 import Link from "next/link";
 import { Button } from "@/components/ui/Button";
 import { ArrowRight, Users, Smartphone, Zap } from "lucide-react";
+
+export const metadata: Metadata = {
+  title: "Smart NFC Business Cards for Sustainable Networking",
+  description:
+    "Replace paper business cards with eco-friendly NFC smart cards. Tap, share, and connect instantly. Trusted by companies across Rwanda.",
+  openGraph: {
+    title: "EcoTap — Smart NFC Business Cards",
+    description:
+      "Replace paper business cards with eco-friendly NFC smart cards. Tap, share, and connect instantly.",
+  },
+};
 
 // Home page is fully static — no data dependencies.
 export const dynamic = "force-static";

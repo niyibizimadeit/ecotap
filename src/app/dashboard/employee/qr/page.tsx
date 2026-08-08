@@ -21,8 +21,8 @@ export default function QrPage() {
       if (result.success && result.data) {
         const card = result.data;
         const url = card.primary_company
-          ? `https://ecotap.rw/${card.primary_company.slug}/${card.profile.username}`
-          : `https://ecotap.rw/${card.profile.username}`;
+          ? `${process.env.NEXT_PUBLIC_SITE_URL || "https://ecotap.rw"}/${card.primary_company.slug}/${card.profile.username}`
+          : `${process.env.NEXT_PUBLIC_SITE_URL || "https://ecotap.rw"}/${card.profile.username}`;
         setCardUrl(url);
         setUsername(card.profile.username);
       }

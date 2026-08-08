@@ -259,6 +259,23 @@ export async function updateMyCompany(
 
     if (error) return { success: false, error: error.message };
 
+    // When theme_locked is turned ON, force all employee cards to the company brand color.
+    // This resets any custom colors employees set while the theme was unlocked.
+    if (input.theme_locked && input.brand_color) {
+      const { data: employeeLinks } = await service
+        .from("profile_companies")
+        .select("profile_id")
+        .eq("company_id", companyId);
+
+      if (employeeLinks && employeeLinks.length > 0) {
+        const profileIds = employeeLinks.map((l: { profile_id: string }) => l.profile_id);
+        await service
+          .from("cards")
+          .update({ theme_color: input.brand_color })
+          .in("profile_id", profileIds);
+      }
+    }
+
     revalidatePath("/dashboard/company");
     revalidatePath("/dashboard/company/settings");
     return { success: true };

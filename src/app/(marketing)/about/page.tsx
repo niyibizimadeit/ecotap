@@ -1,5 +1,12 @@
+import type { Metadata } from "next";
 import Image from "next/image";
 import { Leaf, Trees, Zap, Cloud, Heart, BarChart3, Globe, Eye, Target } from "lucide-react";
+
+export const metadata: Metadata = {
+  title: "About EcoTap — Sustainable Networking",
+  description:
+    "EcoTap replaces paper business cards with NFC smart cards. Our mission: reduce waste, connect people, and support environmental initiatives in Rwanda.",
+};
 
 // Pure static page — no data dependencies.
 export const dynamic = "force-static";

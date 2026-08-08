@@ -5,7 +5,7 @@
 // Follows the same patterns as orders.actions.ts for the payment flow.
 // ─────────────────────────────────────────────────────────────────────────────
 
-import { getSupabase, resolveCompanyId } from "@/lib/supabase/server";
+import { getSupabase, getServiceSupabase, resolveCompanyId } from "@/lib/supabase/server";
 import { revalidatePath } from "next/cache";
 import * as subscriptionService from "@/lib/services/subscription.service";
 import type { ActionResult, BillingPlan, CompanySubscription } from "@/types";
@@ -50,6 +50,25 @@ export async function uploadSubscriptionScreenshotAction(
   subscriptionId: string,
   screenshotUrl: string
 ): Promise<ActionResult<CompanySubscription>> {
+  const supabase = await getSupabase();
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return { success: false, error: "Not authenticated." };
+
+  // Verify the subscription belongs to the caller's company
+  const companyId = await resolveCompanyId();
+  if (!companyId) return { success: false, error: "No company linked to your account." };
+
+  const serviceClient = getServiceSupabase();
+  const { data: sub } = await serviceClient
+    .from("company_subscriptions")
+    .select("company_id, payment_status")
+    .eq("id", subscriptionId)
+    .single();
+
+  if (!sub || sub.company_id !== companyId) {
+    return { success: false, error: "Subscription not found." };
+  }
+
   const result = await subscriptionService.uploadSubscriptionPaymentScreenshot(
     subscriptionId,
     screenshotUrl

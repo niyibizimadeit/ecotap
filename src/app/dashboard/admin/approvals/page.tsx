@@ -29,6 +29,16 @@ export default function ApprovalsPage() {
   const [error,        setError]        = useState<string | null>(null);
   const [retryCount,   setRetryCount]   = useState(0);
   const [actionError,  setActionError]  = useState<string | null>(null);
+  const [isReadOnly,   setIsReadOnly]   = useState(false);
+
+  useEffect(() => {
+    async function init() {
+      const { getCurrentUser } = await import("@/app/actions/auth.actions");
+      const user = await getCurrentUser();
+      setIsReadOnly(user?.role !== "super_admin");
+    }
+    init();
+  }, []);
 
   useEffect(() => {
     async function load() {
@@ -301,6 +311,7 @@ export default function ApprovalsPage() {
                       ecotap.rw/{(item as PendingIndividual).username}
                     </span>
                   )}
+                  {!isReadOnly && (
                   <div className="flex gap-2 ml-auto">
                     <Button
                       variant="danger"
@@ -324,6 +335,7 @@ export default function ApprovalsPage() {
                       Approve
                     </Button>
                   </div>
+                  )}
                 </div>
               </div>
             );

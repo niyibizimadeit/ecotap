@@ -1,0 +1,9 @@
+User-agent: *
+Allow: /
+Disallow: /dashboard/
+Disallow: /dev/
+Disallow: /api/
+Disallow: /login
+Disallow: /register
+
+Sitemap: https://ecotap.rw/sitemap.xml

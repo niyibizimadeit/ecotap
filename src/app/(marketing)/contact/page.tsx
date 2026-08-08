@@ -1,6 +1,13 @@
+import type { Metadata } from "next";
 import { Mail, Phone, MapPin, MessageCircle, ArrowRight } from "lucide-react";
 import { Button } from "@/components/ui/Button";
 import { Input, Textarea } from "@/components/ui/Input";
+
+export const metadata: Metadata = {
+  title: "Contact Us — EcoTap",
+  description:
+    "Get in touch with the EcoTap team. Questions about NFC cards, corporate plans, or partnerships? We're here to help.",
+};
 
 // Pure static page — no data dependencies.
 export const dynamic = "force-static";

@@ -18,26 +18,19 @@ WHERE status = 'pending'
 
 -- Also fix: company admins whose profile_companies link failed due to
 -- trigger timing race (profile row not created yet when insert ran).
--- This creates the missing links for active companies with pending/active admins.
+-- This creates the missing links by matching the company_name from
+-- the admin's signUpOrg user_metadata to the actual company record.
 INSERT INTO profile_companies (profile_id, company_id, is_primary)
 SELECT p.id, c.id, true
 FROM profiles p
-JOIN companies c ON (
-  -- Match by company name stored in user_metadata during signUpOrg
-  c.id IN (
-    SELECT co.id FROM companies co
-    WHERE co.status = 'active'
-  )
-)
+JOIN auth.users u ON u.id = p.id
+JOIN companies c ON LOWER(c.name) = LOWER(u.raw_user_meta_data->>'company_name')
 WHERE p.role = 'company_admin'
   AND p.status IN ('active', 'pending')
+  AND c.status = 'active'
+  AND u.raw_user_meta_data->>'company_name' IS NOT NULL
   AND NOT EXISTS (
     SELECT 1 FROM profile_companies pc
     WHERE pc.profile_id = p.id
-  )
-  AND EXISTS (
-    SELECT 1 FROM auth.users u
-    WHERE u.id = p.id
-    AND u.raw_user_meta_data->>'company_name' IS NOT NULL
   )
 LIMIT 50;
