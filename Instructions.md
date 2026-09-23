@@ -1,6 +1,17 @@
 # EcoTap — Architecture & Coding Conventions
 
-This document is the single source of truth for how this codebase is structured, why decisions were made, and how everything fits together. Read this before writing any code.
+This document covers how this codebase is structured, why decisions were made, and how everything fits together. Read this before writing any code.
+
+**Companion documents — this file does not describe them:**
+
+| Document | Covers |
+|---|---|
+| `Readme.md` | What the product is, tech stack, setup, env vars, deployment |
+| `Roadmap.md` | Features that are designed and partly built but **not wired up** (analytics/ML, environmental reports, notifications) |
+| `Status.md` | What actually works, and the known open bug/risk list |
+| `fixes.md` | Full bug audit and priority fix queue |
+
+If a behaviour is described here but not in `Status.md` as working, verify it in the code before relying on it.
 
 ---
 
@@ -19,11 +30,13 @@ src/app/ + components/   ← Layer 4: UI (calls services only, never DB directly
 ```
 
 ### Layer 1 — Migrations
-- Every schema change is a timestamped `.sql` migration file in `supabase/migrations/`
+- Every schema change is a sequentially-numbered `.sql` migration file in `supabase/migrations/`
 - Never alter tables manually in the Supabase dashboard — always write a migration
-- Migration filenames: `YYYYMMDDHHMMSS_description.sql`
-- Every migration file is kept permanently — this is the historical record of the entire schema
+- Migration filenames: `NNN_description.sql` (e.g. `019_employee_locks_and_whatsapp.sql`)
+- Once written, a migration file is never edited — add a new one instead
 - To deploy: `supabase db push`
+
+> **Important — the migration history starts at `011`.** Migrations `001`–`010` are not standalone files; their combined content lives in `supabase/FULL_SCHEMA.sql`, which is the only complete definition of the base schema. On a fresh database you must run `FULL_SCHEMA.sql` first, then `011`→`021`. See `Readme.md` → Setting up the database. Never assume the migrations directory alone can rebuild the schema from empty.
 
 ### Layer 2 — Repositories (`src/lib/supabase/`)
 - One file per table: `profiles.repo.ts`, `companies.repo.ts`, `cards.repo.ts`, etc.
@@ -79,27 +92,31 @@ src/
       employee/           # Employee + Individual
     [slug]/               # Public individual card (ecotap.rw/username)
     [slug]/[employee]/    # Public company employee card
+    actions/              # All Server Actions (one file per domain)
     api/
-      vcf/                # vCard download endpoint
-      events/             # Event tracking endpoint
-  actions/                # All Server Actions (one file per domain)
+      vcf/[slug]/         # vCard download endpoint — the only API route
+    dev/components/       # UI primitive sandbox — see the warning below
   components/
     ui/                   # Primitives: Button, Input, Badge, Modal, etc.
     cards/                # Card display + interaction components
     dashboard/            # Shared dashboard components (StatCard, PageHeader)
     orders/               # Order flow components
+    analytics/            # Page view tracking
+    auth/ layout/ brand/
   lib/
-    supabase/             # Repositories + Supabase client helpers
+    supabase/             # Repositories + Supabase client/server/middleware helpers
     services/             # Business logic services
-    email/                # Email templates + Resend helpers
+    validations/          # zod schemas (currently auth only)
+    r2/                   # Cloudflare R2 upload helpers
     vcf/                  # vCard generator
-    qr/                   # QR code utilities
     utils/                # Generic helpers (slugify, formatDate, etc.)
-    mock/                 # Mock data — DELETE before Phase 15
   types/                  # All TypeScript interfaces
-  hooks/                  # Custom React hooks
   constants/              # Roles, statuses, routes, environmental constants
 ```
+
+> **Folders that do not exist**, despite appearing in earlier revisions of this document: `lib/email/`, `lib/qr/`, `lib/mock/`, `src/hooks/`, and `src/app/api/events/`. Don't reference them.
+>
+> **`src/app/dev/components/` is currently publicly reachable in production.** Its own header says it should have been deleted at launch, and `src/middleware.ts` both permits `/dev/` and only matches `/dashboard/:path*` — so middleware never runs for it. See `Status.md` (issue H6).
 
 ---
 
@@ -192,115 +209,49 @@ invitations: pending → accepted | expired
 
 ---
 
+## Authentication
+
+Supabase Auth handles all authentication. There are two distinct mechanisms, and only one of them is a sign-in method.
+
+**1. Password sign-in — the primary and only login method.**
+Users register with an email and password, and sign in through `supabase.auth.signInWithPassword` in `signIn()` (`src/app/actions/auth.actions.ts`).
+
+**2. OTP codes — for verification and recovery only.**
+Supabase emails a 6-digit one-time code for:
+- signup email verification (`/verify`)
+- password reset (`/forgot-password` → `/verify-reset` → `/new-password`)
+
+OTP is **not** a standalone login method. There is no passwordless sign-in.
+
+There are two entry points:
+- `/org/login` and `/org/register` — companies and their admins
+- `/login` and `/register` — employees and individuals
+
+Auth mail (verification and reset only) is sent by **Supabase's built-in mailer**, using the templates checked in at `supabase/email-templates/` (`confirm-signup.html`, `reset-password.html`) and configured in the Supabase dashboard. No application code sends email.
+
+Role and status gating happens in `src/middleware.ts`, which reads `profiles.role` and `profiles.status` and redirects accordingly.
+
+---
+
 ## Notifications
 
-| Trigger | Recipient | Channel |
-|---|---|---|
-| New company registration (pending) | Super Admin | Email (Resend) |
-| New individual registration (pending) | Super Admin | Email (Resend) |
-| New card order placed | Super Admin | Email (Resend) |
+**Not implemented.** The application sends no email of its own — there is no mail provider dependency, no mail helper, and no `src/lib/email/`. The only mail leaving the system is Supabase Auth's verification and reset mail described above.
 
-Employees do not receive any notifications. Future phases may add more triggers.
-
-Email provider: **Resend** (`resend` npm package). Templates live in `src/lib/email/templates/`.
+The intended notification triggers are specified in `Roadmap.md` §3. Note that Supabase Auth's mailer can only send auth-related mail, so implementing them requires choosing a separate transactional provider.
 
 ---
 
-## OTP Authentication
+## Environmental impact & Analytics/ML
 
-Supabase Auth is configured with OTP (one-time password) for login:
-- User enters email → Supabase sends a 6-digit OTP
-- User enters OTP → session established
-- No passwords stored — passwordless auth only
-- Configured in the Supabase dashboard under Auth → Email → Enable OTP
+Both of these are **designed and partly built, but not wired up to anything running.** They are specified in full in **`Roadmap.md`** — read that before working on either.
 
----
+In short:
 
-## Environmental impact report
+**Environmental impact reports** — the calculation is fully implemented (`ENV` constants and `calcMonthlyImpact()` in `src/constants/index.ts`, plus `generateMonthlyReport` in `src/lib/services/analytics.service.ts`) and the `environmental_reports` table exists. Nothing calls any of it: there is no scheduler, no monthly job, and no delivery. The `/impact` marketing page shows static figures unrelated to this calculation.
 
-Each company receives a monthly email report on the environmental impact of using EcoTap versus paper business cards. This is a marketing and CSR feature — it reinforces the value of the service.
+**Analytics / ML** — the `card_events`, `daily_card_stats`, `profile_activity`, `card_scores` and `ab_test_assignments` tables exist, and `src/lib/services/analytics.service.ts` exposes a full API over them (`recordCardEvent`, `computeCardScores`, `assignVisitorToTest`, …). **None of it has any call sites.** The only telemetry actually recorded today is `recordPageView` (`src/app/actions/analytics.actions.ts`), which writes `event_type: "view"` with hardcoded `source: "direct"` and `device_type: "unknown"`. There is no NFC/QR attribution, no `vcf_download`/`social_click`/`contact_exchange` capture, no visitor/session cookies, and no geo capture from Vercel headers. There is no nightly rollup job — no `vercel.json`, no cron, no API route — so `daily_card_stats` is only ever read.
 
-### Industry-standard numbers used in calculations
-
-| Metric | Value | Source |
-|---|---|---|
-| Weight of one paper business card | 1.35g | HiHello / Statistic Brain |
-| CO₂ per paper card (full lifecycle) | 9g CO₂e | NexaLink industry analysis |
-| Water to produce 1kg of paper | 324 litres | ShareEcard / EPA data |
-| % of paper cards thrown away within 1 week | 88% | Multiple sources |
-| % of paper cards ending up in landfill | 90% | ShareEcard |
-| EcoTap recycled PVC NFC card lifespan | 7 years | Industry conservative estimate |
-| Paper cards replaced per NFC card (lifespan) | ~30 reprints per person over 7 years | Cardynale / TapiLink research |
-| Carbon footprint: 1 NFC card vs equivalent paper | 10× lower over lifetime | Industry research |
-
-### How the report is calculated per company
-
-For a company with N active employee cards, over the reporting month:
-
-```
-paper_cards_avoided   = N × (reprints_per_year / 12)
-                      = N × (30 / 7 / 12)   ← ~0.36 per employee per month
-
-co2_saved_kg          = paper_cards_avoided × 9g / 1000
-water_saved_litres    = paper_cards_avoided × 1.35g / 1000 × 324
-waste_avoided_grams   = paper_cards_avoided × 1.35g
-trees_saved           = paper_cards_avoided × 0.004  ← industry: 1 tree per 250 cards
-```
-
-Report also includes:
-- Cumulative totals since company joined EcoTap
-- Year-to-date totals
-- Equivalent comparisons ("equivalent to X cups of water", "X km driven in a car")
-
-### Stored in `environmental_reports` table
-Every monthly report is persisted with the calculated values — not recomputed retroactively. This gives you a historical record for trend analysis and ML.
-
----
-
-## Analytics & ML data strategy
-
-### Philosophy: capture everything from day one
-Historical event data cannot be reconstructed. The `card_events` table is append-only and never deleted. Every meaningful visitor action on a card page produces one row. As the business grows, this table becomes the foundation for:
-- Card performance dashboards
-- NFC vs QR split analysis
-- Geographic reach mapping
-- Recommendation engine (which card features drive the most exchanges)
-- Churn prediction (companies with low card engagement)
-- A/B testing card designs
-
-### card_events — the core telemetry table
-
-Every row is one discrete user action. Captured server-side via a fire-and-forget API route.
-
-```sql
-event_type values:
-  'view'             -- card page opened
-  'nfc_tap'          -- arrived via NFC (?source=nfc in URL)
-  'qr_scan'          -- arrived via QR (?source=qr in URL)
-  'vcf_download'     -- Save contact clicked
-  'contact_exchange' -- visitor submitted their contact details
-  'social_click'     -- a social link icon was clicked
-  'share'            -- card share action (future)
-```
-
-### daily_card_stats — pre-aggregated rollups
-A nightly job computes daily totals per card and writes to `daily_card_stats`. Dashboard queries read from this table — never the raw events table. This keeps dashboards fast at any scale.
-
-### Event tracking pattern
-Events are fire-and-forget — they must never block a page render or user action:
-
-```ts
-// Non-blocking — called but not awaited
-recordCardEvent({
-  card_id:     card.id,
-  event_type:  'view',
-  referrer:    headers().get('referer'),
-  country:     headers().get('x-vercel-ip-country'),
-  city:        headers().get('x-vercel-ip-city'),
-  device_type: parseDevice(headers().get('user-agent')),
-  // session_id and visitor_id come from cookies
-}).catch(() => {}) // silently ignore — never surface to user
-```
+Rule that still applies when you do wire these up: **events are fire-and-forget and must never block a render or a user action.** Never surface an analytics error to a user.
 
 ---
 
@@ -309,7 +260,7 @@ recordCardEvent({
 ### Identity & access
 | Table | Purpose |
 |---|---|
-| `profiles` | One per auth user. Role, status, username, OTP auth. |
+| `profiles` | One per auth user. Role, status, username, password auth. |
 | `companies` | One per registered company. Branding, theme_locked, legal_rep_confirmed. |
 | `country_reps` | Links a profile (country_rep role) to a country code. |
 | `profile_companies` | Many-to-many. Employee ↔ company with is_primary flag. |
@@ -319,24 +270,30 @@ recordCardEvent({
 ### Cards & orders
 | Table | Purpose |
 |---|---|
-| `cards` | One per profile. Slug, theme_color, bio, social links, phone. |
+| `cards` | One per profile. Slug, theme_color, bio, social links, phone, whatsapp. |
+| `card_groups` | Groups cards within a company. RLS-scoped to the owning profile. |
 | `card_designs` | Physical NFC card designs managed by Super Admin. |
 | `card_orders` | A user orders physical NFC cards. Status-tracked to delivery. |
 
 ### Analytics & ML
 | Table | Purpose |
 |---|---|
-| `card_events` | Append-only telemetry. Every visitor action. Never deleted. |
+| `card_events` | Append-only telemetry. Every visitor action. Never deleted. **Only `view` events are written today** — see `Roadmap.md`. |
 | `contact_exchanges` | Visitor contact submissions with full metadata. |
-| `daily_card_stats` | Pre-aggregated daily rollups per card. |
+| `daily_card_stats` | Pre-aggregated daily rollups per card. **Currently read-only — no job writes to it.** |
+| `profile_activity` | Per-profile activity log. Not written to yet. |
+| `card_scores` | Computed card-performance scores. Not written to yet. |
+| `ab_test_assignments` | Visitor → A/B variant assignment. Not written to yet. |
 
 ### Billing & platform
 | Table | Purpose |
 |---|---|
 | `billing_plans` | Pricing plans (monthly/annual, price in RWF). |
 | `company_subscriptions` | Which plan a company is on and their employee count. |
-| `notifications` | Notification log — email sent flags, type, metadata. |
-| `environmental_reports` | Monthly CO₂/water/waste calculations per company. |
+| `notifications` | Notification log — email sent flags, type, metadata. **Table only; nothing writes or sends.** |
+| `environmental_reports` | Monthly CO₂/water/waste calculations per company. **Nothing generates these yet.** |
+
+> These 20 tables are the complete set. The authoritative definition is `supabase/FULL_SCHEMA.sql` plus `supabase/migrations/011`→`021` (see `Readme.md` → Setting up the database).
 
 ---
 
@@ -346,6 +303,13 @@ recordCardEvent({
 - Use `interface` for object shapes, `type` for unions
 - Every DB table has a matching TypeScript interface
 - Never use `any` — use `unknown` and narrow if necessary
+- **Known exception:** `src/types/database.ts` exports `Database = any` as a deliberate stub, so that Supabase queries compile before the CLI is connected. Repository functions don't rely on it — they return explicit types from `src/types/index.ts`. To remove it:
+
+  ```bash
+  npx supabase gen types typescript --linked > src/types/supabase.ts
+  ```
+
+  There are ~8 further `any`/`as any` sites in `src/`. See `Status.md`.
 
 ---
 
@@ -380,7 +344,7 @@ Color palette:
   emerald-pale:   #ECFDF5   hover backgrounds
   ivory:          #FEFCE8   page background
   cream:          #FEF9EF   card backgrounds
-  cream-dark:     #F0E6D3   borders, table row headers
+  cream-dark:     #F5EDD8   borders, table row headers
   gold:           #92400E   warnings, pending badges
   gold-light:     #D97706   badge dots, highlights
   gold-pale:      #FEF3C7   warning backgrounds
@@ -394,10 +358,11 @@ Color palette:
 ## Server Actions
 
 - All mutations go through Server Actions in `src/app/actions/`
-- One file per domain: `onboarding.actions.ts`, `cards.actions.ts`, `orders.actions.ts`, `contacts.actions.ts`, `admin.actions.ts`, `events.actions.ts`, `invitations.actions.ts`, `reports.actions.ts`
-- Validate with `zod` before calling services
+- One file per domain. The current set is: `admin.actions.ts`, `analytics.actions.ts`, `auth.actions.ts`, `cards.actions.ts`, `company.actions.ts`, `contacts.actions.ts`, `invitations.actions.ts`, `orders.actions.ts`, `public.actions.ts`, `subscription.actions.ts`, `uploads.actions.ts`
+- Validate with `zod` before calling services. Schemas live in `src/lib/validations/`. **Be aware the current reality is thin:** only `src/lib/validations/auth.ts` exists, and most actions hand-roll `if (!field) return { success: false, … }` guards instead. New or touched actions should add a proper zod schema rather than copying the hand-rolled pattern.
 - Always return `{ success: boolean, data?: T, error?: string }`
 - Server Actions call services — never repositories directly
+- Actions that touch the database as an unauthenticated caller (e.g. public card pages, analytics) use `getServiceSupabase()` — the service role **bypasses RLS**, so ownership must be verified in the action or service. See `Status.md` issue B5.
 
 ---
 
@@ -416,15 +381,15 @@ Color palette:
 | Decision | Rationale |
 |---|---|
 | App Router | Server Components reduce JS; better SEO for public card pages |
-| Supabase | Auth + DB + Storage + RLS in one; fast to ship |
+| Supabase | Auth + DB + RLS in one; fast to ship. (Supabase **Storage** is *not* used — uploads go to R2.) |
 | SSOT four-layer | Prevents spaghetti; auditable and testable |
 | Cloudflare R2 | Cheaper egress than Supabase Storage at scale |
 | No ORM | Supabase typed client is sufficient; Prisma adds a fifth layer |
 | Slug-based URLs | Human-readable, NFC-friendly, SEO-friendly |
 | Server Actions | Eliminates API route boilerplate; co-locates logic with pages |
-| OTP-only auth | Passwordless is simpler for users and eliminates password reset flows |
+| Email + password auth, with OTP for verification and reset | Familiar to users and to company admins; OTP removes password-reset friction without giving up password login |
 | card_events append-only | Historical data cannot be reconstructed — capture from day one |
-| Resend for email | Best Next.js/Vercel integration; simple API; generous free tier |
 | profile_companies join | Supports multi-company employees without future schema changes |
-| daily_card_stats rollup | Pre-aggregated stats make dashboards instant at scale |
+| daily_card_stats rollup | Pre-aggregated stats would make dashboards instant at scale. **Designed but not built** — see `Roadmap.md` |
 | Environmental constants in code | Numbers are researched and versioned — not hardcoded in SQL |
+| No third-party mail provider yet | Supabase Auth's built-in mailer covers verification and reset. Transactional notifications need a separate provider when implemented — see `Roadmap.md` §3 |

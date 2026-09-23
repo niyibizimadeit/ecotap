@@ -5,8 +5,8 @@
     "semantic_hash": "7583f1d34506a2b83ce1a762b1069a23"
   },
   ".claude/settings.local.json": {
-    "mtime": 1786200511.2685635,
-    "ast_hash": "b8dddcd1d3792650ef211894091809a8",
+    "mtime": 1789975476.6985216,
+    "ast_hash": "742343c04bdb056ed2071012f9a6b8dd",
     "semantic_hash": ""
   },
   "eslint.config.mjs": {
@@ -530,9 +530,9 @@
     "semantic_hash": ""
   },
   "src/lib/r2/upload.ts": {
-    "mtime": 1781097204.4315884,
-    "ast_hash": "17989593d24c7216be6cbedc6084b8de",
-    "semantic_hash": "17989593d24c7216be6cbedc6084b8de"
+    "mtime": 1789975198.5390782,
+    "ast_hash": "94a221055f43665827e1e6a608ccaae3",
+    "semantic_hash": ""
   },
   "src/lib/services/admin.service.ts": {
     "mtime": 1783762538.3711414,
@@ -730,13 +730,13 @@
     "semantic_hash": ""
   },
   "Instructions.md": {
-    "mtime": 1780912248.7523108,
-    "ast_hash": "d9decb67b8cb06098f4bb9874d5b0321",
+    "mtime": 1789975440.704682,
+    "ast_hash": "d767beea366ae97f57637f1d3bcea9f9",
     "semantic_hash": ""
   },
   "Readme.md": {
-    "mtime": 1781688379.9004219,
-    "ast_hash": "975220f9c0ba1bfcd54b705527a7ceff",
+    "mtime": 1789975238.669127,
+    "ast_hash": "29dc354b861042c25f00baf0b280581d",
     "semantic_hash": ""
   },
   "Todo.md": {
@@ -842,6 +842,16 @@
   "public/robots.txt": {
     "mtime": 1786200649.2754843,
     "ast_hash": "f835ad9c8e06e73b734b2a1eb320e286",
+    "semantic_hash": ""
+  },
+  "Roadmap.md": {
+    "mtime": 1789975277.7286625,
+    "ast_hash": "6717fbb8c65a65226311b1dec63d7607",
+    "semantic_hash": ""
+  },
+  "Status.md": {
+    "mtime": 1789975300.4269326,
+    "ast_hash": "46f710856ecdc247c6a5bcd4664245f0",
     "semantic_hash": ""
   }
 }

@@ -1,6 +1,10 @@
 import { S3Client, PutObjectCommand, DeleteObjectCommand } from "@aws-sdk/client-s3";
 
 // ── R2 Client (S3-compatible) ─────────────────────────────────────────────
+//
+// Config is read lazily, at call time — never at module load. These vars are
+// only present where uploads actually run, so reading them on import would
+// throw as soon as anything imported this module during local development.
 
 function requireEnv(key: string): string {
   const value = process.env[key];
@@ -10,19 +14,13 @@ function requireEnv(key: string): string {
   return value;
 }
 
-const R2_ENDPOINT = requireEnv("R2_ENDPOINT");
-const R2_ACCESS_KEY_ID = requireEnv("R2_ACCESS_KEY_ID");
-const R2_SECRET_ACCESS_KEY = requireEnv("R2_SECRET_ACCESS_KEY");
-const R2_BUCKET_NAME = requireEnv("R2_BUCKET_NAME");
-const R2_PUBLIC_URL = requireEnv("R2_PUBLIC_URL");
-
 function getClient(): S3Client {
   return new S3Client({
     region: "auto",
-    endpoint: R2_ENDPOINT,
+    endpoint: requireEnv("R2_ENDPOINT"),
     credentials: {
-      accessKeyId: R2_ACCESS_KEY_ID,
-      secretAccessKey: R2_SECRET_ACCESS_KEY,
+      accessKeyId: requireEnv("R2_ACCESS_KEY_ID"),
+      secretAccessKey: requireEnv("R2_SECRET_ACCESS_KEY"),
     },
   });
 }
@@ -54,12 +52,14 @@ export async function uploadToR2(
   prefix: string = "uploads"
 ): Promise<UploadResult> {
   try {
+    const bucket = requireEnv("R2_BUCKET_NAME");
+    const publicUrl = requireEnv("R2_PUBLIC_URL");
     const client = getClient();
     const key = generateKey(prefix, filename);
 
     await client.send(
       new PutObjectCommand({
-        Bucket: R2_BUCKET_NAME,
+        Bucket: bucket,
         Key: key,
         Body: buffer,
         ContentType: contentType,
@@ -67,7 +67,7 @@ export async function uploadToR2(
       })
     );
 
-    const url = `${R2_PUBLIC_URL}/${key}`;
+    const url = `${publicUrl}/${key}`;
 
     return { success: true, key, url };
   } catch (error) {
@@ -144,10 +144,11 @@ export async function uploadDesignPreview(
  */
 export async function deleteFromR2(key: string): Promise<boolean> {
   try {
+    const bucket = requireEnv("R2_BUCKET_NAME");
     const client = getClient();
     await client.send(
       new DeleteObjectCommand({
-        Bucket: R2_BUCKET_NAME,
+        Bucket: bucket,
         Key: key,
       })
     );
@@ -162,6 +163,9 @@ export async function deleteFromR2(key: string): Promise<boolean> {
  * Extract the key from a full R2 URL.
  */
 export function keyFromUrl(url: string): string | null {
-  if (!url.startsWith(R2_PUBLIC_URL)) return null;
-  return url.slice(R2_PUBLIC_URL.length + 1);
+  // Read directly rather than via requireEnv — this is synchronous and must
+  // never throw. With no base URL configured no R2 URL can match anyway.
+  const publicUrl = process.env.R2_PUBLIC_URL;
+  if (!publicUrl || !url.startsWith(publicUrl)) return null;
+  return url.slice(publicUrl.length + 1);
 }
