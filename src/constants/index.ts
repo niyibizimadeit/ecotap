@@ -1,4 +1,7 @@
-import type { UserRole, UserStatus, OrderStatus, NotificationType } from "@/types";
+import type {
+  UserRole, UserStatus, OrderStatus, NotificationType,
+  EventStatus, CheckInMethod, VisitExitSource,
+} from "@/types";
 
 // ── Roles ─────────────────────────────────────────────────────────────────────
 
@@ -237,3 +240,61 @@ export const COLORS = {
   goldLight:     "#D97706",
   goldPale:      "#FEF3C7",
 } as const;
+
+// ── Events ───────────────────────────────────────────────────────────────────
+
+export const EVENT_STATUS_LABELS: Record<EventStatus, string> = {
+  scheduled: "Scheduled",
+  live:      "Live",
+  closed:    "Closed",
+  cancelled: "Cancelled",
+};
+
+export const CHECK_IN_METHOD_LABELS: Record<CheckInMethod, string> = {
+  nfc: "NFC tap",
+  qr:  "QR scan",
+};
+
+export const VISIT_EXIT_SOURCE_LABELS: Record<VisitExitSource, string> = {
+  manual:      "Recorded",
+  auto_close:  "Auto — event closed",
+  auto_cancel: "Auto — event cancelled",
+};
+
+/**
+ * A second tap within this window of entry is ambiguous: nobody genuinely
+ * checks in and leaves this fast, so the host is asked whether the person
+ * is leaving or the card double-tapped. At or beyond this, the exit is
+ * recorded automatically with no prompt.
+ */
+export const AMBIGUOUS_EXIT_WINDOW_MS = 5 * 60 * 1000;
+
+/** Event titles are a display label; keep them short enough for a phone row. */
+export const MAX_EVENT_TITLE_LENGTH = 120;
+
+/**
+ * All export timestamps render in this zone. Vercel runs UTC, so writing
+ * raw Date objects would show hosts times two hours behind what they saw
+ * at the door. Everything is formatted as a string in this zone instead.
+ */
+export const EVENT_EXPORT_TIMEZONE = "Africa/Kigali";
+
+/** Column headers for the attendance spreadsheet, in order. */
+export const EVENT_EXPORT_COLUMNS = [
+  "Full name",
+  "Phone",
+  "Email",
+  "Company",
+  "Department",
+  "Role/Position",
+  "Entry time",
+  "Exit time",
+] as const;
+
+/**
+ * Hard caps on a bulk export. A platform-wide zip is generated in memory,
+ * so these keep the request inside the function's memory and time budget.
+ * Exceeding either returns 413 with a clear message rather than timing out.
+ */
+export const MAX_EVENTS_PER_ZIP = 500;
+export const MAX_VISITS_PER_ZIP = 100_000;

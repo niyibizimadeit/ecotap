@@ -1,6 +1,6 @@
 "use client";
 
-import { getInitials } from "@/lib/utils";
+import { getInitials, contrastColor } from "@/lib/utils";
 import { Building2 } from "lucide-react";
 import type { SocialLinks } from "@/types";
 
@@ -43,15 +43,7 @@ export function CardPreview({
   const activeSocial = (Object.entries(socialLinks) as [keyof SocialLinks, string][])
     .filter(([, v]) => v.trim());
 
-  /* ── Contrast helpers ── */
-  const getLuminance = (hex: string): number => {
-    const r = parseInt(hex.slice(1, 3), 16) / 255;
-    const g = parseInt(hex.slice(3, 5), 16) / 255;
-    const b = parseInt(hex.slice(5, 7), 16) / 255;
-    const toLinear = (c: number) => (c <= 0.03928 ? c / 12.92 : Math.pow((c + 0.055) / 1.055, 2.4));
-    return 0.2126 * toLinear(r) + 0.7152 * toLinear(g) + 0.0722 * toLinear(b);
-  };
-  const iconColor = getLuminance(accentColor) > 0.5 ? "#000000" : "#FFFFFF";
+  const iconColor = contrastColor(accentColor);
 
   return (
     <div className="w-full max-w-xs mx-auto">

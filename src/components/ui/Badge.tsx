@@ -14,6 +14,7 @@ const badgeVariants = cva(
         approved:  "bg-emerald-pale text-emerald-mid border-emerald-bright/20",
         draft:     "bg-cream-dark text-ink-mid border-cream-dark",
         info:      "bg-blue-50 text-blue-700 border-blue-200",
+        live:      "bg-emerald-pale text-emerald-deep border-emerald-bright/30",
       },
     },
     defaultVariants: {
@@ -31,6 +32,7 @@ const DOT_COLORS: Record<string, string> = {
   approved:  "bg-emerald-bright",
   draft:     "bg-ink-light",
   info:      "bg-blue-500",
+  live:      "bg-emerald-bright",
 };
 
 export interface BadgeProps

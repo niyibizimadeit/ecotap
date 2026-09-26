@@ -290,3 +290,452 @@ ALTER TABLE cards ADD COLUMN IF NOT EXISTS whatsapp text;
 23. RLS policy audit on all Supabase tables
 24. Fix `prefers-reduced-motion` in globals.css
 25. Extract inline styles to CSS variables/Tailwind tokens
+
+---
+---
+
+# Audit — 2026-09-25
+
+A second pass over the whole repo, prompted by a report that a deleted user's email could not be re-registered.
+
+**How to read this.** Entries marked **[verified]** were reproduced or proven while writing this — by running code, querying the schema, or reading the exact call chain. Entries marked **[reported]** come from a systematic sweep and have a file:line and a described mechanism, but were not independently reproduced. Treat **[reported]** as "worth checking", not "confirmed".
+
+Numbering `N1…` is separate from the `B/H/M` numbering above, which is left intact.
+
+---
+
+## N1. A rejected subscription permanently blocks the company from ever subscribing — CRITICAL **[verified]**
+
+**Files:** `src/lib/services/subscription.service.ts:155-171` (reject), `:44-71` (subscribe guard), `src/lib/supabase/billing.repo.ts:154` (insert), `supabase/FULL_SCHEMA.sql:600` (constraint)
+
+The chain, verified link by link:
+
+1. Super admin rejects a payment → `rejectSubscription` sets `status: "cancelled"`
+2. Company admin uploads a correct screenshot and clicks Subscribe
+3. `subscribe()` only refuses when an existing row is `active` or `pending_approval` — a `cancelled` row does **not** match, so it proceeds
+4. `createSubscription` does a plain `.insert()` — but `company_subscriptions.company_id` is `not null unique`
+5. The insert hits a unique violation, `.single()` returns `data: null`, and the user sees `"Failed to create subscription."`
+
+**Consequence:** a company whose payment is ever rejected can never subscribe again. Every retry fails identically, the message names no cause, and no code path resets the row to `pending_approval`. This is a business-blocking dead end, not a cosmetic bug.
+
+**Likely fix:** make rejection reuse the existing row (`update` to `pending_approval` with the new screenshot) rather than leaving a tombstone that blocks a fresh insert — or upsert on `company_id`.
+
+---
+
+## N2. Account deletion is non-atomic and fails in the unrecoverable direction — CRITICAL **[verified]**
+
+**Files:** `src/lib/services/admin.service.ts:277-392`
+
+`deleteProfileCascade` removes the account's data **first** (steps 1–4: `card_orders`, `profile_companies`, `profile_activity`, `contact_exchanges`, `invitations`, `notifications`) and deletes the identity **last** (step 5: `auth.users`, which cascades to `profiles`).
+
+If step 5 fails, the person is left half-deleted: their records are gone, but `auth.users` still holds the email, so re-registration returns *"already exists"* while the account itself is unusable. Nothing retries and nothing reconciles.
+
+**This is the likely mechanism behind the reported "deleted user's email still exists" symptom.** Two contributing defects:
+
+**2a — every guard in the function is dead code.** Supabase's client does not reject; PostgREST errors come back as a *resolved* `{ error }`. Proven directly, against this project's own client:
+
+```
+did it THROW?       false
+did it RETURN err?  {"error":{"code":"PGRST205", ...}}
+```
+
+So all seven `try { await supabase.from(X).delete() } catch {...}` blocks can never fire. Steps 1–4 fail silently, `errors[]` stays empty, and the function proceeds to step 5 with its cleanup incomplete — which is how step 5 then fails on a foreign key. Only the `auth.admin.deleteUser` step checks its result. Nothing is logged either.
+
+**2b — `invitations.created_by` and `invitations.accepted_by` are `references profiles(id)` with no `on delete` clause** (`supabase/FULL_SCHEMA.sql:250,255`), which Postgres treats as `NO ACTION` — effectively RESTRICT. Step 4b exists specifically to clear those rows, and is exactly the kind of step whose failure is invisible under 2a.
+
+**Same root cause, second location:** `src/lib/supabase/companies.repo.ts:123-146` (`deleteCompanyCascade`) — `errors` can never be non-empty, so company deletion always reports a clean success.
+
+**Also feeds N10 (events):** `deleteProfileCascade` never touches `events`, and `events.host_profile_id` cascades — so deleting a host silently destroys other people's attendance.
+
+---
+
+## N3. Deleting a card design or a billing plan "succeeds" and does nothing — HIGH **[verified]**
+
+**Files:** `src/lib/services/admin.service.ts:117-120` (`deleteDesign`), `:137-140` (`deletePlan`)
+
+Both discard the repository result and return `{ success: true }` unconditionally:
+
+```ts
+export async function deleteDesign(id: string): Promise<ActionResult<void>> {
+  await designsRepo.deleteDesign(id);
+  return { success: true };
+}
+```
+
+The rows are FK-protected (`card_orders.design_id … on delete restrict`, `company_subscriptions.plan_id … on delete restrict`), so any design that has ever been ordered — and any plan a company is on — cannot be deleted. The delete is rejected, the error is dropped, the UI shows no error, and after a refresh the row is still there.
+
+There is no soft-delete path either: `card_designs.is_active` exists but `deleteDesign` never uses it, so designs cannot be retired at all.
+
+---
+
+## N4. Event server actions read service-role data without ownership checks — FIXED 2026-09-25 **[verified]**
+
+**Files:** `src/app/actions/events.actions.ts:171-181` (as originally written)
+
+`getOpenVisitsAction(eventId)` proved only that the caller was *a* host, never that they hosted *that* event, and called a service-role read — so it would return the full "inside now" roster (names, emails, phones) for any event on the platform given its id. `getAdminEventsAction()` checked only `caps.authenticated`, returning every event platform-wide with host details.
+
+Neither was imported by a client component, so the action IDs were not in the client bundle — a defence-in-depth gap rather than an open door. But B4/B5 exist precisely because "unreachable" server actions are still callable.
+
+**Fixed:** added host-scoped service reads (`getOpenVisitsForHost`, `getEventVisitsForHost`) that verify the caller hosts the event, and a platform-admin/country-rep role check on `getAdminEventsAction`. Verified: `tsc` and `npm run build` clean.
+
+---
+
+## N5. Admin billing shows the wrong plan and price per subscription — HIGH **[reported]**
+
+**File:** `src/lib/supabase/billing.repo.ts:132`
+
+```ts
+const planMap = new Map((plans ?? []).map((p, i) => [planIds[i], p]));
+```
+
+An **index-based** join against `.in("id", planIds)` with no `order` clause. Postgres does not guarantee that result order matches request order.
+
+**Consequence:** with several companies on different plans, each subscription row can be rendered with another company's plan name, cycle and `price_per_employee` (`src/app/dashboard/admin/billing/page.tsx:396,416`). The super admin verifies payments against those numbers. **Fix:** key the map by `p.id`.
+
+---
+
+## N6. `updateMyCard` can delete another company, its departments and its subscription — HIGH **[reported]**
+
+**File:** `src/app/actions/cards.actions.ts:275-307, 379-382, 387-418`
+
+Company lookup uses raw user input with unescaped LIKE wildcards (`.ilike("name", companyName)`), and on a later edit the code deletes any company with no `profile_companies` rows and `status === "active"` — with no check that the caller is that company's admin.
+
+**Consequence:** an individual types an approved company's name onto their card (permitted by design, no approval needed), later changes it, and that company row plus its `departments` and `company_subscriptions` are silently destroyed. Separately, `:380-381` lets that user overwrite the company's `social_links` — a **sixth** member of the B5 family that B5 does not list.
+
+---
+
+## N7. `approveCompany` reactivates individually suspended members — MEDIUM **[reported]**
+
+**File:** `src/lib/services/onboarding.service.ts:120-134`
+
+It loops over every `profile_companies` row and calls `updateProfileStatus(profileId, "active")` with no transition check, bypassing `VALID_TRANSITIONS`.
+
+**Consequence:** a member suspended on their own merits is silently reactivated — regaining dashboard and card access — the next time the company is approved.
+
+---
+
+## N8. `country_rep` scoping does not exist — MEDIUM **[verified]**
+
+**Files:** `src/app/actions/admin.actions.ts:30-42`, `supabase/FULL_SCHEMA.sql:1130-1140`, `src/types/index.ts:98`
+
+`country_reps` exists to scope representatives to a country, but a grep for `country_code`/`country_reps` across `src/` returns exactly one hit — a type field. No query filters by country. Every admin fetch (`fetchUsers`, `fetchOrders`, `fetchAllContactExchanges`, `fetchUserProfile`, `lookupUserForQR`) grants reps platform-wide read of every profile, order, contact exchange and subscription.
+
+H7 covers the middleware-vs-action mismatch. This is the separate fact that **even where reps are permitted, the country filter was never implemented.**
+
+---
+
+## N9. Suspended users keep a live public card and VCF — MEDIUM **[reported]**
+
+**Files:** `src/lib/supabase/cards.repo.ts:51-88`, `src/app/api/vcf/[slug]/route.ts:11`, `src/app/[slug]/[employee]/page.tsx:13`
+
+`resolveSlug` filters `status = "active"`, so `/{username}` 404s for a suspended user — but the VCF route and the two-segment `/{company}/{username}` route call `getPublicCard` directly, which never selects `status`, and still serve the card, phone and `email_public`. Middleware signs suspended users out immediately, so suspension is clearly meant to remove public access; it currently removes one of three routes.
+
+---
+
+## N10. Deleting a host destroys other people's attendance records — MEDIUM **[verified]**
+
+**Files:** `supabase/migrations/022_events.sql:25,68`; `src/lib/services/admin.service.ts:277`
+
+The migration's own design note is that attendance is a historical record and that deleting a profile must not blank past attendance — which is why `attendee_profile_id` is `on delete set null`. That holds for an **attendee**. When a **host** is deleted, `events` cascades and every `event_visits` row for it goes with it: other people's attendance, the company admin's sheets, and the data behind every past export vanish with no audit trail. `deleteProfileCascade` never touches `events`, so nothing warns the operator.
+
+This was accepted deliberately during design (see `Status.md`), but the blast radius includes attendees who are not the deleted user — worth revisiting.
+
+---
+
+## N11. `updateMyCard` commits partial writes and can destroy card groups — MEDIUM **[reported]**
+
+**Files:** `src/app/actions/cards.actions.ts:215-257, 424-435`, `src/lib/supabase/cards.repo.ts:305-334`
+
+Profile/card/`profile_companies` writes are applied first and never rolled back. `syncCardGroups` is documented as "Replace all groups for a card atomically" but is a plain delete-then-insert with no transaction: if the insert fails, the existing groups are already gone, and the action returns `"Groups not saved: …"` *after* the rest of the edit committed. The user's mental model ("nothing saved") and the database state disagree.
+
+---
+
+## N12. `recordPageView` is an unauthenticated, unvalidated service-role write — MEDIUM **[verified]**
+
+**Files:** `src/app/actions/analytics.actions.ts:9-20`, `src/components/analytics/PageViewTracker.tsx:18`
+
+No auth, no check that `cardId` exists or is public, and it inserts with the service role (bypassing the `card_events` RLS insert policy). The `catch` only covers a thrown error, which — per N2a — never happens, so failures are not even logged.
+
+Any anonymous visitor can loop this to inflate any card's view counts, and those numbers feed the dashboards and the `card_scores` feature. H5 lists "no rate limiting"; this is the concrete data-integrity consequence for the one endpoint that writes with the service role from an unauthenticated context.
+
+---
+
+## N13. `deleteExchange` always reports success and never deletes — LOW **[reported]**
+
+**Files:** `src/lib/services/contacts.service.ts:88-93`, `src/lib/supabase/contact_exchanges.repo.ts:95-98`
+
+No ownership check, and `contact_exchanges` has no `for delete` RLS policy (only insert + three selects). The user-scoped client deletes 0 rows, returns no error, and the service returns `{ success: true }`. Currently unreachable — no action exports it — so it is a trap rather than a live bug.
+
+---
+
+## N14. Self-delete has no last-super-admin guard — LOW **[reported]**
+
+**File:** `src/lib/services/admin.service.ts:427-441`
+
+`deleteUser` refuses to delete the last super admin (`:407-414`); `deleteOwnAccount` has no such check. Reached from `src/app/dashboard/employee/profile/page.tsx:215`, and middleware keeps `super_admin` out of `/dashboard/employee` — but the action itself enforces nothing, so the guard exists on one delete path and not the other.
+
+---
+
+## Corrections to the B/H/M list above
+
+These were re-checked during this audit and are **no longer open**:
+
+| ID | Status |
+|---|---|
+| **B4** | **Fixed** — `src/lib/supabase/server.ts:82` now rejects any role that is not `company_admin`/`super_admin`. |
+| **B5** | **Fixed** — all five listed endpoints now verify ownership or role (`uploads.actions.ts:66-69, 104-113, 180-190, 207-216`; `subscription.actions.ts:57-70`). Note the family has a **sixth** member still open — see N6. |
+| **H8** | **Fixed** — `subscription.service.ts:132-140` now branches on `billing_cycle === "annual"`. |
+| **H7** | **Needs restating** — rep read access is granted deliberately, but no country filter exists anywhere (see N8). `getEventCapabilities` denies reps event *export* while the admin events page still shows them every event. |
+
+---
+
+## Environment & consistency findings
+
+**E1. `supabase/migrations/019_employee_locks_and_whatsapp.sql` is 1 byte — empty. [verified]**
+`companies.org_locked`, `job_title_locked`, `groups_locked` and `cards.whatsapp` exist in `src/types/index.ts` and are read in `src/app/actions/company.actions.ts`, but appear **in no SQL file**. They exist only in the live database. A database rebuilt from this repo would be missing them. Same class of drift as `022` was written to avoid.
+
+**E2. `COLORS.creamDark` disagrees with `globals.css`. [verified]**
+`src/constants/index.ts` declares `creamDark: "#F0E6D3"` under a comment reading "mirror globals.css", while `src/styles/globals.css:14` defines `--color-cream-dark: #F5EDD8`. Whichever is wrong, the file's own stated contract is broken.
+
+**E3. `/dev/components` is publicly reachable in production. [verified]**
+`src/app/dev/components/page.tsx` builds as a static route. `src/middleware.ts` permits `/dev/` in `isPublicPath`, and its matcher covers only `/dashboard/:path*`, so middleware never runs for it. The page's own header says it should have been deleted at launch. Already logged as H6; restated because it is still open and now confirmed in a production build.
+
+**E4. Sign-out throws a visible runtime error. [verified]**
+`signOut()` (`src/app/actions/auth.actions.ts`) ends with `redirect("/")`. Called as `onClick={() => signOut()}` from all three sidebars, the resulting 303 produces `Error: An unexpected response was received from the server` as an unhandled rejection. **Sign-out itself works** — the session does clear and the user does land on `/`. It is a noisy client error over a working feature. Pre-existing; unrelated to Events.
+
+**E5. Admin "view card" links 404 for some users. [verified — cause not determined]**
+Clicking through the admin users list produced `GET /masterjerb 404` and `GET /yuhiabia 404` while others resolved 200. The link is built from `user.slug` (`src/app/dashboard/admin/users/page.tsx:69,306`), which is `profiles.username`. Likely causes: no `cards` row, `is_public = false`, or a non-active profile. Not investigated further.
+
+**E6. Dead code and unused surface. [reported]**
+`deleteProfile` / `deleteProfileService` (`src/lib/supabase/profiles.repo.ts`) have no callers. The whole analytics service (`src/lib/services/analytics.service.ts`) and the `recordCardEvent` path are exported but unwired — already described in `Roadmap.md`.
+
+**E7. Hardcoded `/rdmc/` in the admin users list.** `src/app/dashboard/admin/users/page.tsx:306` builds `/rdmc/${user.slug}` for any employee. Already logged as **M4**. It happens to still resolve because `[slug]/[employee]/page.tsx` ignores the company segment — but it publicly displays "rdmc" for every tenant and breaks if that route ever honours the segment.
+
+**E8. Subscriber-facing placeholders use a real customer's name.** `src/app/(auth)/org/register/page.tsx:173,199,247` and `org/login/page.tsx:81` use `e.g., RDMC Ltd` / `ntwali@rdmc.rw`. RDMC is a real EcoTap partner, so every other tenant registering sees a competitor's name as the example. The same issue in the Events modal was fixed on 2026-09-25.
+
+---
+
+## Priority queue for this audit
+
+**Immediate — user-blocking or data-destroying**
+1. **N1** rejected subscription dead end (blocks revenue)
+2. **N2** account deletion: fix the swallowed errors and the non-atomic order
+3. **N6** `updateMyCard` destroying companies and subscriptions
+
+**Short-term**
+4. **N3** delete design/plan silently no-ops
+5. **N5** billing index-based plan join shows wrong prices
+6. **N9** suspended users still serve public cards + VCF
+7. **N12** unauthenticated service-role analytics write
+8. **E1** empty `019` migration — reconcile the schema
+
+**Medium-term**
+9. **N7, N8, N10, N11, N13, N14**
+10. **E2, E3, E4, E5, E7, E8**
+
+**Fixed during this audit:** N4 (event action ownership checks).
+
+
+---
+
+# Audit — 2026-09-25 (second sweep: schema, config, dead code)
+
+Continues the numbering from above. Same convention: **[verified]** = reproduced or proven during this audit; **[reported]** = mechanism and file:line identified, not independently reproduced.
+
+---
+
+## N15. A fresh install cannot apply migration 022 — the documented setup path is broken — CRITICAL **[verified]**
+
+**Files:** `supabase/migrations/019_employee_locks_and_whatsapp.sql` (1 byte), `supabase/migrations/021_backfill_employee_cards.sql:69-77`
+
+`019` is **empty**. No SQL file anywhere creates `cards.whatsapp` — the only `whatsapp` references in `supabase/` are a JSONB comment and an unrelated `utm_source` example. But `021` does:
+
+```sql
+-- 6. Set whatsapp = phone for employees whose whatsapp is empty
+UPDATE cards c SET whatsapp = c.phone FROM profile_companies pc
+WHERE ... AND (c.whatsapp IS NULL OR c.whatsapp = '')
+```
+
+On a database built the way `Readme.md` documents — `FULL_SCHEMA.sql`, then `supabase db push` for `011`→`022` — this statement fails with `column "whatsapp" of relation "cards" does not exist` and **aborts the migration run**:
+
+- `021` step 7 (activating invited employees) never executes
+- **`022_events.sql` never applies, so the Events feature has no tables at all**
+
+The existing `fixes.md` entry reports the empty `019` as a curiosity and even reproduces its intended SQL. It never notes that a *later* migration depends on those columns and dies without them.
+
+The live database works only because those columns were applied by hand at some point — consistent with `company.actions.ts:174-176` reading `org_locked`/`job_title_locked`/`groups_locked` through `as Record<string, unknown>` casts, and `cards.whatsapp` being present in `src/types/index.ts` but in no migration.
+
+**This is the single highest-value fix in this audit**: without it, the repo cannot rebuild its own database, and anyone following `Readme.md` gets a partially-migrated schema plus a silently missing feature. The fix is to write the real `019` body (idempotent `add column if not exists`), which is a no-op against the live database.
+
+---
+
+## N16. `FULL_SCHEMA.sql` omits all four of migration 012's contact-enrichment columns — HIGH **[reported]**
+
+**Files:** `supabase/FULL_SCHEMA.sql:437-462` vs `supabase/migrations/012_contact_enrichment.sql:7-17`
+
+`is_favorite`, `lead_level`, `owner_notes`, `lead_group` exist only in `012`. `FULL_SCHEMA.sql` presents itself as the complete, run-from-scratch schema, and both `Readme.md` and `Instructions.md` call it the only complete definition of the base schema.
+
+A database built from it lacks the whole lead-management feature. `ContactsClient.tsx:41-84` reads and writes all four, so every favourite / lead level / note / group edit fails and surfaces only as a generic error.
+
+---
+
+## N17. `FULL_SCHEMA.sql` omits migration 014 — the RLS policy it exists to add — HIGH **[reported]**
+
+**Files:** `supabase/FULL_SCHEMA.sql:1462-1490` vs `supabase/migrations/014_contact_exchanges_update_policy.sql:1-5`
+
+Migration 014 exists solely to add `contact_exchanges: card owner update`. FULL_SCHEMA defines only insert + three selects. 014's own header says: *"Without this, the app's updates are silently blocked by RLS."*
+
+On a FULL_SCHEMA-only database, `updateContactExchange` fails silently — the same failure 014 was written to fix.
+
+---
+
+## N18. `FULL_SCHEMA.sql` omits migration 015's objects — LOW **[reported]**
+
+`debug_profile_org(pid uuid)` and `departments: linked member insert` are absent. The latter is moot today because `departments.repo.ts` is entirely dead (N21). Verified that `departments: linked member read` duplicates FULL_SCHEMA's existing `departments: member read` byte-for-byte, so that one is redundancy rather than drift.
+
+---
+
+## N19. Migration 020 silently caps its repair at 50 rows — MEDIUM **[reported]**
+
+**File:** `supabase/migrations/020_activate_self_serve_companies.sql:36`
+
+```sql
+INSERT INTO profile_companies (...) SELECT ... LIMIT 50;
+```
+
+No `ORDER BY`, and migrations run once. If more than 50 company admins are missing their `profile_companies` link, the rest are never repaired by anything and keep hitting `NO_COMPANY_LINKED` from `resolveCompanyId()`. `LIMIT 50` reads like a safety valve left in from testing.
+
+---
+
+## N20. `updateMyCompany` overwrites omitted fields — it is not the partial update its type promises — MEDIUM **[reported]**
+
+**File:** `src/app/actions/company.actions.ts:202-213` (type), `:244-257` (implementation)
+
+```ts
+industry:     input.industry     ?? null,
+website:      input.website      ?? null,
+description:  input.description  ?? null,
+brand_color:  input.brand_color  ?? "#064E3B",
+theme_locked: input.theme_locked ?? false,
+org_locked:   input.org_locked   ?? false,
+```
+
+`UpdateCompanyInput` marks everything except `name`/`slug` optional, so the type advertises a patch while the implementation performs a full overwrite. A caller passing `{ name, slug, org_locked: true }` wipes `industry`, `website` and `description`, resets the brand colour, and **unlocks `theme_locked`** — re-enabling employee theme edits.
+
+Latent today (the settings page always sends the full form), but one line from silently destroying a company's branding. Related: `:279-280` revalidates only the two company dashboard paths, never the public company page or employee cards, which render company name, brand colour and slug.
+
+---
+
+## N21. `departments.repo.ts` is an entirely dead module — MEDIUM **[reported]**
+
+All five exports (`getDepartmentsByCompany`, `getDepartmentById`, `createDepartment`, `updateDepartment`, `deleteDepartment`) have zero callers. It is the only repo with no importers. Anyone adding department CRUD will write a second, divergent implementation.
+
+---
+
+## N22. `supabase/client.ts` and `supabase/middleware-client.ts` are dead — and the latter is a live trap — MEDIUM **[reported]**
+
+Both have zero importers. `middleware-client.ts:16-44` (`updateSession`) is a near-verbatim copy of the cookie-refresh block now inlined in `src/middleware.ts:78-101` — but it knows nothing about the role checks, the pending/suspended redirects, or fix #9's `isPublicPath` ordering.
+
+`Instructions.md` lists `lib/supabase/` as containing "middleware helpers", so a developer is invited to wire up the stale one. `client.ts:11-12` also reads env vars at module load and throws, contradicting the deliberate lazy-read pattern documented in `r2/upload.ts:5-8`.
+
+---
+
+## N23. vCard generator: field injection, wrong folding units, folding applied to one field — MEDIUM **[reported]**
+
+**File:** `src/lib/vcf/generator.ts:12-16, 28-33, 50-60`
+
+Three distinct defects:
+
+- **No escaping.** `full_name`, `company.name`, `bio`, `job_title` and social URLs are interpolated raw; only `bio` escapes `\n`, and nothing escapes `\r`, `;` or `,`. A user whose `full_name` is `X\r\nURL:https://evil.example` injects arbitrary vCard properties into **every contact file other people download from their card**.
+- **`foldLine` counts UTF-16 code units, not octets.** The comment says 75 octets per RFC 6350; the code uses `line.length`. Accented or emoji text exceeds the limit and gets folded mid-character.
+- **Folding is applied only to `NOTE`.** `FN`, `N`, `ORG`, `TITLE`, `URL` are pushed unfolded despite routinely exceeding 75 octets.
+
+---
+
+## N24. Services query Supabase directly; types live outside `src/types/index.ts` — MEDIUM **[reported]**
+
+`Instructions.md` says services call repositories only, never Supabase directly. Actual direct `.from()` counts inside `src/lib/services/`: `admin.service.ts` 10, `invitations.service.ts` 10, `subscription.service.ts` 1, `onboarding.service.ts` 1 — all via `getServiceSupabase()`.
+
+This is the structural root of the B5 class: when the query bypasses the repo layer, ownership verification has nowhere natural to live.
+
+Interfaces declared outside `src/types/index.ts`: `company.actions.ts:11,21,202`, `public.actions.ts:8,16`, `events.actions.ts:101`, plus Input types in `event_visits.repo.ts:117`, `contact_exchanges.repo.ts:121`, `profiles.repo.ts:283`, `subscription.service.ts:13,22`, `invitations.service.ts:11,17,97`, and `export/zip.ts:11`.
+
+---
+
+## N25. Dead exports, including the constants that encode the country_rep policy — LOW-MEDIUM **[reported]**
+
+Zero importers anywhere in `src/`:
+
+- `ROLES`, `ADMIN_ROLES`, `ADMIN_WRITE_ROLES`, `COLORS` (`src/constants/index.ts:8,25,28,230`)
+- `CountryRep` (`src/types/index.ts:95`) — the `country_reps` table it models also has zero references in `src/`, so table and type are both dead
+- `OrgRegisterForm`, `IndividualRegisterForm`, `AddCompanyForm` (`src/types/index.ts:484,494,512`)
+- `slugify` (`src/lib/utils/index.ts:8`)
+
+`ADMIN_ROLES` / `ADMIN_WRITE_ROLES` are the consequential ones: they encode the intended country_rep read-only policy that the code does not follow (see N8, H7).
+
+---
+
+## N26. Diverging duplicated palettes — LOW-MEDIUM **[reported]**
+
+Two different constants both named `PRESET_COLORS`: `admin/designs/page.tsx:22` has 10 values, `company/settings/page.tsx:19-27` has 8 — a brand colour selectable in one context is unpickable in the other. `PAYMENT_COLORS` is copied verbatim in `admin/orders/page.tsx:88-92` and `admin/billing/page.tsx:175-178`. `ALL_ROLES` (`admin/users/page.tsx:29`) re-lists all five roles instead of using the exported `ROLES`.
+
+---
+
+## E9. `creamDark` drift is worse than a wrong constant — the stale value is hardcoded in 10 files **[verified]**
+
+`src/constants/index.ts:230` has `#F0E6D3`; `src/styles/globals.css:14` has `#F5EDD8`; `Instructions.md:355` documents `#F5EDD8`, so the CSS token is authoritative. Only `creamDark` has rotted — every other `COLORS` value matches.
+
+The reason it matters: `#F0E6D3` is hardcoded as an inline `backgroundColor` in `admin/users/page.tsx:244,286`, `admin/contacts/page.tsx:142`, `admin/approvals/page.tsx:198`, `admin/billing/page.tsx:242`, `employee/orders/new/page.tsx:732,748`, `employee/orders/page.tsx:151,166`, `employee/orders/success/page.tsx:90` — each sitting next to Tailwind `border-cream-dark` classes rendering `#F5EDD8`. Visible two-tone mismatch on step dots, progress bars and inactive pills. `COLORS` has zero importers, so nothing enforces the "mirror globals.css" comment.
+
+---
+
+## E10. Smaller consistency findings **[reported]**
+
+- **`fixes.md` / `Status.md` still list B4 as open** — it is fixed (`server.ts:79-84`). The priority queue sends a developer to redo finished work.
+- **`loginSchema` reuses registration's password rules** (`src/lib/validations/auth.ts:12-14,96-99`), so a legacy short password can never be entered and the user sees *"Password must be at least 8 characters"* instead of wrong credentials.
+- **`createEventSchema` accepts past dates** (`src/lib/validations/events.ts:14-18`) — `Date.parse` validity only. *(Found in code I wrote this session.)*
+- **`updateMyCompany` leaks internal codes** — `NO_COMPANY_LINKED`, `INVALID_SLUG_FORMAT`, `UNEXPECTED_ERROR` returned at `company.actions.ts:220,224,283` and rendered verbatim by `settings/page.tsx:114`, while line 236 in the same function returns a proper sentence. Same class as M10.
+- **`downloadVcf` revokes the blob URL synchronously** (`src/lib/vcf/generator.ts:82`) right after `a.click()` — Firefox and Safari can abort the download.
+- **`.env.example:15` promises a sitemap** used for "vCard links, canonical metadata, sitemap" — there is no `src/app/sitemap.ts` or `robots.ts`. *(`.env.example` was written this session; the claim was inherited from the old docs.)*
+- **`foldLine` and `getInitials` disagree on splitting**: `generator.ts:16` uses `.split(" ")`, `utils/index.ts:30` uses `.split(/\s+/)` (fix #57). A double space produces a trailing-space `N:` field.
+- **`tsconfig.json` has `noUnusedLocals`/`noUnusedParameters` off**, which is part of why the dead exports in N21–N25 are never caught by `npm run build`.
+
+---
+
+## Areas verified clean
+
+- **Environment variables** — only five `process.env` reads in `src/`, all documented in `.env.example`. The `R2_*` names that look missing under a naive grep are read correctly through `requireEnv(key)`.
+- **`next.config.ts` `remotePatterns`** matches `R2_PUBLIC_URL`, and the only `next/image` usage references local assets.
+- **The Events schema itself** — `022_events.sql` and its block in `FULL_SCHEMA.sql` agree exactly on columns, constraints, partial unique indexes and RLS policies.
+- **`tsconfig.json`** — `strict: true`, correct paths, no stale options.
+- **Fixes #57 and #58** are genuinely present in `src/lib/utils/index.ts`.
+
+---
+
+## Updated priority queue
+
+This supersedes the queue above.
+
+**Immediate — install-breaking or data-destroying**
+1. **N15** write the real `019` migration so `021` and `022` can apply (fresh installs are broken today)
+2. **N2** account deletion: fix the swallowed errors, then the non-atomic ordering
+3. **N1** rejected subscription permanently blocks the company
+4. **N6** `updateMyCard` destroying companies and subscriptions
+
+**Short-term**
+5. **N16, N17** bring `FULL_SCHEMA.sql` up to date with migrations 012 and 014
+6. **N3** delete design/plan silently no-ops
+7. **N5** billing index-based plan join shows wrong prices
+8. **N9** suspended users still serve public cards and VCF
+9. **N12** unauthenticated service-role analytics write
+10. **N19** migration 020's `LIMIT 50`
+
+**Medium-term**
+11. **N7, N8, N10, N11, N13, N14, N20–N24**
+12. **E2, E3, E4, E5, E7, E8, E9, E10**
+
+**Fixed during this audit (2026-09-25)**
+- **N4** — event actions now verify host ownership and admin role
+- A repository import inside `dashboard/company/events/[id]/page.tsx` (noted in N24) — replaced with a service-level gate
+- The Events modal placeholder that used a real customer's name (E8)
+

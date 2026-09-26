@@ -12,6 +12,7 @@
 - Employees and freelancers can self-register and order physical NFC cards
 - Every cardholder gets a public page at `ecotap.rw/[slug]/[employee]` or `ecotap.rw/[slug]`
 - Visitors tap an NFC chip or scan a QR code → see the profile → save contact as `.vcf`
+- Any cardholder can host a live event and run the door from their own phone — NFC tap on Android, QR scan on iPhone — then export attendance as `.xlsx`
 - Super Admin manages approvals, card orders, card designs, and billing
 - Company admins pay manually via Mobile Money (Momo) and upload a payment screenshot for approval
 
@@ -87,20 +88,24 @@ src/
     [slug]/               # Public individual card page
     [slug]/[employee]/    # Public company employee card page
     actions/              # All Server Actions (one file per domain)
-    api/vcf/[slug]/       # vCard (.vcf) download endpoint — the only API route
+    api/
+      vcf/[slug]/         # vCard (.vcf) download endpoint
+      events/             # Attendance export — authenticated, generated on demand
     dev/components/       # UI primitive sandbox — see Status.md, currently public
   components/
     ui/                   # Shared design system primitives
     cards/                # Card profile + interaction components
     dashboard/            # Dashboard-shared building blocks
     orders/               # Order flow components
+    events/               # Event check-in: door screen, lists, exports
     analytics/            # Page view tracking
     auth/ layout/ brand/
   lib/
     supabase/             # Repositories + Supabase client/server/middleware helpers
     services/             # Business logic services
-    validations/          # zod schemas (currently auth only)
+    validations/          # zod schemas (auth + events)
     r2/                   # Cloudflare R2 upload helpers
+    export/                # XLSX + ZIP writers (server-only)
     vcf/                  # vCard (.vcf) generator
     utils/                # General helpers
   types/                  # Global TypeScript types
@@ -109,12 +114,12 @@ scripts/
   seed-demo-users.ts      # Seeds demo accounts — see Getting started
 supabase/
   FULL_SCHEMA.sql         # Complete base schema — run this FIRST
-  migrations/             # Incremental migrations 011 → 021
+  migrations/             # Incremental migrations 011 → 022
   email-templates/        # Supabase Auth email templates (HTML)
   subscription_upgrade.sql
 ```
 
-> `src/lib/email/`, `src/lib/qr/`, `src/lib/mock/`, `src/hooks/` and `src/app/api/events/` do **not** exist. Older revisions of the docs referenced them.
+> `src/lib/email/`, `src/lib/qr/`, `src/lib/mock/` and `src/hooks/` do **not** exist. Older revisions of the docs referenced them.
 
 ---
 
@@ -137,7 +142,7 @@ Runs on Turbopack (`next dev --turbo`). App is at http://localhost:3000.
 
 1. **Base schema.** Open `supabase/FULL_SCHEMA.sql`, paste the whole file into the Supabase SQL Editor, and run it. This creates the extensions, enums, all core tables, indexes, triggers and RLS policies. It is safe to run from scratch on an empty database.
 
-2. **Incremental migrations.** Apply everything in `supabase/migrations/` (currently `011` → `021`), in filename order:
+2. **Incremental migrations.** Apply everything in `supabase/migrations/` (currently `011` → `022`), in filename order:
 
    ```bash
    supabase db push
@@ -180,7 +185,7 @@ The `R2_*` block is only needed for image uploads. Without it, uploads return a 
 
 ## Database
 
-Core tables: `profiles`, `companies`, `country_reps`, `profile_companies`, `departments`, `invitations`, `cards`, `card_groups`, `card_designs`, `card_orders`, `card_events`, `contact_exchanges`, `daily_card_stats`, `profile_activity`, `card_scores`, `ab_test_assignments`, `billing_plans`, `company_subscriptions`, `notifications`, `environmental_reports`
+Core tables: `profiles`, `companies`, `country_reps`, `profile_companies`, `departments`, `invitations`, `cards`, `card_groups`, `card_designs`, `card_orders`, `events`, `event_visits`, `card_events`, `contact_exchanges`, `daily_card_stats`, `profile_activity`, `card_scores`, `ab_test_assignments`, `billing_plans`, `company_subscriptions`, `notifications`, `environmental_reports`
 
 Several of the analytics tables are created but not yet written to — see `Roadmap.md`.
 

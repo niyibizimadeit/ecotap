@@ -36,7 +36,7 @@ src/app/ + components/   ← Layer 4: UI (calls services only, never DB directly
 - Once written, a migration file is never edited — add a new one instead
 - To deploy: `supabase db push`
 
-> **Important — the migration history starts at `011`.** Migrations `001`–`010` are not standalone files; their combined content lives in `supabase/FULL_SCHEMA.sql`, which is the only complete definition of the base schema. On a fresh database you must run `FULL_SCHEMA.sql` first, then `011`→`021`. See `Readme.md` → Setting up the database. Never assume the migrations directory alone can rebuild the schema from empty.
+> **Important — the migration history starts at `011`.** Migrations `001`–`010` are not standalone files; their combined content lives in `supabase/FULL_SCHEMA.sql`, which is the only complete definition of the base schema. On a fresh database you must run `FULL_SCHEMA.sql` first, then `011`→`022`. See `Readme.md` → Setting up the database. Never assume the migrations directory alone can rebuild the schema from empty.
 
 ### Layer 2 — Repositories (`src/lib/supabase/`)
 - One file per table: `profiles.repo.ts`, `companies.repo.ts`, `cards.repo.ts`, etc.
@@ -94,19 +94,22 @@ src/
     [slug]/[employee]/    # Public company employee card
     actions/              # All Server Actions (one file per domain)
     api/
-      vcf/[slug]/         # vCard download endpoint — the only API route
+      vcf/[slug]/         # vCard download endpoint
+      events/             # Attendance export — authenticated, generated on demand
     dev/components/       # UI primitive sandbox — see the warning below
   components/
     ui/                   # Primitives: Button, Input, Badge, Modal, etc.
     cards/                # Card display + interaction components
     dashboard/            # Shared dashboard components (StatCard, PageHeader)
     orders/               # Order flow components
+    events/               # Event check-in: door screen, lists, exports
     analytics/            # Page view tracking
     auth/ layout/ brand/
   lib/
     supabase/             # Repositories + Supabase client/server/middleware helpers
     services/             # Business logic services
-    validations/          # zod schemas (currently auth only)
+    validations/          # zod schemas (auth + events)
+    export/               # XLSX + ZIP writers, used only by export routes
     r2/                   # Cloudflare R2 upload helpers
     vcf/                  # vCard generator
     utils/                # Generic helpers (slugify, formatDate, etc.)
@@ -114,7 +117,7 @@ src/
   constants/              # Roles, statuses, routes, environmental constants
 ```
 
-> **Folders that do not exist**, despite appearing in earlier revisions of this document: `lib/email/`, `lib/qr/`, `lib/mock/`, `src/hooks/`, and `src/app/api/events/`. Don't reference them.
+> **Folders that do not exist**, despite appearing in earlier revisions of this document: `lib/email/`, `lib/qr/`, `lib/mock/`, and `src/hooks/`. Don't reference them.
 >
 > **`src/app/dev/components/` is currently publicly reachable in production.** Its own header says it should have been deleted at launch, and `src/middleware.ts` both permits `/dev/` and only matches `/dashboard/:path*` — so middleware never runs for it. See `Status.md` (issue H6).
 
@@ -285,6 +288,12 @@ Rule that still applies when you do wire these up: **events are fire-and-forget 
 | `card_scores` | Computed card-performance scores. Not written to yet. |
 | `ab_test_assignments` | Visitor → A/B variant assignment. Not written to yet. |
 
+### Events
+| Table | Purpose |
+|---|---|
+| `events` | A live event hosted by a cardholder. One live event per host, enforced by a partial unique index. |
+| `event_visits` | One row per VISIT, not per person. Attendee fields are snapshotted at entry. |
+
 ### Billing & platform
 | Table | Purpose |
 |---|---|
@@ -293,7 +302,7 @@ Rule that still applies when you do wire these up: **events are fire-and-forget 
 | `notifications` | Notification log — email sent flags, type, metadata. **Table only; nothing writes or sends.** |
 | `environmental_reports` | Monthly CO₂/water/waste calculations per company. **Nothing generates these yet.** |
 
-> These 20 tables are the complete set. The authoritative definition is `supabase/FULL_SCHEMA.sql` plus `supabase/migrations/011`→`021` (see `Readme.md` → Setting up the database).
+> These 22 tables are the complete set. The authoritative definition is `supabase/FULL_SCHEMA.sql` plus `supabase/migrations/011`→`022` (see `Readme.md` → Setting up the database).
 
 ---
 
@@ -358,8 +367,8 @@ Color palette:
 ## Server Actions
 
 - All mutations go through Server Actions in `src/app/actions/`
-- One file per domain. The current set is: `admin.actions.ts`, `analytics.actions.ts`, `auth.actions.ts`, `cards.actions.ts`, `company.actions.ts`, `contacts.actions.ts`, `invitations.actions.ts`, `orders.actions.ts`, `public.actions.ts`, `subscription.actions.ts`, `uploads.actions.ts`
-- Validate with `zod` before calling services. Schemas live in `src/lib/validations/`. **Be aware the current reality is thin:** only `src/lib/validations/auth.ts` exists, and most actions hand-roll `if (!field) return { success: false, … }` guards instead. New or touched actions should add a proper zod schema rather than copying the hand-rolled pattern.
+- One file per domain. The current set is: `admin.actions.ts`, `analytics.actions.ts`, `auth.actions.ts`, `cards.actions.ts`, `company.actions.ts`, `contacts.actions.ts`, `events.actions.ts`, `invitations.actions.ts`, `orders.actions.ts`, `public.actions.ts`, `subscription.actions.ts`, `uploads.actions.ts`
+- Validate with `zod` before calling services. Schemas live in `src/lib/validations/`. **Reality is still thin:** `auth.ts` (client-side, via `zodResolver`) and `events.ts` (server-side) exist; most other actions hand-roll `if (!field) return { success: false, … }` guards instead. New or touched actions should add a proper zod schema rather than copying the hand-rolled pattern.
 - Always return `{ success: boolean, data?: T, error?: string }`
 - Server Actions call services — never repositories directly
 - Actions that touch the database as an unauthenticated caller (e.g. public card pages, analytics) use `getServiceSupabase()` — the service role **bypasses RLS**, so ownership must be verified in the action or service. See `Status.md` issue B5.

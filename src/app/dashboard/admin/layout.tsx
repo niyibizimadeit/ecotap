@@ -11,23 +11,33 @@ import type { UserRole } from "@/types";
 import {
   LayoutDashboard, Clock, Package, Palette,
   Users, CreditCard, LogOut, Menu, X, ChevronRight, Shield,
-  MessageCircle, QrCode,
+  MessageCircle, QrCode, CalendarDays,
 } from "lucide-react";
+import { isNavActive } from "@/lib/utils";
 
-const NAV = [
-  { label: "Overview",   href: "/dashboard/admin",           icon: LayoutDashboard, badge: null },
-  { label: "Approvals",  href: "/dashboard/admin/approvals", icon: Clock,           badge: null },
-  { label: "Card orders",href: "/dashboard/admin/orders",    icon: Package,         badge: null },
-  { label: "Designs",    href: "/dashboard/admin/designs",   icon: Palette,         badge: null },
-  { label: "Users",      href: "/dashboard/admin/users",     icon: Users,           badge: null },
-  { label: "Contacts",   href: "/dashboard/admin/contacts",  icon: MessageCircle,   badge: null },
-  { label: "QR Codes",   href: "/dashboard/admin/qr-codes",  icon: QrCode,          badge: null },
-  { label: "Billing",    href: "/dashboard/admin/billing",   icon: CreditCard,      badge: null },
-];
+/**
+ * Admin nav. `badge` renders as a gold pill and was unused until now — the
+ * live-event count is the first thing worth surfacing there.
+ */
+function buildAdminNav({ liveEvents }: { liveEvents: number }) {
+  return [
+    { label: "Overview",   href: "/dashboard/admin",           icon: LayoutDashboard, badge: null },
+    { label: "Approvals",  href: "/dashboard/admin/approvals", icon: Clock,           badge: null },
+    { label: "Card orders",href: "/dashboard/admin/orders",    icon: Package,         badge: null },
+    { label: "Designs",    href: "/dashboard/admin/designs",   icon: Palette,         badge: null },
+    { label: "Users",      href: "/dashboard/admin/users",     icon: Users,           badge: null },
+    { label: "Contacts",   href: "/dashboard/admin/contacts",  icon: MessageCircle,   badge: null },
+    { label: "Events",     href: "/dashboard/admin/events",    icon: CalendarDays,
+      badge: liveEvents > 0 ? liveEvents : null },
+    { label: "QR Codes",   href: "/dashboard/admin/qr-codes",  icon: QrCode,          badge: null },
+    { label: "Billing",    href: "/dashboard/admin/billing",   icon: CreditCard,      badge: null },
+  ];
+}
 
 export default function AdminDashboardLayout({ children }: { children: React.ReactNode }) {
   const [mobileOpen, setMobileOpen] = useState(false);
   const [role, setRole] = useState<UserRole | null>(null);
+  const [liveEvents, setLiveEvents] = useState(0);
   const pathname = usePathname();
 
   useEffect(() => {
@@ -35,9 +45,15 @@ export default function AdminDashboardLayout({ children }: { children: React.Rea
       const { getCurrentUser } = await import("@/app/actions/auth.actions");
       const user = await getCurrentUser();
       if (user) setRole(user.role as UserRole);
+
+      const { getLiveEventCountAction } = await import("@/app/actions/events.actions");
+      const result = await getLiveEventCountAction();
+      if (result.success && typeof result.data === "number") setLiveEvents(result.data);
     }
     load();
   }, []);
+
+  const NAV = buildAdminNav({ liveEvents });
 
   return (
     <div className="min-h-screen flex" style={{ backgroundColor: "#FEFCE8" }}>
@@ -78,7 +94,7 @@ export default function AdminDashboardLayout({ children }: { children: React.Rea
         {/* Nav */}
         <nav className="flex-1 px-3 py-4 space-y-0.5 overflow-y-auto">
           {NAV.map((item) => {
-            const active = pathname === item.href;
+            const active = isNavActive(pathname, item.href);
             return (
               <Link
                 key={item.href}
@@ -150,7 +166,7 @@ export default function AdminDashboardLayout({ children }: { children: React.Rea
           >
             <div className="px-4 py-3 space-y-0.5">
               {NAV.map((item) => {
-                const active = pathname === item.href;
+                const active = isNavActive(pathname, item.href);
                 return (
                   <Link
                     key={item.href}

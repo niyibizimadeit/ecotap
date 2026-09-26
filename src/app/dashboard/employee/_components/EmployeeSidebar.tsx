@@ -5,10 +5,10 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { BrandLogo } from "@/components/brand/BrandLogo";
 import { signOut } from "@/app/actions/auth.actions";
-import { cn } from "@/lib/utils";
+import { cn, isNavActive } from "@/lib/utils";
 import {
   LayoutDashboard, User, QrCode, Mail, Package,
-  LogOut, Menu, X, ExternalLink, ChevronRight,
+  LogOut, Menu, X, ExternalLink, ChevronRight, CalendarDays,
 } from "lucide-react";
 
 const NAV = [
@@ -17,6 +17,7 @@ const NAV = [
   { label: "QR Code",   href: "/dashboard/employee/qr",       icon: QrCode          },
   { label: "Contacts",  href: "/dashboard/employee/contacts", icon: Mail            },
   { label: "Order Card",href: "/dashboard/employee/orders",   icon: Package         },
+  { label: "Events",    href: "/dashboard/employee/events",   icon: CalendarDays    },
 ];
 
 interface Props {
@@ -69,7 +70,7 @@ export function EmployeeSidebar({
         {/* Nav */}
         <nav className="flex-1 px-3 py-4 space-y-0.5 overflow-y-auto">
           {NAV.map((item) => {
-            const active = pathname === item.href;
+            const active = isNavActive(pathname, item.href);
             return (
               <Link
                 key={item.href}
@@ -123,12 +124,12 @@ export function EmployeeSidebar({
         <div className="lg:hidden fixed inset-0 z-30">
           <div className="absolute inset-0 bg-ink/20 backdrop-blur-sm" onClick={() => setMobileOpen(false)} />
           <div
-            className="absolute top-14 inset-x-0 border-b shadow-card-lg animate-fade-up"
+            className="absolute top-14 inset-x-0 border-b shadow-card-lg animate-fade-up max-h-[80vh] overflow-y-auto"
             style={{ backgroundColor: "#FEF9EF", borderColor: "rgba(6,78,59,0.08)" }}
           >
             <div className="px-4 py-3 space-y-0.5">
               {NAV.map((item) => {
-                const active = pathname === item.href;
+                const active = isNavActive(pathname, item.href);
                 return (
                   <Link
                     key={item.href}

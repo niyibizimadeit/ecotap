@@ -29,6 +29,24 @@ export type EventType =
   | "social_click"     // A social link icon clicked
   | "share";           // Card shared (future)
 
+// ── Events ────────────────────────────────────────────────────────────────────
+
+export type EventStatus = "scheduled" | "live" | "closed" | "cancelled";
+
+export type CheckInMethod = "nfc" | "qr";
+
+export type VisitExitSource = "manual" | "auto_close" | "auto_cancel";
+
+/** Why a scanned identifier could not be turned into a check-in. */
+export type CheckInFailure =
+  | "UNPARSEABLE"     // the scan wasn't a recognisable EcoTap URL or username
+  | "NOT_FOUND"       // parsed fine, but no such username
+  | "NO_CARD"         // profile exists but has no card
+  | "INACTIVE"        // profile is still pending
+  | "SUSPENDED"       // profile is suspended
+  | "EVENT_NOT_LIVE"  // event was closed from another tab
+  | "FORBIDDEN";      // caller is not the host of this event
+
 // ── Identity & access ─────────────────────────────────────────────────────────
 
 export interface Profile {
@@ -524,6 +542,112 @@ export interface RecordEventPayload {
   utm_medium?:       string;
   utm_campaign?:     string;
   social_target?:    string;
+}
+
+// ── Events ────────────────────────────────────────────────────────────────────
+// Named EcoEvent, not Event — a bare `Event` would shadow the DOM global.
+
+export interface EcoEvent {
+  id:                 string;
+  host_profile_id:    string;
+  title:              string;
+  venue:              string | null;
+  scheduled_start_at: string;
+  starts_at:          string | null;
+  ends_at:            string | null;
+  status:             EventStatus;
+  created_at:         string;
+  updated_at:         string;
+}
+
+/** An event plus its host's display fields, for admin and company lists. */
+export interface EcoEventWithHost extends EcoEvent {
+  host: {
+    id:         string;
+    username:   string;
+    full_name:  string;
+    email:      string;
+    avatar_url: string | null;
+  } | null;
+  visit_count?: number;
+  inside_count?: number;
+}
+
+/**
+ * One row per VISIT, not per person. A tap after a recorded exit
+ * starts a brand new row.
+ */
+export interface EventVisit {
+  id:                  string;
+  event_id:            string;
+  /** Null once the attendee's profile is deleted — the snapshot survives. */
+  attendee_profile_id: string | null;
+  attendee_card_id:    string | null;
+
+  // Snapshot taken at entry time. Never mutated afterwards.
+  full_name:           string;
+  phone:               string | null;
+  email:               string | null;
+  company_name:        string | null;
+  department:          string | null;
+  job_title:           string | null;
+
+  entry_at:            string;
+  exit_at:             string | null;
+  exit_source:         VisitExitSource | null;
+  check_in_method:     CheckInMethod | null;
+  created_at:          string;
+  updated_at:          string;
+}
+
+/** The resolved attendee for a tap, before it is written. */
+export interface VisitAttendee {
+  profileId:  string;
+  cardId:     string;
+  fullName:   string;
+  phone:      string | null;
+  email:      string | null;
+  company:    string | null;
+  department: string | null;
+  jobTitle:   string | null;
+}
+
+/**
+ * What a single tap or scan did. `confirm_exit` writes nothing —
+ * the host is asked whether the person is leaving or it was a mistake.
+ */
+export type TapOutcome =
+  | { kind: "entry";          visit: EventVisit; attendee: VisitAttendee }
+  | { kind: "exit";           visit: EventVisit; attendee: VisitAttendee; durationMs: number }
+  | { kind: "confirm_exit";   visit: EventVisit; attendee: VisitAttendee; sinceEntryMs: number }
+  | { kind: "already_inside"; visit: EventVisit; attendee: VisitAttendee; sinceEntryMs: number };
+
+/** Resolved once per request. Never accepted from the client. */
+export interface EventCapabilities {
+  authenticated:   boolean;
+  hostProfileId:   string | null;   // any cardholder — employee | individual | company_admin
+  companyId:       string | null;   // company_admin only; null for everyone else
+  isPlatformAdmin: boolean;         // super_admin
+  isCountryRep:    boolean;         // read-only — never exports
+}
+
+/** Which set of events a bulk export covers. */
+export type ExportScope =
+  | { kind: "host";    profileId: string }
+  | { kind: "company"; companyId: string }
+  | { kind: "all" }
+  | { kind: "none" };
+
+/** Flattened row shape handed to the spreadsheet writer. */
+export interface ExportRow {
+  full_name:  string;
+  phone:      string;
+  email:      string;
+  company:    string;
+  department: string;
+  job_title:  string;
+  entry_at:   string;
+  exit_at:    string;
 }
 
 // ── Server Action response ────────────────────────────────────────────────────

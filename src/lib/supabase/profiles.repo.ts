@@ -235,3 +235,89 @@ export async function searchProfilesByQuery(query: string): Promise<Profile[]> {
   }
   return results.slice(0, 10);
 }
+
+// ── Events: attendee resolution & company membership ─────────────────────────
+
+/**
+ * Service-role lookup by username, used when a host scans an attendee's card.
+ *
+ * The RLS client cannot do this: profiles are readable only by their owner,
+ * an admin, or that person's company admin — so a host checking in someone
+ * from another company would get nothing back.
+ */
+export async function getProfileByUsernameService(
+  username: string
+): Promise<Profile | null> {
+  const supabase = getServiceSupabase();
+  const { data } = await supabase
+    .from("profiles")
+    .select("*")
+    .eq("username", username)
+    .maybeSingle();
+  return data;
+}
+
+/**
+ * Is this profile a PRIMARY member of this company?
+ *
+ * The is_primary filter is deliberate. Any user may add any company to their
+ * card without that company's approval, so treating a non-primary link as
+ * membership would let anyone hand a company admin visibility into their
+ * events by typing that company's name onto their card.
+ */
+export async function isPrimaryMemberOfCompany(
+  profileId: string,
+  companyId: string
+): Promise<boolean> {
+  const supabase = getServiceSupabase();
+  const { data } = await supabase
+    .from("profile_companies")
+    .select("id")
+    .eq("profile_id", profileId)
+    .eq("company_id", companyId)
+    .eq("is_primary", true)
+    .maybeSingle();
+  return data !== null;
+}
+
+export interface PrimaryCompanyInfo {
+  companyName: string | null;
+  department:  string | null;
+  jobTitle:    string | null;
+}
+
+/**
+ * The attendee's PRIMARY company, department and job title — the fields
+ * snapshotted onto a visit at check-in.
+ *
+ * Reads the attendee's own primary company regardless of whose event it is:
+ * an attendee from another company still shows where they actually work.
+ */
+export async function getPrimaryCompanyInfoService(
+  profileId: string
+): Promise<PrimaryCompanyInfo> {
+  const supabase = getServiceSupabase();
+  const { data: link } = await supabase
+    .from("profile_companies")
+    .select("job_title, department_id, company_id")
+    .eq("profile_id", profileId)
+    .eq("is_primary", true)
+    .maybeSingle();
+
+  if (!link) return { companyName: null, department: null, jobTitle: null };
+
+  const [companyRes, deptRes] = await Promise.all([
+    link.company_id
+      ? supabase.from("companies").select("name").eq("id", link.company_id).maybeSingle()
+      : Promise.resolve({ data: null }),
+    link.department_id
+      ? supabase.from("departments").select("name").eq("id", link.department_id).maybeSingle()
+      : Promise.resolve({ data: null }),
+  ]);
+
+  return {
+    companyName: companyRes.data?.name ?? null,
+    department:  deptRes.data?.name ?? null,
+    jobTitle:    link.job_title ?? null,
+  };
+}

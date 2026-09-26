@@ -10,7 +10,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { BrandLogo } from "@/components/brand/BrandLogo";
 import { signOut } from "@/app/actions/auth.actions";
-import { cn } from "@/lib/utils";
+import { cn, isNavActive } from "@/lib/utils";
 import {
   LayoutDashboard,
   Users,
@@ -22,12 +22,14 @@ import {
   ExternalLink,
   ChevronRight,
   Package,
+  CalendarDays,
 } from "lucide-react";
 
 const NAV = [
   { label: "Overview",     href: "/dashboard/company",              icon: LayoutDashboard },
   { label: "Employees",    href: "/dashboard/company/employees",    icon: Users           },
   { label: "Order Cards",  href: "/dashboard/company/orders",       icon: Package         },
+  { label: "Events",       href: "/dashboard/company/events",       icon: CalendarDays    },
   { label: "Settings",     href: "/dashboard/company/settings",     icon: Settings        },
   { label: "Subscription", href: "/dashboard/company/subscription", icon: CreditCard      },
 ];
@@ -69,7 +71,7 @@ export default function CompanySidebar({
   const NavLinks = ({ onClick }: { onClick?: () => void }) => (
     <>
       {NAV.map((item) => {
-        const active = pathname === item.href;
+        const active = isNavActive(pathname, item.href);
         return (
           <Link
             key={item.href}
@@ -177,7 +179,7 @@ export default function CompanySidebar({
             onClick={() => setMobileOpen(false)}
           />
           <div
-            className="absolute top-14 inset-x-0 border-b shadow-card-lg animate-fade-up"
+            className="absolute top-14 inset-x-0 border-b shadow-card-lg animate-fade-up max-h-[80vh] overflow-y-auto"
             style={{
               backgroundColor: "#FEF9EF",
               borderColor: "rgba(6,78,59,0.08)",
