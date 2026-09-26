@@ -1,7 +1,7 @@
-# Graph Report - ecotap  (2026-09-25)
+# Graph Report - ecotap  (2026-09-26)
 
 ## Corpus Check
-- 191 files · ~145,780 words
+- 191 files · ~147,700 words
 - Verdict: corpus is large enough that graph structure adds value.
 
 ## Summary
@@ -10,7 +10,7 @@
 - Token cost: 0 input · 0 output
 
 ## Graph Freshness
-- Built from commit: `71b24e32`
+- Built from commit: `b3e9a6c7`
 - Run `git rev-parse HEAD` and compare to check if the graph is stale.
 - Run `graphify update .` after code changes (no API cost).
 
@@ -163,8 +163,8 @@ Cohesion: 0.13
 Nodes (14): acceptInvite(), createInvite(), CreateInviteInput, InviteResult, ValidatedInvite, validateInviteToken(), acceptInvitation(), createInvitation() (+6 more)
 
 ### Community 10 - "getServiceSupabase"
-Cohesion: 0.14
-Nodes (13): createCard(), deleteCard(), deleteCardGroup(), deleteCardService(), getCardById(), getCardByProfileId(), getCardByProfileIdService(), getCardBySlug() (+5 more)
+Cohesion: 0.16
+Nodes (11): ALL_ROLES, InviteButton(), InviteModal(), Props, Modal(), ModalProps, SIZE_CLASSES, Spinner() (+3 more)
 
 ### Community 11 - "admin.actions.ts"
 Cohesion: 0.10
@@ -195,12 +195,12 @@ Cohesion: 0.22
 Nodes (14): RFC-5987, GET(), NOTE: this static `export` segment sits alongside the sibling dynamic, attachmentHeader(), EXPORT_ERROR_STATUS, exportError(), NO_STORE, GET() (+6 more)
 
 ### Community 19 - "index.ts"
-Cohesion: 0.17
-Nodes (11): EVENT_EXPORT_COLUMNS, COLUMN_WIDTHS, AddCompanyForm, CountryRep, EventType, ExportRow, IndividualRegisterForm, InvitationStatus (+3 more)
+Cohesion: 0.14
+Nodes (13): createCard(), deleteCard(), deleteCardGroup(), deleteCardService(), getCardById(), getCardByProfileId(), getCardByProfileIdService(), getCardBySlug() (+5 more)
 
 ### Community 20 - "page.tsx"
-Cohesion: 0.16
-Nodes (11): ALL_ROLES, InviteButton(), InviteModal(), Props, Modal(), ModalProps, SIZE_CLASSES, Spinner() (+3 more)
+Cohesion: 0.23
+Nodes (12): AdminUser, DASHBOARD_ROUTE, UserFilters, AUTH_PAGES, config, isAccessAllowed(), isPublicPath(), middleware() (+4 more)
 
 ### Community 21 - "Input.tsx"
 Cohesion: 0.10
@@ -267,8 +267,8 @@ Cohesion: 0.09
 Nodes (19): submitContactExchange(), Design, INITIAL_DESIGNS, PRESET_COLORS, DEFAULT_FORM, FormState, PRESET_COLORS, metadata (+11 more)
 
 ### Community 39 - "middleware.ts"
-Cohesion: 0.23
-Nodes (12): AdminUser, DASHBOARD_ROUTE, UserFilters, AUTH_PAGES, config, isAccessAllowed(), isPublicPath(), middleware() (+4 more)
+Cohesion: 0.17
+Nodes (11): EVENT_EXPORT_COLUMNS, COLUMN_WIDTHS, AddCompanyForm, CountryRep, EventType, ExportRow, IndividualRegisterForm, InvitationStatus (+3 more)
 
 ### Community 41 - "EventActions.tsx"
 Cohesion: 0.22
@@ -378,11 +378,11 @@ Nodes (6): PendingQueue, Company, CompanyWithRelations, Profile, ProfileFull, Pr
 ## Suggested Questions
 _Questions this graph is uniquely positioned to answer:_
 
-- **Why does `getSupabase()` connect `getSupabase` to `cn`, `page.tsx`, `admin.service.ts`, `CardPreview.tsx`, `getServiceSupabase`, `admin.actions.ts`, `contacts.service.ts`, `orders.service.ts`, `profiles.repo.ts`, `contact_exchanges.repo.ts`, `billing.repo.ts`, `cards.actions.ts`, `middleware.ts`, `companies.repo.ts`, `server.ts`, `AuthLayout.tsx`, `onboarding.service.ts`, `page.tsx`, `requireAdminAccess`?**
+- **Why does `getSupabase()` connect `getSupabase` to `cn`, `page.tsx`, `admin.service.ts`, `CardPreview.tsx`, `admin.actions.ts`, `contacts.service.ts`, `index.ts`, `orders.service.ts`, `profiles.repo.ts`, `contact_exchanges.repo.ts`, `billing.repo.ts`, `cards.actions.ts`, `middleware.ts`, `companies.repo.ts`, `server.ts`, `AuthLayout.tsx`, `onboarding.service.ts`, `page.tsx`, `requireAdminAccess`?**
   _High betweenness centrality (0.070) - this node is a cross-community bridge._
-- **Why does `getServiceSupabase` connect `admin.service.ts` to `public.actions.ts`, `page.tsx`, `getSupabase`, `companies.repo.ts`, `profiles.repo.ts`, `server.ts`, `CardPreview.tsx`, `getServiceSupabase`, `admin.actions.ts`, `orders.service.ts`, `Modal.tsx`, `contact_exchanges.repo.ts`, `billing.repo.ts`, `onboarding.service.ts`, `cards.actions.ts`, `middleware.ts`?**
+- **Why does `getServiceSupabase` connect `admin.service.ts` to `public.actions.ts`, `page.tsx`, `getSupabase`, `companies.repo.ts`, `profiles.repo.ts`, `server.ts`, `CardPreview.tsx`, `admin.actions.ts`, `index.ts`, `orders.service.ts`, `Modal.tsx`, `contact_exchanges.repo.ts`, `billing.repo.ts`, `onboarding.service.ts`, `cards.actions.ts`, `middleware.ts`?**
   _High betweenness centrality (0.054) - this node is a cross-community bridge._
-- **Why does `Button()` connect `page.tsx` to `page.tsx`, `Button.tsx`, `page.tsx`, `page.tsx`, `Input.tsx`, `page.tsx`, `cards.actions.ts`, `orders.service.ts`, `InviteModal.tsx`, `cards.actions.ts`, `Input.tsx`, `AuthLayout.tsx`, `getPublicCard`, `Modal.tsx`, `web-nfc.d.ts`, `card_orders.repo.ts`, `BrandLogo.tsx`, `page.tsx`, `EmptyState`, `page.tsx`, `VerifyResetForm.tsx`?**
+- **Why does `Button()` connect `page.tsx` to `page.tsx`, `getServiceSupabase`, `Button.tsx`, `page.tsx`, `Input.tsx`, `page.tsx`, `cards.actions.ts`, `orders.service.ts`, `InviteModal.tsx`, `cards.actions.ts`, `Input.tsx`, `AuthLayout.tsx`, `getPublicCard`, `Modal.tsx`, `web-nfc.d.ts`, `card_orders.repo.ts`, `BrandLogo.tsx`, `page.tsx`, `EmptyState`, `page.tsx`, `VerifyResetForm.tsx`?**
   _High betweenness centrality (0.038) - this node is a cross-community bridge._
 - **What connects `eslintConfig`, `nextConfig`, `name` to the rest of the system?**
   _384 weakly-connected nodes found - possible documentation gaps or missing edges._

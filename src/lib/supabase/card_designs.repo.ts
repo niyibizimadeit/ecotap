@@ -80,7 +80,38 @@ export async function updateDesign(
   return data;
 }
 
-export async function deleteDesign(id: string): Promise<void> {
+/**
+ * Delete a card design.
+ *
+ * `.select("id")` (return=representation) is load-bearing: an RLS-blocked delete
+ * comes back as a 204 with no error and zero rows, so a bare delete reports
+ * success for a no-op. The row count is the only signal that it actually happened.
+ */
+export async function deleteDesign(
+  id: string
+): Promise<{ success: boolean; error?: string }> {
   const supabase = await getSupabase();
-  await supabase.from("card_designs").delete().eq("id", id);
+  const { data, error } = await supabase
+    .from("card_designs")
+    .delete()
+    .eq("id", id)
+    .select("id");
+
+  if (error) {
+    console.error("deleteDesign error:", error);
+    // 23503 = foreign_key_violation: card_orders.design_id is ON DELETE RESTRICT.
+    if (error.code === "23503") {
+      return {
+        success: false,
+        error: "This design has been used by card orders and cannot be deleted. Deactivate it instead.",
+      };
+    }
+    return { success: false, error: "Failed to delete design." };
+  }
+
+  if (!data || data.length === 0) {
+    return { success: false, error: "Design not found, or you do not have permission to delete it." };
+  }
+
+  return { success: true };
 }

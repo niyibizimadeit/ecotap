@@ -119,7 +119,21 @@ export async function deleteCompany(id: string): Promise<void> {
   await supabase.from("companies").delete().eq("id", id);
 }
 
-/** Cascade-delete a company and all its related records. Each step is try/caught so one failure doesn't block others. */
+/**
+ * Cascade-delete a company and all its related records.
+ *
+ * `success` means the companies row is actually GONE. The four pre-steps are
+ * belt-and-braces: every FK into companies (departments, profile_companies,
+ * invitations, company_subscriptions, environmental_reports) is ON DELETE
+ * CASCADE, so their failures are recorded for diagnostics but are not fatal.
+ * The authoritative step is the final companies delete.
+ *
+ * NOTE ON THE GUARDS: PostgREST errors RESOLVE, they do not throw — the Supabase
+ * client's `shouldThrowOnError` defaults to false and `throwOnError` is used
+ * nowhere in this codebase. The `try/catch` this replaced could therefore never
+ * fire, which made `success` permanently true and reported every failed company
+ * deletion as a clean success. Do not reintroduce try/catch around these calls.
+ */
 export async function deleteCompanyCascade(companyId: string): Promise<{
   success: boolean;
   errors: string[];
@@ -132,16 +146,36 @@ export async function deleteCompanyCascade(companyId: string): Promise<{
     { name: "departments",        fn: () => supabase.from("departments").delete().eq("company_id", companyId) },
     { name: "company_subscriptions", fn: () => supabase.from("company_subscriptions").delete().eq("company_id", companyId) },
     { name: "environmental_reports", fn: () => supabase.from("environmental_reports").delete().eq("company_id", companyId) },
-    { name: "company",           fn: () => supabase.from("companies").delete().eq("id", companyId) },
   ];
 
   for (const step of steps) {
-    try {
-      await step.fn();
-    } catch (err) {
-      errors.push(`${step.name}: ${err instanceof Error ? err.message : String(err)}`);
+    const { error } = await step.fn();
+    if (error) {
+      errors.push(`${step.name}: ${error.message}`);
+      console.error(`deleteCompanyCascade ${step.name} failed:`, error);
     }
   }
 
-  return { success: errors.length === 0, errors };
+  // The authoritative step. `.select("id")` matters: an RLS-blocked delete comes
+  // back as a 204 with no error and zero rows, so a bare delete would report
+  // success for a no-op.
+  const { data: deleted, error: deleteError } = await supabase
+    .from("companies")
+    .delete()
+    .eq("id", companyId)
+    .select("id");
+
+  if (deleteError) {
+    errors.push(`company: ${deleteError.message}`);
+    console.error("deleteCompanyCascade company delete failed:", deleteError);
+    return { success: false, errors };
+  }
+
+  if (!deleted || deleted.length === 0) {
+    errors.push("company: no row deleted (not found, or the delete was not permitted)");
+    console.error("deleteCompanyCascade deleted 0 rows for", companyId);
+    return { success: false, errors };
+  }
+
+  return { success: true, errors };
 }

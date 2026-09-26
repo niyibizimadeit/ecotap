@@ -260,8 +260,17 @@ export async function updateMyCard(
   if (data.company?.trim()) {
     const companyName = data.company.trim();
 
-    // Remember the user's current primary company BEFORE changing it,
-    // so we can clean up the old one if it becomes orphaned.
+    // `%` and `_` are Postgres LIKE wildcards, and `*` is PostgREST's alias for
+    // `%`. Unescaped, a typed name can match a DIFFERENT company — or, as a bare
+    // `%`, every company, which makes maybeSingle() fail. Backslash is Postgres's
+    // default LIKE escape character, so escape it first.
+    const companyNamePattern = companyName
+      .replace(/\\/g, "\\\\")
+      .replace(/[%_*]/g, (ch) => `\\${ch}`);
+
+    // Remember the user's current primary company BEFORE changing it. This is a
+    // pre-mutation snapshot: it is what authorises the company social-links write
+    // below, and what identifies the company to unlink.
     const { data: oldLink } = await serviceClient
       .from("profile_companies")
       .select("company_id")
@@ -272,10 +281,15 @@ export async function updateMyCard(
 
     // Find or create the company (use maybeSingle — zero rows is normal for new companies)
     let companyId: string;
+    let companyWasCreatedThisCall = false;
+    // `.order(...).limit(1)`: two companies can legitimately share a name differing
+    // only in case, and maybeSingle() errors on a multi-row response.
     const { data: existing, error: findErr } = await serviceClient
       .from("companies")
       .select("id")
-      .ilike("name", companyName)
+      .ilike("name", companyNamePattern)
+      .order("created_at", { ascending: true })
+      .limit(1)
       .maybeSingle();
 
     if (findErr) {
@@ -304,6 +318,7 @@ export async function updateMyCard(
         return { success: false, error: "Failed to create company." };
       }
       companyId = created.id;
+      companyWasCreatedThisCall = true;
     }
 
     // Resolve department: look up existing department by name, or create one
@@ -376,44 +391,51 @@ export async function updateMyCard(
       }
     }
 
-    // 5. Update company social links if provided
+    // 5. Update company social links if provided.
+    //
+    // This is a service-role write of a company-wide, shared field (RLS bypassed),
+    // so authorise it explicitly. Allowed when:
+    //   - this call just created the company (the self-serve flow), or
+    //   - the company was ALREADY the caller's primary company before this call.
+    // The pre-mutation snapshot is what makes the second test meaningful: step 4
+    // above has just linked the caller to `companyId` and marked it primary, so a
+    // post-hoc ownership check would pass for anyone who merely typed an existing
+    // company's name into the form.
     if (data.company_social_links) {
-      await updateCompanySocialLinks(companyId, data.company_social_links);
+      const callerMayWriteCompanyLinks = companyWasCreatedThisCall || oldCompanyId === companyId;
+      if (callerMayWriteCompanyLinks) {
+        const updated = await updateCompanySocialLinks(companyId, data.company_social_links);
+        if (!updated) {
+          console.error("updateMyCard: company social links update failed for", companyId);
+        }
+      } else {
+        console.error(
+          "updateMyCard: refused company_social_links write — caller is not affiliated with",
+          companyId
+        );
+      }
     }
 
-    // 6. Clean up orphaned old company — if the user switched companies,
-    //    delete their old profile_companies link. If the old company has
-    //    no remaining members, delete it too (self-serve only).
+    // 6. Unlink the user's OLD company — and only the link.
+    //
+    // DO NOT reintroduce an auto-delete of the old company here. Every FK into
+    // companies is ON DELETE CASCADE (departments, profile_companies, invitations,
+    // company_subscriptions, environmental_reports), so deleting the company row
+    // also destroys that company's departments, members, invitations, SUBSCRIPTION
+    // and environmental reports. There is no way to tell a self-serve display label
+    // from a real approved partner company at this point — status === 'active' is
+    // true for both, so the guard cannot be made safe. An abandoned self-serve
+    // company is a cosmetic row; destroying a paying company's subscription is not.
+    // Orphan cleanup belongs to the super admin (admin.service deleteCompany).
     if (oldCompanyId && oldCompanyId !== companyId) {
-      // Remove the user's old company link entirely
-      await serviceClient
+      const { error: unlinkError } = await serviceClient
         .from("profile_companies")
         .delete()
         .eq("profile_id", user.id)
         .eq("company_id", oldCompanyId);
 
-      // Check if the old company has any remaining members
-      const { data: remainingLinks } = await serviceClient
-        .from("profile_companies")
-        .select("profile_id")
-        .eq("company_id", oldCompanyId);
-
-      if (!remainingLinks || remainingLinks.length === 0) {
-        // Only auto-delete self-serve active companies, not org-registered ones
-        const { data: oldCompany } = await serviceClient
-          .from("companies")
-          .select("id, status")
-          .eq("id", oldCompanyId)
-          .single();
-
-        if (oldCompany && oldCompany.status === "active") {
-          try {
-            await serviceClient.from("departments").delete().eq("company_id", oldCompanyId);
-            await serviceClient.from("companies").delete().eq("id", oldCompanyId);
-          } catch (err) {
-            console.error("updateMyCard: orphan company cleanup error:", err);
-          }
-        }
+      if (unlinkError) {
+        console.error("updateMyCard: failed to unlink old company", oldCompanyId, unlinkError);
       }
     }
   }

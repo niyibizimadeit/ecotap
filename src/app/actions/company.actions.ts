@@ -86,6 +86,11 @@ const _getCompanyDashboardData = cache(async (
         .from("company_subscriptions")
         .select("*, plan:billing_plans(*)")
         .eq("company_id", companyId)
+        // Deliberately excludes 'cancelled': returning null here is what renders
+        // the subscription page's "Choose a plan" empty state, which is the only
+        // resubscribe entry point in the product. Widening this filter to include
+        // a cancelled row would replace that CTA with a dead-end card. The revive
+        // path in subscription.service subscribe() handles the re-submission.
         .in("status", ["active", "pending_approval"])
         .maybeSingle(),
     ]);

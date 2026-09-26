@@ -41,32 +41,55 @@ export async function subscribe(
   if (!plan) return { success: false, error: "Plan not found." };
   if (!plan.is_active) return { success: false, error: "This plan is no longer available." };
 
-  // Check if company already has an active or pending subscription
+  // company_subscriptions.company_id is UNIQUE, so there is at most ONE row per
+  // company. Look it up regardless of status.
+  //
+  // This deliberately does not filter on status. A rejected subscription sits at
+  // 'cancelled'; the old status-filtered lookup could not see that row, fell
+  // through to a plain INSERT, hit the unique constraint (23505) and surfaced as a
+  // cause-free "Failed to create subscription." No retry could ever get past it —
+  // the company was permanently unable to subscribe.
   const supabase = getServiceSupabase();
   const { data: existingSub } = await supabase
     .from("company_subscriptions")
     .select("id, status")
     .eq("company_id", input.companyId)
-    .in("status", ["active", "pending_approval"])
     .maybeSingle();
 
-  if (existingSub) {
-    if (existingSub.status === "active") {
-      return { success: false, error: "Your company already has an active subscription. Contact support to change plans." };
-    }
-    if (existingSub.status === "pending_approval") {
-      return { success: false, error: "You already have a subscription awaiting approval." };
-    }
+  if (existingSub?.status === "active") {
+    return { success: false, error: "Your company already has an active subscription. Contact support to change plans." };
+  }
+  if (existingSub?.status === "pending_approval") {
+    return { success: false, error: "You already have a subscription awaiting approval." };
   }
 
-  const subscription = await billingRepo.createSubscription({
-    company_id:              input.companyId,
-    plan_id:                 input.planId,
-    employee_count:          input.employeeCount ?? 0,
-    payment_amount:          input.paymentAmount,
-    payment_currency:        input.paymentCurrency,
-    payment_screenshot_url:  input.paymentScreenshotUrl,
-  });
+  // 'cancelled' / 'inactive' -> REVIVE the existing row in place. Every field a
+  // fresh insert would set is set here to the same value, so the result is
+  // indistinguishable from a first-time submission.
+  //
+  // Clearing payment_screenshot_url and payment_amount is load-bearing: the
+  // rejected submission's proof must not linger and be verified against the new
+  // amount. `started_at` is non-nullable, so it takes an ISO string, not null.
+  const subscription = existingSub
+    ? await billingRepo.updateSubscription(existingSub.id, {
+        plan_id:                input.planId,
+        status:                 "pending_approval",
+        employee_count:         input.employeeCount ?? 0,
+        payment_status:         input.paymentScreenshotUrl ? "paid" : "unpaid",
+        payment_amount:         input.paymentAmount ?? null,
+        payment_currency:       input.paymentCurrency ?? "RWF",
+        payment_screenshot_url: input.paymentScreenshotUrl ?? null,
+        started_at:             new Date().toISOString(),
+        next_billing_date:      null,
+      })
+    : await billingRepo.createSubscription({
+        company_id:             input.companyId,
+        plan_id:                input.planId,
+        employee_count:         input.employeeCount ?? 0,
+        payment_amount:         input.paymentAmount,
+        payment_currency:       input.paymentCurrency,
+        payment_screenshot_url: input.paymentScreenshotUrl,
+      });
 
   if (!subscription) return { success: false, error: "Failed to create subscription." };
 

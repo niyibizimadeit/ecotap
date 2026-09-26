@@ -58,9 +58,39 @@ export async function upsertPlan(plan: {
   return data;
 }
 
-export async function deletePlan(id: string): Promise<void> {
+/**
+ * Delete a billing plan.
+ *
+ * `.select("id")` is load-bearing — see deleteDesign in card_designs.repo.ts:
+ * an RLS-blocked delete is a silent 204 with zero rows.
+ */
+export async function deletePlan(
+  id: string
+): Promise<{ success: boolean; error?: string }> {
   const supabase = await getSupabase();
-  await supabase.from("billing_plans").delete().eq("id", id);
+  const { data, error } = await supabase
+    .from("billing_plans")
+    .delete()
+    .eq("id", id)
+    .select("id");
+
+  if (error) {
+    console.error("deletePlan error:", error);
+    // 23503 = foreign_key_violation: company_subscriptions.plan_id is ON DELETE RESTRICT.
+    if (error.code === "23503") {
+      return {
+        success: false,
+        error: "This plan has subscriptions attached and cannot be deleted. Deactivate it instead.",
+      };
+    }
+    return { success: false, error: "Failed to delete plan." };
+  }
+
+  if (!data || data.length === 0) {
+    return { success: false, error: "Plan not found, or you do not have permission to delete it." };
+  }
+
+  return { success: true };
 }
 
 // ── Company subscriptions ────────────────────────────────────────────────────
@@ -108,7 +138,7 @@ export async function getAllSubscriptions(filters?: {
 export async function getAllSubscriptionsEnriched(): Promise<
   Array<CompanySubscription & {
     company: { id: string; name: string; slug: string } | null;
-    plan: { name: string; price_per_employee: number; billing_cycle: string } | null;
+    plan: { id: string; name: string; price_per_employee: number; billing_cycle: string } | null;
   }>
 > {
   const supabase = getServiceSupabase();
@@ -125,11 +155,11 @@ export async function getAllSubscriptionsEnriched(): Promise<
 
   const [{ data: companies }, { data: plans }] = await Promise.all([
     supabase.from("companies").select("id, name, slug").in("id", companyIds as string[]),
-    supabase.from("billing_plans").select("name, price_per_employee, billing_cycle").in("id", planIds as string[]),
+    supabase.from("billing_plans").select("id, name, price_per_employee, billing_cycle").in("id", planIds as string[]),
   ]);
 
   const companyMap = new Map((companies ?? []).map((c: Record<string, unknown>) => [c.id, c]));
-  const planMap = new Map((plans ?? []).map((p: Record<string, unknown>, i: number) => [planIds[i] as string, p]));
+  const planMap = new Map((plans ?? []).map((p: Record<string, unknown>) => [p.id, p]));
 
   return subs.map((s: Record<string, unknown>) => ({
     ...s,
@@ -137,7 +167,7 @@ export async function getAllSubscriptionsEnriched(): Promise<
     plan: planMap.get(s.plan_id as string) ?? null,
   })) as Array<CompanySubscription & {
     company: { id: string; name: string; slug: string } | null;
-    plan: { name: string; price_per_employee: number; billing_cycle: string } | null;
+    plan: { id: string; name: string; price_per_employee: number; billing_cycle: string } | null;
   }>;
 }
 

@@ -717,15 +717,15 @@ The reason it matters: `#F0E6D3` is hardcoded as an inline `backgroundColor` in 
 This supersedes the queue above.
 
 **Immediate — install-breaking or data-destroying**
-1. **N15** write the real `019` migration so `021` and `022` can apply (fresh installs are broken today)
-2. **N2** account deletion: fix the swallowed errors, then the non-atomic ordering
-3. **N1** rejected subscription permanently blocks the company
-4. **N6** `updateMyCard` destroying companies and subscriptions
+1. ~~**N15** write the real `019` migration so `021` and `022` can apply~~ — **fixed 2026-09-26** (also mirrored into `FULL_SCHEMA.sql`, see N15b)
+2. ~~**N2** account deletion: fix the swallowed errors, then the non-atomic ordering~~ — **fixed 2026-09-26**
+3. ~~**N1** rejected subscription permanently blocks the company~~ — **fixed 2026-09-26**
+4. ~~**N6** `updateMyCard` destroying companies and subscriptions~~ — **fixed 2026-09-26**
 
 **Short-term**
-5. **N16, N17** bring `FULL_SCHEMA.sql` up to date with migrations 012 and 014
-6. **N3** delete design/plan silently no-ops
-7. **N5** billing index-based plan join shows wrong prices
+5. ~~**N16, N17** bring `FULL_SCHEMA.sql` up to date with migrations 012 and 014~~ — **fixed 2026-09-26**
+6. ~~**N3** delete design/plan silently no-ops~~ — **fixed 2026-09-26**
+7. ~~**N5** billing index-based plan join shows wrong prices~~ — **fixed 2026-09-26**
 8. **N9** suspended users still serve public cards and VCF
 9. **N12** unauthenticated service-role analytics write
 10. **N19** migration 020's `LIMIT 50`
@@ -739,3 +739,75 @@ This supersedes the queue above.
 - A repository import inside `dashboard/company/events/[id]/page.tsx` (noted in N24) — replaced with a service-level gate
 - The Events modal placeholder that used a real customer's name (E8)
 
+
+
+---
+
+# Fix pass — 2026-09-26
+
+Eight fixes applied, verified with `npx tsc --noEmit` (clean) and `npm run build` (exit 0, no warnings).
+No live-database work was done; the SQL was written by static review against the verified file:line context.
+
+**Note on the B/H/M list at the top of this file.** It is stale. **B1, B2, B4, B5 and H8 were already
+fixed in code before this pass** — B4/B5/H8 are confirmed in the "Corrections to the B/H/M list above"
+table, and B1/B2 landed without the log being updated. Nothing in this pass touched them.
+
+## Fixed
+
+| ID | Fix | Files |
+|---|---|---|
+| **N15** | Wrote the real body of the empty `019` migration: `companies.org_locked`/`job_title_locked`/`groups_locked` (`boolean not null default false`) and `cards.whatsapp` (`text`). Idempotent, no backfill (021 step 6 does that), so it is a no-op against the live DB. | `supabase/migrations/019_employee_locks_and_whatsapp.sql` |
+| **N15b** | Mirrored the same DDL into `FULL_SCHEMA.sql`. Load-bearing, not cosmetic: a DB built from `FULL_SCHEMA.sql` alone still could not save a card or a company. Also the recovery path if a database already recorded the empty `019` as applied — **editing an applied migration does not re-apply it**, so check `supabase migration list`. | `supabase/FULL_SCHEMA.sql` |
+| **N16** | Added migration 012's four `contact_exchanges` lead-management columns and three indexes to `FULL_SCHEMA.sql`, verbatim (including the absence of `not null`), using 012's exact index names. | `supabase/FULL_SCHEMA.sql` |
+| **N17** | Added migration 014's `contact_exchanges: card owner update` policy to `FULL_SCHEMA.sql`. | `supabase/FULL_SCHEMA.sql` |
+| **N5** | Keyed the plan map by `p.id` instead of array index, and added the previously-omitted `id` to the projection (without which the fix is impossible). Was rendering another company's plan name, cycle and price — the numbers the super admin verifies payments against. | `src/lib/supabase/billing.repo.ts` |
+| **N3** | `deleteDesign`/`deletePlan` now return `{success, error}` and use `.delete().select("id")`. The representation request is load-bearing: an RLS-blocked delete is a **204 with no error and zero rows**, so a bare delete reports success for a no-op. FK-restrict (`23503`) maps to a message pointing at `is_active`. | `card_designs.repo.ts`, `billing.repo.ts`, `admin.service.ts` |
+| **N1** | `subscribe()` now looks the row up **regardless of status** and revives a `cancelled`/`inactive` row in place via `updateSubscription`, with full field parity against `createSubscription` — notably clearing `payment_screenshot_url`/`payment_amount` so a rejected proof cannot be re-verified. `started_at` is non-nullable, so it takes an ISO string. | `subscription.service.ts` |
+| **N2** | Both cascade delete functions rewritten. Every `try { await supabase… } catch {}` replaced with an explicit `{ error }` check — see the root cause below. `deleteProfileCascade` restructured into three phases with an **abort gate before the auth deletion**. `deleteCompanyCascade`'s `success` now means the row is actually gone. | `companies.repo.ts`, `admin.service.ts` |
+| **N6** | Three changes in `updateMyCard`: escaped the LIKE wildcards (`%`, `_`, and PostgREST's `*` alias) plus `.order().limit(1)` for case-differing duplicate names; **removed the orphan-company auto-delete**; guarded the company `social_links` write on a pre-mutation affiliation snapshot. | `cards.actions.ts` |
+
+## Root cause worth remembering (N2, and the same class as N2's siblings)
+
+**PostgREST errors resolve — they do not throw.** `@supabase/supabase-js` 2.108.0 sets
+`shouldThrowOnError = false` by default, and `throwOnError` appears nowhere in `src/`. Every
+`try { await supabase.from(X)... } catch {}` in this codebase is therefore **dead code that hides
+every failure**. This is what made account deletion silently half-complete and made
+`deleteCompanyCascade` always report success.
+
+## Corrections to earlier framing (found while implementing)
+
+- **N15's stated blast radius was overstated.** `FULL_SCHEMA.sql` already mirrors `022` in full, so the
+  Events tables *do* exist on the documented fresh-install path. The critical part is narrower and still
+  real: all four columns are absent from every SQL file, which kills `021` step 6 (and therefore step 7),
+  and breaks card/company saving against any rebuilt database.
+- **N1's adjacent "bug" is not a bug, and "fixing" it would have made things worse.** The
+  `.in("status", ["active","pending_approval"])` filter in `getCompanyDashboardData` is what renders the
+  subscription page's "Choose a plan" empty state — **the only resubscribe entry point in the product**.
+  Widening it to include `cancelled` would replace the recovery CTA with a dead-end card. Left in place
+  with an explanatory comment.
+- **`company/page.tsx:144`'s `? "Pending" : "Active"` ternary is not reachable** for a cancelled row,
+  because of that same filter. No change made.
+- **N2 needed more than an abort gate.** Steps 2–4c are themselves destructive, so aborting after them
+  would still leave the user without their order history. Reordering the two RESTRICT-FK steps
+  (`card_orders`, `invitations` by `created_by` *and* `accepted_by` — checked separately) into Phase 1
+  makes the abort a true no-op in the realistic failure mode.
+- **N6's guard cannot be a role check.** `profile_companies` has no `role`/`is_admin` column, and a
+  `profiles.role` check would block the employee flow the UI explicitly advertises. Used the
+  pre-mutation `oldCompanyId` snapshot instead — no extra query.
+- **N17's "fails silently" is imprecise**: `contacts.service.ts` checks the `.select().single()` result,
+  so an RLS-blocked update surfaces a "Failed to update…" toast. The policy is still missing and still
+  needed; the failure is visible, not silent.
+
+## New finding (not fixed — deferred)
+
+`updateCompanySocialLinks` (`companies.repo.ts`) overwrites the whole `social_links` JSONB, and the
+employee form only knows `linkedin`/`twitter`/`website`. A company whose `social_links` contains
+`whatsapp` or `instagram` silently loses those keys on any employee card save. Reachable because 021
+copies company links onto cards. Minimal fix would be a read-merge-write.
+
+## Still open
+
+The four "still open" items from the updated priority queue: **N9, N12, N19**, plus the medium-term
+`N7, N8, N10, N11, N13, N14, N18, N20–N25` and the `E` findings. Also worth noting: `FULL_SCHEMA.sql`
+still holds a **stale pre-013 `handle_profile_activated`** body, and migrations 013/018/020 are absent
+from it.

@@ -178,6 +178,15 @@ comment on column companies.legal_rep_confirmed is 'Confirmed at registration. L
 alter table companies add column if not exists social_links jsonb default '{}';
 comment on column companies.social_links is 'Optional company-level social links (linkedin, twitter, website, etc.). Shared across all employees of this company.';
 
+-- Migration 019: Employee card locks (organization, job title, card groups)
+alter table companies add column if not exists org_locked       boolean not null default false;
+alter table companies add column if not exists job_title_locked boolean not null default false;
+alter table companies add column if not exists groups_locked    boolean not null default false;
+
+comment on column companies.org_locked       is 'If true, employees cannot change their primary organization.';
+comment on column companies.job_title_locked is 'If true, employees cannot change their job title.';
+comment on column companies.groups_locked    is 'If true, employees cannot add or remove card affiliation groups.';
+
 -- ----------------------------------------------------------
 -- country_reps
 -- Links a profile (country_rep role) to a country.
@@ -321,6 +330,10 @@ comment on column cards.email_public is 'The email shown on the public card page
 alter table cards add column if not exists show_organization boolean not null default false;
 comment on column cards.show_organization is 'If true, the card shows the employee''s company, department, job title, and company social links.';
 
+-- Migration 019: Separate WhatsApp number on cards
+alter table cards add column if not exists whatsapp text;
+comment on column cards.whatsapp is 'Separate WhatsApp number. Falls back to phone when empty.';
+
 -- ----------------------------------------------------------
 -- card_orders
 -- A user orders physical NFC cards. Status is tracked to delivery.
@@ -460,6 +473,17 @@ comment on column contact_exchanges.message   is 'Optional short note left by th
 alter table contact_exchanges add column if not exists visitor_organization text;
 comment on column contact_exchanges.visitor_organization is 'Optional organization/company name provided by the visitor.';
 comment on constraint chk_has_contact_info on contact_exchanges is 'Must have at least one of email or phone.';
+
+-- Migration 012: Contact exchange enrichment (lead management)
+alter table contact_exchanges add column if not exists is_favorite boolean default false;
+alter table contact_exchanges add column if not exists lead_level  text    default 'normal';
+alter table contact_exchanges add column if not exists owner_notes text;
+alter table contact_exchanges add column if not exists lead_group  text;
+
+comment on column contact_exchanges.is_favorite is 'Card owner starred this contact.';
+comment on column contact_exchanges.lead_level  is 'Lead qualification: hot | warm | cold | normal. Validated in the application layer.';
+comment on column contact_exchanges.owner_notes is 'Private notes the card owner keeps about this contact.';
+comment on column contact_exchanges.lead_group  is 'User-defined group/category label.';
 
 -- ----------------------------------------------------------
 -- daily_card_stats
@@ -753,6 +777,11 @@ create index idx_daily_stats_date      on daily_card_stats (date desc);
 -- ----------------------------------------------------------
 create index idx_exchanges_card_id    on contact_exchanges (card_id);
 create index idx_exchanges_created    on contact_exchanges (created_at desc);
+
+-- Migration 012: lead-management sort/filter indexes
+create index if not exists idx_contact_exchanges_is_favorite on contact_exchanges (is_favorite);
+create index if not exists idx_contact_exchanges_lead_level  on contact_exchanges (lead_level);
+create index if not exists idx_contact_exchanges_lead_group  on contact_exchanges (lead_group);
 
 -- ----------------------------------------------------------
 -- invitations
@@ -1490,6 +1519,26 @@ create policy "contact_exchanges: company admin read"
 create policy "contact_exchanges: admin read"
   on contact_exchanges for select
   using (is_admin_or_rep());
+
+-- Migration 014: card owners can update their own contact exchanges
+-- (lead level, notes, favourites, group). Without this, the app's updates
+-- are blocked by RLS.
+create policy "contact_exchanges: card owner update"
+  on contact_exchanges for update
+  using (
+    exists (
+      select 1 from cards
+      where  cards.id = contact_exchanges.card_id
+        and  cards.profile_id = auth.uid()
+    )
+  )
+  with check (
+    exists (
+      select 1 from cards
+      where  cards.id = contact_exchanges.card_id
+        and  cards.profile_id = auth.uid()
+    )
+  );
 
 -- ----------------------------------------------------------
 -- daily_card_stats policies

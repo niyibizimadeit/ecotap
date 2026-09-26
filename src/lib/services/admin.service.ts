@@ -115,7 +115,10 @@ export async function updateDesign(
 }
 
 export async function deleteDesign(id: string): Promise<ActionResult<void>> {
-  await designsRepo.deleteDesign(id);
+  const result = await designsRepo.deleteDesign(id);
+  if (!result.success) {
+    return { success: false, error: result.error ?? "Failed to delete design." };
+  }
   return { success: true };
 }
 
@@ -135,7 +138,10 @@ export async function upsertPlan(
 }
 
 export async function deletePlan(id: string): Promise<ActionResult<void>> {
-  await billingRepo.deletePlan(id);
+  const result = await billingRepo.deletePlan(id);
+  if (!result.success) {
+    return { success: false, error: result.error ?? "Failed to delete plan." };
+  }
   return { success: true };
 }
 
@@ -259,18 +265,33 @@ export async function toggleUserStatus(
  * Shared helper: delete all data for a profile, including the auth user.
  * Used by super-admin delete, self-delete, and company employee removal.
  *
- * DELETION ORDER (critical for FK constraints):
- *   1. card_orders          — ON DELETE RESTRICT on profiles (must go before profile/auth)
- *   2. profile_companies    — track linked companies for orphan cleanup
- *   3. profile_activity     — no restrictive FKs
- *   4. contact_exchanges    — explicit cleanup (belt-and-suspenders on top of cascade)
- *   5. auth user            — cascades to profiles → cards → card_events, daily_card_stats,
- *                              card_scores, card_groups, ab_test_assignments
- *   6. orphaned companies   — clean up companies with no remaining members
+ * Runs in three phases, in this order for a reason:
  *
- * Deleting the auth user FIRST (after removing restrict-FK data) is intentional:
- * the cascade handles profiles, cards, and all card-related tables automatically.
- * This ensures the Supabase Auth record is truly removed and the email can be reused.
+ *   PHASE 1 - clear the only two RESTRICT foreign keys that would block the auth
+ *     deletion. `card_orders.profile_id` is ON DELETE RESTRICT, and
+ *     `invitations.created_by` / `.accepted_by` reference profiles(id) with no
+ *     ON DELETE clause, which Postgres treats as NO ACTION (i.e. RESTRICT).
+ *     A failed DELETE is atomic and changes nothing, so an early return here
+ *     leaves the account and every row fully intact.
+ *
+ *   PHASE 2 - advisory cleanup (profile_companies, profile_activity,
+ *     contact_exchanges, notifications). All of these cascade from profiles, so a
+ *     failure does not block the auth deletion; it is recorded and reported.
+ *
+ *   PHASE 3 - ABORT GATE. The auth identity is never deleted while cleanup is
+ *     incomplete. Deleting auth.users cascades to profiles and is irreversible:
+ *     once the auth row is gone, the email is permanently held by an account that
+ *     can no longer be used or re-registered. That is the half-deleted state this
+ *     function used to produce. Leaving the account intact is the recoverable
+ *     direction, and every step above is an idempotent delete, so a retry is safe.
+ *
+ * NOTE ON THE GUARDS: PostgREST errors RESOLVE, they do not throw - the Supabase
+ * client's `shouldThrowOnError` defaults to false and `throwOnError` is used
+ * nowhere in this codebase. The `try { ... } catch {}` blocks this function used
+ * to wrap every step in were therefore dead code that hid every failure, so
+ * cleanup silently half-finished and the auth deletion then failed on a leftover
+ * foreign key. Every step below inspects `{ error }` explicitly. Do not
+ * "simplify" them back into try/catch.
  *
  * Returns a list of error strings (empty = success).
  */
@@ -279,73 +300,118 @@ export async function deleteProfileCascade(profileId: string): Promise<string[]>
   const supabase = (await import("@/lib/supabase/server")).getServiceSupabase();
   let linkedCompanyIds: string[] = [];
 
-  // 1. Delete card orders — these have ON DELETE RESTRICT on profiles,
-  //    so they MUST be removed before we can delete the profile/auth user.
-  try {
-    await supabase.from("card_orders").delete().eq("profile_id", profileId);
-  } catch (err) {
-    errors.push(`card_orders: ${err instanceof Error ? err.message : String(err)}`);
+  // ── PHASE 1: the RESTRICT foreign keys. Any failure here returns immediately,
+  //    with the account and all of its data untouched.
+  const { error: ordersError } = await supabase
+    .from("card_orders")
+    .delete()
+    .eq("profile_id", profileId);
+  if (ordersError) {
+    console.error("deleteProfileCascade card_orders failed:", ordersError);
+    errors.push(`card_orders: ${ordersError.message}`);
+    return errors;
   }
 
-  // 2. Find and delete profile_companies links (track linked companies for orphan cleanup).
-  try {
-    const { data: links } = await supabase
-      .from("profile_companies")
-      .select("company_id")
-      .eq("profile_id", profileId);
+  const { error: invCreatedError } = await supabase
+    .from("invitations")
+    .delete()
+    .eq("created_by", profileId);
+  if (invCreatedError) {
+    console.error("deleteProfileCascade invitations(created_by) failed:", invCreatedError);
+    errors.push(`invitations(created_by): ${invCreatedError.message}`);
+    return errors;
+  }
 
+  // Checked separately from created_by: these are independent FKs and one can
+  // fail while the other succeeds.
+  const { error: invAcceptedError } = await supabase
+    .from("invitations")
+    .delete()
+    .eq("accepted_by", profileId);
+  if (invAcceptedError) {
+    console.error("deleteProfileCascade invitations(accepted_by) failed:", invAcceptedError);
+    errors.push(`invitations(accepted_by): ${invAcceptedError.message}`);
+    return errors;
+  }
+
+  // ── PHASE 2: advisory cleanup. Recorded, never fatal.
+  //    Also captures the company links the orphan cleanup in phase 4 needs.
+  const { data: links, error: linksError } = await supabase
+    .from("profile_companies")
+    .select("company_id")
+    .eq("profile_id", profileId);
+  if (linksError) {
+    // linkedCompanyIds stays empty, which silently skips orphan cleanup below.
+    console.error("deleteProfileCascade profile_companies read failed:", linksError);
+    errors.push(`profile_companies(read): ${linksError.message}`);
+  } else {
     linkedCompanyIds = links?.map((l) => l.company_id) ?? [];
-
-    await supabase.from("profile_companies").delete().eq("profile_id", profileId);
-  } catch (err) {
-    errors.push(`profile_companies: ${err instanceof Error ? err.message : String(err)}`);
   }
 
-  // 3. Delete profile activity.
-  try {
-    await supabase.from("profile_activity").delete().eq("profile_id", profileId);
-  } catch (err) {
-    errors.push(`profile_activity: ${err instanceof Error ? err.message : String(err)}`);
+  const { error: linksDeleteError } = await supabase
+    .from("profile_companies")
+    .delete()
+    .eq("profile_id", profileId);
+  if (linksDeleteError) {
+    console.error("deleteProfileCascade profile_companies delete failed:", linksDeleteError);
+    errors.push(`profile_companies: ${linksDeleteError.message}`);
   }
 
-  // 4. Delete contact_exchanges for this user's cards (belt-and-suspenders —
-  //    the cascade will also clean these, but explicit cleanup avoids edge cases).
-  try {
-    const { data: userCards } = await supabase
-      .from("cards")
-      .select("id")
-      .eq("profile_id", profileId);
+  const { error: activityError } = await supabase
+    .from("profile_activity")
+    .delete()
+    .eq("profile_id", profileId);
+  if (activityError) {
+    console.error("deleteProfileCascade profile_activity failed:", activityError);
+    errors.push(`profile_activity: ${activityError.message}`);
+  }
 
-    if (userCards && userCards.length > 0) {
-      const cardIds = userCards.map((c: { id: string }) => c.id);
-      await supabase.from("contact_exchanges").delete().in("card_id", cardIds);
+  // Deletes contact_exchanges for this user's cards. Belt-and-suspenders: the
+  // cascade would also clean these, but explicit cleanup avoids edge cases.
+  const { data: userCards, error: cardsError } = await supabase
+    .from("cards")
+    .select("id")
+    .eq("profile_id", profileId);
+  if (cardsError) {
+    console.error("deleteProfileCascade cards read failed:", cardsError);
+    errors.push(`contact_exchanges(read): ${cardsError.message}`);
+  } else if (userCards && userCards.length > 0) {
+    const cardIds = userCards.map((c: { id: string }) => c.id);
+    const { error: exchangesError } = await supabase
+      .from("contact_exchanges")
+      .delete()
+      .in("card_id", cardIds);
+    if (exchangesError) {
+      console.error("deleteProfileCascade contact_exchanges failed:", exchangesError);
+      errors.push(`contact_exchanges: ${exchangesError.message}`);
     }
-  } catch (err) {
-    errors.push(`contact_exchanges: ${err instanceof Error ? err.message : String(err)}`);
   }
 
-  // 4b. Delete invitations created by or accepted by this profile.
-  //     invitations.created_by and invitations.accepted_by reference
-  //     profiles(id) WITHOUT ON DELETE CASCADE, so they block the
-  //     auth user deletion if not cleaned up first.
-  try {
-    await supabase.from("invitations").delete().eq("created_by", profileId);
-    await supabase.from("invitations").delete().eq("accepted_by", profileId);
-  } catch (err) {
-    errors.push(`invitations: ${err instanceof Error ? err.message : String(err)}`);
+  const { error: notificationsError } = await supabase
+    .from("notifications")
+    .delete()
+    .eq("profile_id", profileId);
+  if (notificationsError) {
+    console.error("deleteProfileCascade notifications failed:", notificationsError);
+    errors.push(`notifications: ${notificationsError.message}`);
   }
 
-  // 4c. Clean up notifications sent to this profile.
-  try {
-    await supabase.from("notifications").delete().eq("profile_id", profileId);
-  } catch (err) {
-    errors.push(`notifications: ${err instanceof Error ? err.message : String(err)}`);
+  // ── PHASE 3: ABORT GATE. Never delete the auth identity while cleanup is
+  //    incomplete - see the doc comment above.
+  if (errors.length > 0) {
+    console.error(
+      "deleteProfileCascade aborted before auth deletion - account left intact:",
+      errors
+    );
+    return errors;
   }
 
-  // 5. Delete the auth user — this cascades to profiles (ON DELETE CASCADE),
-  //    which cascades to cards, which cascades to card_events, daily_card_stats,
-  //    card_scores, card_groups, ab_test_assignments.
-  //    This is the CRITICAL step for email reuse — the auth record MUST be fully purged.
+  // Delete the auth user - this cascades to profiles (ON DELETE CASCADE),
+  // which cascades to cards, card_events, daily_card_stats, card_scores,
+  // card_groups, ab_test_assignments.
+  // This is the CRITICAL step for email reuse - the auth record MUST be fully purged.
+  // Kept as try/catch: the auth admin API's failure is re-thrown explicitly below,
+  // so unlike the PostgREST calls above this catch is genuinely reachable.
   try {
     const { error: authError } = await supabase.auth.admin.deleteUser(profileId);
     if (authError) throw authError;
@@ -353,7 +419,7 @@ export async function deleteProfileCascade(profileId: string): Promise<string[]>
     // Verify the auth user is truly gone
     const { data: verifyUser } = await supabase.auth.admin.getUserById(profileId);
     if (verifyUser?.user) {
-      // User still exists — the SDK may have soft-deleted; retry
+      // User still exists - the SDK may have soft-deleted; retry
       const { error: retryError } = await supabase.auth.admin.deleteUser(profileId);
       if (retryError) throw retryError;
     }
@@ -361,29 +427,32 @@ export async function deleteProfileCascade(profileId: string): Promise<string[]>
     errors.push(`auth_user: ${err instanceof Error ? err.message : String(err)}`);
   }
 
-  // 6. Clean up orphaned companies (no remaining profile_companies links).
+  // ── PHASE 4: orphaned companies (no remaining profile_companies links).
+  //    Deliberately after the gate: a failed company cleanup must not block a
+  //    legitimate user deletion.
   if (linkedCompanyIds.length > 0) {
-    try {
-      const { data: stillLinked } = await supabase
-        .from("profile_companies")
-        .select("company_id")
-        .in("company_id", linkedCompanyIds);
+    const { data: stillLinked, error: stillLinkedError } = await supabase
+      .from("profile_companies")
+      .select("company_id")
+      .in("company_id", linkedCompanyIds);
 
+    if (stillLinkedError) {
+      console.error("deleteProfileCascade orphan lookup failed:", stillLinkedError);
+      errors.push(`orphan_cleanup(read): ${stillLinkedError.message}`);
+    } else {
       const stillLinkedIds = new Set(stillLinked?.map((l) => l.company_id) ?? []);
       const orphanedIds = linkedCompanyIds.filter((id) => !stillLinkedIds.has(id));
 
       if (orphanedIds.length > 0) {
         const { deleteCompanyCascade } = await import("@/lib/supabase/companies.repo");
         for (const companyId of orphanedIds) {
-          try {
-            await deleteCompanyCascade(companyId);
-          } catch (err) {
-            errors.push(`orphaned_company(${companyId}): ${err instanceof Error ? err.message : String(err)}`);
+          const cleanup = await deleteCompanyCascade(companyId);
+          if (!cleanup.success) {
+            console.error("deleteProfileCascade orphan cleanup failed:", companyId, cleanup.errors);
+            errors.push(`orphaned_company(${companyId}): ${cleanup.errors.join("; ")}`);
           }
         }
       }
-    } catch (err) {
-      errors.push(`orphan_cleanup: ${err instanceof Error ? err.message : String(err)}`);
     }
   }
 
@@ -414,7 +483,7 @@ export async function deleteUser(
   const errors = await deleteProfileCascade(targetProfileId);
 
   if (errors.length > 0) {
-    return { success: false, error: `Partial deletion: ${errors.join("; ")}` };
+    return { success: false, error: `Deletion aborted - the account was left intact: ${errors.join("; ")}` };
   }
 
   return { success: true };
@@ -431,7 +500,7 @@ export async function deleteOwnAccount(profileId: string): Promise<ActionResult<
   const errors = await deleteProfileCascade(profileId);
 
   if (errors.length > 0) {
-    return { success: false, error: `Partial deletion: ${errors.join("; ")}` };
+    return { success: false, error: `Deletion aborted - the account was left intact: ${errors.join("; ")}` };
   }
 
   return { success: true };
@@ -443,9 +512,15 @@ export async function deleteCompany(
 ): Promise<ActionResult<{ errors: string[] }>> {
   const result = await companiesRepo.deleteCompanyCascade(companyId);
   if (!result.success) {
-    return { success: false, error: `Partial deletion: ${result.errors.join("; ")}`, data: { errors: result.errors } };
+    return {
+      success: false,
+      error: `Company not deleted: ${result.errors.join("; ")}`,
+      data: { errors: result.errors },
+    };
   }
-  return { success: true, data: { errors: [] } };
+  // The row is gone. Pre-step warnings are advisory only (every FK into
+  // companies cascades), so surface them without failing the operation.
+  return { success: true, data: { errors: result.errors } };
 }
 
 // ── Contact exchanges (admin-wide) ────────────────────────────────────────────
