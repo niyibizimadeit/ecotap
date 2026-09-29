@@ -18,7 +18,7 @@ import { NextResponse } from "next/server";
 import { getEventCapabilities } from "@/lib/supabase/event-access";
 import * as eventsService from "@/lib/services/events.service";
 import { writeAttendanceWorkbook } from "@/lib/export/xlsx";
-import { createZipStream, safeEntryName } from "@/lib/export/zip";
+import { createZipStream, safeEntryName, uniqueEntryNamer } from "@/lib/export/zip";
 import { exportError, attachmentHeader, NO_STORE } from "../export-shared";
 
 export const runtime = "nodejs";
@@ -40,15 +40,15 @@ export async function GET() {
   // into the zip, and its compressed bytes flow out to the response. Only one
   // event's rows are ever in memory at a time.
   const zip = createZipStream();
+  const entryName = uniqueEntryNamer();
 
   const produce = (async () => {
     try {
-      for (let i = 0; i < events.length; i++) {
-        const event = events[i];
-        const rows  = await eventsService.collectExportRows(event.id);
-        const xlsx  = await writeAttendanceWorkbook(rows);
+      for (const event of events) {
+        const rows = await eventsService.collectExportRows(event.id);
+        const xlsx = await writeAttendanceWorkbook(rows, event.title);
         zip.add(
-          safeEntryName(i, event.title, event.starts_at ?? event.created_at),
+          entryName(safeEntryName(event.title, event.starts_at ?? event.created_at)),
           new Uint8Array(xlsx)
         );
       }

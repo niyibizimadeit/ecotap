@@ -41,6 +41,22 @@ export function attachmentHeader(asciiName: string, realName: string): string {
   return `attachment; filename="${ascii}"; filename*=UTF-8''${encodeURIComponent(realName)}`;
 }
 
+/**
+ * Name an event's spreadsheet after the event itself.
+ *
+ * The returned value is used twice: `attachmentHeader` sanitises it for the
+ * ASCII `filename=` fallback and percent-encodes it for `filename*`, so the
+ * only job here is choosing a sane stem.
+ *
+ * A title with no ASCII alphanumerics at all ("日本語イベント", or one that is
+ * pure emoji) would sanitise down to a row of underscores on the fallback path,
+ * so it gets a generic name instead. Browsers that honour `filename*` — every
+ * current one — still see the real title regardless.
+ */
+export function exportFilename(title: string): string {
+  return /[A-Za-z0-9]/.test(title) ? `${title}.xlsx` : "event-export.xlsx";
+}
+
 export const XLSX_CONTENT_TYPE =
   "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet";
 

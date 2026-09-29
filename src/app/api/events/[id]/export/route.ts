@@ -10,7 +10,9 @@ import { NextResponse } from "next/server";
 import { getEventCapabilities } from "@/lib/supabase/event-access";
 import * as eventsService from "@/lib/services/events.service";
 import { writeAttendanceWorkbook } from "@/lib/export/xlsx";
-import { exportError, attachmentHeader, XLSX_CONTENT_TYPE, NO_STORE } from "../../export-shared";
+import {
+  exportError, attachmentHeader, exportFilename, XLSX_CONTENT_TYPE, NO_STORE,
+} from "../../export-shared";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -35,14 +37,14 @@ export async function GET(_req: Request, { params }: Props) {
 
   try {
     const rows   = await eventsService.collectExportRows(event.id);
-    const buffer = await writeAttendanceWorkbook(rows);
-    const label  = `${event.title} — attendance`;
+    const buffer = await writeAttendanceWorkbook(rows, event.title);
+    const name   = exportFilename(event.title);
 
     return new NextResponse(new Uint8Array(buffer), {
       status: 200,
       headers: {
         "Content-Type":        XLSX_CONTENT_TYPE,
-        "Content-Disposition": attachmentHeader(`${event.title}-attendance.xlsx`, `${label}.xlsx`),
+        "Content-Disposition": attachmentHeader(name, name),
         "Content-Length":      String(buffer.length),
         ...NO_STORE,
       },
