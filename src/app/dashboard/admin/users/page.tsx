@@ -10,7 +10,7 @@ import { Spinner } from "@/components/ui/Spinner";
 import {
   Search, ExternalLink, AlertTriangle, Trash2, Shield, XCircle,
   UserCheck, Building, Package, CreditCard, ChevronRight,
-  Mail, Calendar, Briefcase, Palette, Globe,
+  Mail, Phone, Calendar, Briefcase, Palette, Globe,
 } from "lucide-react";
 import type { UserRole, UserStatus, ProfileFull } from "@/types";
 import { ROLE_LABELS } from "@/constants";
@@ -400,10 +400,20 @@ export default function UsersPage() {
                     <span className="text-ink-light">Public:</span>
                     <span className={userDetail.card.is_public ? "text-emerald-bright font-medium" : "text-ink-light"}>{userDetail.card.is_public ? "Yes" : "No"}</span>
                   </div>
-                  <div className="flex items-center gap-2">
+                  <div className="flex items-center gap-2 min-w-0">
+                    <Phone className="h-4 w-4 text-ink-light flex-shrink-0" />
+                    <span className="text-ink-light flex-shrink-0">Phone:</span>
+                    <span className="font-medium text-ink truncate min-w-0" title={userDetail.card.phone ?? undefined}>{userDetail.card.phone ?? "—"}</span>
+                  </div>
+                  <div className="flex items-center gap-2 min-w-0">
                     <Mail className="h-4 w-4 text-ink-light flex-shrink-0" />
-                    <span className="text-ink-light">Phone:</span>
-                    <span className="font-medium text-ink">{userDetail.card.phone ?? "—"}</span>
+                    <span className="text-ink-light flex-shrink-0">Personal email:</span>
+                    <span className="font-medium text-ink truncate min-w-0" title={userDetail.card.email_public ?? undefined}>{userDetail.card.email_public ?? "—"}</span>
+                  </div>
+                  <div className="flex items-center gap-2 min-w-0">
+                    <Mail className="h-4 w-4 text-ink-light flex-shrink-0" />
+                    <span className="text-ink-light flex-shrink-0">Work email:</span>
+                    <span className="font-medium text-ink truncate min-w-0" title={userDetail.card.email_work ?? undefined}>{userDetail.card.email_work ?? "—"}</span>
                   </div>
                   {userDetail.card.bio && (
                     <div className="sm:col-span-2">

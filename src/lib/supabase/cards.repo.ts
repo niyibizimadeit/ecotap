@@ -187,6 +187,7 @@ export async function updateCard(
       | "phone"
       | "whatsapp"
       | "email_public"
+      | "email_work"
       | "social_links"
       | "show_organization"
       | "is_public"

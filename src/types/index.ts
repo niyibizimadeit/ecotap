@@ -177,7 +177,8 @@ export interface Card {
   job_title:        string | null; // Fallback if no primary company job_title set
   phone:            string | null;
   whatsapp:         string | null; // Separate WhatsApp number — can auto-fill from phone
-  email_public:     string | null; // Shown on card (may differ from auth email)
+  email_public:     string | null; // Personal email — included in vCard export
+  email_work:       string | null; // Optional work email — vCard export + admin detail
   social_links:     SocialLinks;
   show_organization:boolean;       // Show company, department, job title, company socials on card
   qr_url:           string | null;
@@ -503,6 +504,7 @@ export interface CardProfileForm {
   phone:             string;
   whatsapp:          string;
   email_public:      string;
+  email_work:        string;
   bio:               string;
   theme_color:       string;
   social_links:      SocialLinks;

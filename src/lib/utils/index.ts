@@ -38,13 +38,19 @@ export function getInitials(name: string): string {
 /**
  * Whether a sidebar nav item should render as active for the current path.
  *
- * The `href + "/"` boundary is load-bearing. A plain `startsWith(href)` would
- * leave Overview (/dashboard/admin) lit on every sub-page, because it is a
- * prefix of /dashboard/admin/events. With the boundary, an item is active on
- * exactly its own path plus anything nested beneath it.
+ * Exact matches always count. Deeper sections also stay active on their
+ * nested pages (e.g. /dashboard/employee/orders on /orders/new), but a
+ * dashboard root like /dashboard/employee is the Overview page only — it must
+ * not stay lit on /dashboard/employee/profile.
+ *
+ * The `href + "/"` boundary additionally stops /dashboard/adminX from
+ * matching /dashboard/admin.
  */
 export function isNavActive(pathname: string, href: string): boolean {
-  return pathname === href || pathname.startsWith(href + "/");
+  if (pathname === href) return true;
+  // Dashboard roots are Overview pages, not parent sections.
+  if (/^\/dashboard\/[^/]+$/.test(href)) return false;
+  return pathname.startsWith(href + "/");
 }
 
 /** Relative luminance of a hex colour, 0 (black) to 1 (white). */

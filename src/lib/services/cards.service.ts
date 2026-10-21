@@ -72,6 +72,9 @@ export async function updateCard(
     phone:            data.phone || null,
     whatsapp:         data.whatsapp || null,
     email_public:     data.email_public || null,
+    ...(typeof data.email_work === "string"
+      ? { email_work: data.email_work.trim() || null }
+      : {}),
     social_links:     data.social_links,
     show_organization: data.show_organization,
   });

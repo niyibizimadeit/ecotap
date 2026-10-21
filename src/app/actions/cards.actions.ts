@@ -226,6 +226,7 @@ export async function updateMyCard(
     phone:             data.phone,
     whatsapp:          data.whatsapp || data.phone || "",
     email_public:      data.email_public,
+    email_work:        data.email_work,
     bio:               data.bio,
     theme_color:       data.theme_color,
     social_links:      data.social_links,

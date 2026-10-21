@@ -310,7 +310,8 @@ create table cards (
   bio          text,
   job_title    text,        -- Fallback if no primary company job_title
   phone        text,
-  email_public text,        -- Shown on card; may differ from auth email
+  email_public text,        -- Personal email; included in saved contact (vCard)
+  email_work   text,        -- Optional work email; included in saved contact (vCard)
   social_links jsonb        not null default '{}',
   qr_url       text,
   is_public    boolean      not null default true,
@@ -324,7 +325,8 @@ create table cards (
 comment on table  cards              is 'One digital card per profile. Slug = public URL segment.';
 comment on column cards.theme_color  is 'Digital card accent colour. Editable unless primary company has theme_locked = true.';
 comment on column cards.social_links is 'JSONB: {linkedin, twitter, whatsapp, instagram, website}. Validated in application layer.';
-comment on column cards.email_public is 'The email shown on the public card page. May differ from auth email.';
+comment on column cards.email_public is 'Personal email. Included in the saved contact (vCard); not rendered on the public card page.';
+comment on column cards.email_work   is 'Optional work email. Included in the saved contact (vCard); shown only in the super-admin user detail modal.';
 
 -- Migration 004c: Organization display toggle
 alter table cards add column if not exists show_organization boolean not null default false;

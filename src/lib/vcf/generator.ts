@@ -18,7 +18,12 @@ export function generateVcf(card: PublicCard): string {
   if (job_title) lines.push(`TITLE:${job_title}`);
   if (company)   lines.push(`ORG:${company.name}`);
   if (phone)     lines.push(`TEL;TYPE=CELL:${phone}`);
-  if (card.email_public) lines.push(`EMAIL:${card.email_public}`);
+  const personalEmail = card.email_public?.trim() ?? "";
+  const workEmail     = card.email_work?.trim() ?? "";
+
+  if (personalEmail) lines.push(`EMAIL;TYPE=INTERNET,HOME:${personalEmail}`);
+  if (workEmail && workEmail.toLowerCase() !== personalEmail.toLowerCase())
+    lines.push(`EMAIL;TYPE=INTERNET,WORK:${workEmail}`);
 
   if (social_links.website)  lines.push(`URL:${social_links.website}`);
   if (social_links.linkedin) lines.push(`X-SOCIALPROFILE;type=linkedin:${social_links.linkedin}`);

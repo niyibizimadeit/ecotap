@@ -180,8 +180,8 @@
     "semantic_hash": ""
   },
   "src/app/actions/cards.actions.ts": {
-    "mtime": 1790419387.096295,
-    "ast_hash": "e99b08b9ce5eff9411d4fc8dea6d93c0",
+    "mtime": 1792466998.2643,
+    "ast_hash": "32280fd2b25304ecfe71c39d115f6d25",
     "semantic_hash": ""
   },
   "src/app/actions/company.actions.ts": {
@@ -265,8 +265,8 @@
     "semantic_hash": "624219a2ea4bc12b6b9e194f27d319b5"
   },
   "src/app/dashboard/admin/users/page.tsx": {
-    "mtime": 1786208663.7422104,
-    "ast_hash": "c1f28be356fbeaa7cf7474add89edfb9",
+    "mtime": 1792467011.3454874,
+    "ast_hash": "2b32596f286712a74760d729e4a5bc49",
     "semantic_hash": ""
   },
   "src/app/dashboard/company/_components/CompanyPublicPage.tsx": {
@@ -380,8 +380,8 @@
     "semantic_hash": "6388abaae8e92b077413ae5c8b74d3bf"
   },
   "src/app/dashboard/employee/profile/page.tsx": {
-    "mtime": 1786194452.0499277,
-    "ast_hash": "b953765cdb7df382c321df4308b7f3c7",
+    "mtime": 1792466993.4623294,
+    "ast_hash": "dd018db40fc94b11fbced887e5373041",
     "semantic_hash": ""
   },
   "src/app/dashboard/employee/qr/page.tsx": {
@@ -545,8 +545,8 @@
     "semantic_hash": ""
   },
   "src/lib/services/cards.service.ts": {
-    "mtime": 1786189918.9551663,
-    "ast_hash": "e381c15ac0877c0753a0609a25136f96",
+    "mtime": 1792467188.2312367,
+    "ast_hash": "9f56f601eb0fae3a1f2613e4434a55b0",
     "semantic_hash": ""
   },
   "src/lib/services/contacts.service.ts": {
@@ -595,8 +595,8 @@
     "semantic_hash": ""
   },
   "src/lib/supabase/cards.repo.ts": {
-    "mtime": 1786190390.4270227,
-    "ast_hash": "8b097a11dc420dd90b3a98ac2a0f1a17",
+    "mtime": 1792466998.2653027,
+    "ast_hash": "0d2c150a7001d240eb3817b2a3ab30eb",
     "semantic_hash": ""
   },
   "src/lib/supabase/client.ts": {
@@ -640,8 +640,8 @@
     "semantic_hash": ""
   },
   "src/lib/utils/index.ts": {
-    "mtime": 1790249974.7645063,
-    "ast_hash": "a22a838921c07bc7f77a973978d823eb",
+    "mtime": 1792482245.6356835,
+    "ast_hash": "1cc86b798970bd268ce1ff7c23675ac0",
     "semantic_hash": ""
   },
   "src/lib/validations/auth.ts": {
@@ -650,8 +650,8 @@
     "semantic_hash": "dec0f898b818dbc2c4a92790baf2eff0"
   },
   "src/lib/vcf/generator.ts": {
-    "mtime": 1786200742.7838404,
-    "ast_hash": "45b1c6809f91405ed8893b9ab8aaaa72",
+    "mtime": 1792467188.2316172,
+    "ast_hash": "84ca7652cc81bc32fc1bdbc7ad132196",
     "semantic_hash": ""
   },
   "src/middleware.ts": {
@@ -665,13 +665,13 @@
     "semantic_hash": "27d50bf5d3602d445056e68a19ea41f0"
   },
   "src/types/index.ts": {
-    "mtime": 1790249472.7876406,
-    "ast_hash": "c91b8d976553e65c727f982ffd394803",
+    "mtime": 1792466988.073442,
+    "ast_hash": "92464aa328faf30cf7977d1738f51d68",
     "semantic_hash": ""
   },
   "supabase/FULL_SCHEMA.sql": {
-    "mtime": 1790419225.7843032,
-    "ast_hash": "70eeb5bf221d49daec30e322b951dc50",
+    "mtime": 1792467188.2324092,
+    "ast_hash": "7ec1790e12ab9e2e30fbff68e4086124",
     "semantic_hash": ""
   },
   "supabase/migrations/011_card_groups.sql": {
@@ -1012,6 +1012,11 @@
   "supabase/migrations/022_events.sql": {
     "mtime": 1790249411.9702666,
     "ast_hash": "25167026bca8e43ea049a14ede07fd06",
+    "semantic_hash": ""
+  },
+  "supabase/migrations/023_card_work_email.sql": {
+    "mtime": 1792467188.2318342,
+    "ast_hash": "ec90f7219447b99cbcf1f9920938eceb",
     "semantic_hash": ""
   }
 }

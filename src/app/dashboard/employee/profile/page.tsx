@@ -47,6 +47,7 @@ const EMPTY_FORM: FormState = {
   phone:                "",
   whatsapp:             "",
   email_public:         "",
+  email_work:           "",
   bio:                  "",
   theme_color:          "#064E3B",
   social_links:         { linkedin: "", twitter: "", whatsapp: "", instagram: "", website: "" },
@@ -92,6 +93,7 @@ export default function ProfilePage() {
           phone:        card.phone ?? "",
           whatsapp:     card.whatsapp || card.phone || "",
           email_public: card.email_public ?? "",
+          email_work:   card.email_work ?? "",
           bio:          card.bio ?? "",
           theme_color:  themeLocked && companyBrandColor ? companyBrandColor : (card.theme_color ?? "#064E3B"),
           social_links: {
@@ -192,6 +194,7 @@ export default function ProfilePage() {
       phone:                form.phone,
       whatsapp:             form.whatsapp,
       email_public:         form.email_public,
+      email_work:           form.email_work,
       bio:                  form.bio,
       theme_color:          form.theme_color,
       social_links:         form.social_links,
@@ -302,7 +305,8 @@ export default function ProfilePage() {
                 </div>
               </div>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <Input label="Email" type="email" value={form.email_public} onChange={set("email_public")} hint="Shown on your card" />
+                <Input label="Personal email" type="email" value={form.email_public} onChange={set("email_public")} hint="Included in your saved contact (.vcf)" />
+                <Input label="Work email" type="email" value={form.email_work} onChange={set("email_work")} hint="Optional — included in your saved contact (.vcf)" />
               </div>
               <Textarea label="Bio" placeholder="Tell visitors about yourself..." value={form.bio} onChange={set("bio")} hint="Keep it under 200 characters for best display." className="min-h-[90px]" />
             </div>
